@@ -139,18 +139,6 @@ export function PersonalityScreen() {
             />
           </QuestionScreen>
         ) : null}
-        {step === 2 ? (
-          <QuestionScreen title="That's enough to begin.">
-            <p className="closing-copy">
-              Your media manager has your words on the business, the people, what you're hoping for,
-              and how you'd like to come across — including the places you left open.
-            </p>
-            <p className="closing-copy">
-              Nothing here decides your brand. It gives the next conversation somewhere real to start.
-            </p>
-            <p className="meta">Kept on this device. A refresh won't clear it.</p>
-          </QuestionScreen>
-        ) : null}
       </TransitionWrapper>
     </DiscoveryLayout>
   );

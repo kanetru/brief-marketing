@@ -15,7 +15,17 @@
 
 export type IsoDateTime = string;
 
-export type SectionId = "welcome" | "business" | "audience" | "goals" | "personality";
+export type SectionId =
+  | "welcome"
+  | "business"
+  | "audience"
+  | "goals"
+  | "personality"
+  | "spectrum"
+  | "visual"
+  | "colour"
+  | "type"
+  | "imagery";
 
 export interface AgencyRef {
   id: "lover-lover";
@@ -150,6 +160,139 @@ export interface PersonalitySection {
   avoid: PersonalityPole;
 }
 
+export type SpectrumDimensionId =
+  | "playful_serious"
+  | "traditional_progressive"
+  | "understated_bold"
+  | "raw_polished"
+  | "familiar_exclusive"
+  | "human_corporate";
+
+/**
+ * A spectrum answer.
+ * `unanswered` means they have not touched it.
+ * `neutral` is an explicit "neither really matters" — not the midpoint.
+ * `selected` is a chosen position from 0 (left) to 100 (right).
+ */
+export type SpectrumAnswer =
+  | { state: "unanswered" }
+  | { state: "neutral"; capturedAt: IsoDateTime }
+  | { state: "selected"; value: number; capturedAt: IsoDateTime };
+
+/** Structured client evidence for one tension. Labels are what they were shown. */
+export interface SpectrumDimensionEvidence {
+  id: SpectrumDimensionId;
+  leftLabel: string;
+  rightLabel: string;
+  answer: SpectrumAnswer;
+}
+
+export interface PersonalitySpectrumSection {
+  dimensions: SpectrumDimensionEvidence[];
+}
+
+export type VisualTrait =
+  | "editorial"
+  | "organic"
+  | "minimal"
+  | "expressive"
+  | "playful"
+  | "technical"
+  | "warm"
+  | "cool"
+  | "polished"
+  | "raw"
+  | "bold"
+  | "restrained"
+  | "classic"
+  | "contemporary";
+
+/** Catalogue scores copied onto the evidence so later rescoring still has the original board. */
+export type VisualTraitScores = Record<VisualTrait, number>;
+
+export type VisualChoice = "a" | "b" | "both" | "neither";
+
+export interface VisualDirectionSnapshot {
+  id: string;
+  traits: VisualTraitScores;
+}
+
+/**
+ * One pair the client was shown, plus what they did with it.
+ * This is raw selection evidence, not an interpretation.
+ */
+export interface VisualComparisonEvidence {
+  comparisonId: string;
+  order: number;
+  a: VisualDirectionSnapshot;
+  b: VisualDirectionSnapshot;
+  choice:
+    | { state: "unanswered" }
+    | { state: "selected"; value: VisualChoice; capturedAt: IsoDateTime };
+}
+
+export interface VisualPreferences {
+  comparisons: VisualComparisonEvidence[];
+}
+
+export type ColourRelationship = "yes" | "sort_of" | "no";
+
+/** A colour the client says they already use. Not a recommendation. */
+export interface ExistingBrandColour {
+  hex: string;
+  capturedAt: IsoDateTime;
+}
+
+/**
+ * Preference evidence about colour worlds.
+ * Liking a palette is not an instruction to use it as the brand palette.
+ */
+export interface ColourPreferences {
+  preferredPaletteIds: string[];
+  avoidedPaletteIds: string[];
+  preferredCapturedAt: IsoDateTime | null;
+  avoidedCapturedAt: IsoDateTime | null;
+  existingColourRelationship:
+    | { state: "unanswered" }
+    | { state: "selected"; value: ColourRelationship; capturedAt: IsoDateTime };
+  existingBrandColours: ExistingBrandColour[];
+}
+
+export type TypographyDirectionId =
+  | "editorial_serif"
+  | "clean_sans"
+  | "humanist_sans"
+  | "bold_grotesk"
+  | "classic_serif"
+  | "expressive_display";
+
+/**
+ * Direction ids only. The font used to render a specimen lives in the catalogue
+ * and can change without rewriting this evidence.
+ */
+export interface TypographyPreferences {
+  preferredDirectionIds: TypographyDirectionId[];
+  avoidedDirectionIds: TypographyDirectionId[];
+  preferredCapturedAt: IsoDateTime | null;
+  avoidedCapturedAt: IsoDateTime | null;
+}
+
+export type ImageryDirectionId =
+  | "documentary"
+  | "polished"
+  | "editorial"
+  | "people_first"
+  | "detail_craft"
+  | "atmospheric";
+
+/** Preference evidence. Not a recommendation of what to publish. */
+export interface ImageryPreferences {
+  preferredDirectionIds: ImageryDirectionId[];
+  avoidedDirectionIds: ImageryDirectionId[];
+  preferredCapturedAt: IsoDateTime | null;
+  avoidedCapturedAt: IsoDateTime | null;
+}
+
 /** A later collection step. Present so the document shape stays stable. */
 export interface NotStartedSection {
   status: "not_started";
@@ -205,7 +348,7 @@ export interface DiscoveryProfile {
 
 export interface DiscoverySession {
   id: string;
-  version: 1;
+  version: 2;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
   agency: AgencyRef;
@@ -214,11 +357,11 @@ export interface DiscoverySession {
   audience: AudienceSection;
   goals: GoalsSection;
   personality: PersonalitySection;
-  personalitySpectrum: NotStartedSection;
-  visualPreferences: NotStartedSection;
-  colourPreferences: NotStartedSection;
-  typographyPreferences: NotStartedSection;
-  imageryPreferences: NotStartedSection;
+  personalitySpectrum: PersonalitySpectrumSection;
+  visualPreferences: VisualPreferences;
+  colourPreferences: ColourPreferences;
+  typographyPreferences: TypographyPreferences;
+  imageryPreferences: ImageryPreferences;
   voicePreferences: NotStartedSection;
   inspiration: NotStartedSection;
   existingAssets: NotStartedSection;

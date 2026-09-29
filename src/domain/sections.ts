@@ -1,4 +1,6 @@
 import type { SectionId } from "../types/discovery";
+import { SPECTRUM_DIMENSIONS } from "./spectrum";
+import { VISUAL_COMPARISON_PAIRS } from "./visualDirections";
 
 /**
  * Steps are internal to a route. They are never shown as "question N of M".
@@ -7,14 +9,24 @@ import type { SectionId } from "../types/discovery";
  * business:     0 name, 1 description, 2 peopleComeFor, 3 differentiation
  * audience:     0 current, 1 desired
  * goals:        0 outcomes, 1 twelve-month marker
- * personality:  0 attract, 1 avoid, 2 close
+ * personality:  0 attract, 1 avoid
+ * spectrum:     0 intro, then one step per dimension
+ * visual:       0 intro, then one step per comparison pair
+ * colour:       0 preferred, 1 avoided, 2 existing relationship, 3 existing colours
+ * type:         0 preferred, 1 avoided
+ * imagery:      0 preferred, 1 avoided
  */
 export const SECTIONS = [
   { id: "welcome", label: "Intro", path: "/demo/start", steps: 1 },
   { id: "business", label: "Business", path: "/demo/business", steps: 4 },
   { id: "audience", label: "Audience", path: "/demo/audience", steps: 2 },
   { id: "goals", label: "Goals", path: "/demo/goals", steps: 2 },
-  { id: "personality", label: "Personality", path: "/demo/personality", steps: 3 },
+  { id: "personality", label: "Personality", path: "/demo/personality", steps: 2 },
+  { id: "spectrum", label: "Spectrum", path: "/demo/spectrum", steps: 1 + SPECTRUM_DIMENSIONS.length },
+  { id: "visual", label: "Visual", path: "/demo/visual", steps: 1 + VISUAL_COMPARISON_PAIRS.length },
+  { id: "colour", label: "Colour", path: "/demo/colour", steps: 4 },
+  { id: "type", label: "Type", path: "/demo/type", steps: 2 },
+  { id: "imagery", label: "Imagery", path: "/demo/imagery", steps: 2 },
 ] as const satisfies ReadonlyArray<{
   id: SectionId;
   label: string;

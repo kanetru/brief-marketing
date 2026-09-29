@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { deriveVisualSignal } from "../domain/visualSignal";
 import { useSession } from "../state/SessionContext";
 
 interface InspectorControls {
@@ -48,6 +49,7 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [copied, setCopied] = useState(false);
   const json = JSON.stringify(session, null, 2);
+  const visualSignal = deriveVisualSignal(session.visualPreferences);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -100,7 +102,51 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
-      <pre>{json}</pre>
+      <div className="inspector-scroll">
+        <EvidenceBlock title="personalitySpectrum" data={session.personalitySpectrum} startOpen />
+        <EvidenceBlock title="visualPreferences" data={session.visualPreferences} startOpen />
+        <EvidenceBlock
+          title="Derived visual signal"
+          note="Computed from the raw choices while this panel is open. Not stored on the session, and not an observation."
+          data={visualSignal ?? { state: "not_enough_choices" }}
+        />
+        <EvidenceBlock title="colourPreferences" data={session.colourPreferences} startOpen />
+        <EvidenceBlock title="typographyPreferences" data={session.typographyPreferences} startOpen />
+        <EvidenceBlock title="imageryPreferences" data={session.imageryPreferences} startOpen />
+        <EvidenceBlock title="Earlier evidence" data={{
+          business: session.business,
+          audience: session.audience,
+          goals: session.goals,
+          personality: session.personality,
+        }} />
+        <EvidenceBlock title="Full session" data={session} />
+      </div>
     </aside>
+  );
+}
+
+function EvidenceBlock({
+  title,
+  note,
+  data,
+  startOpen = false,
+}: {
+  title: string;
+  note?: string;
+  data: unknown;
+  startOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(startOpen);
+
+  return (
+    <details
+      className="evidence"
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary>{title}</summary>
+      {note ? <p className="inspector-note">{note}</p> : null}
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </details>
   );
 }

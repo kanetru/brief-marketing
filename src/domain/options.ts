@@ -3,6 +3,9 @@ import type { MarketingOutcome, PersonalityTrait } from "../types/discovery";
 export const LIMITS = {
   goals: 3,
   traits: 5,
+  palettes: 3,
+  typePreferred: 2,
+  imageryPreferred: 2,
 } as const;
 
 export const MARKETING_OUTCOMES: ReadonlyArray<{ id: MarketingOutcome; label: string }> = [
