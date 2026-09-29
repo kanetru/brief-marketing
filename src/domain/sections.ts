@@ -1,0 +1,56 @@
+import type { SectionId } from "../types/discovery";
+
+/**
+ * Steps are internal to a route. They are never shown as "question N of M".
+ *
+ * welcome:      0 intro
+ * business:     0 name, 1 description, 2 peopleComeFor, 3 differentiation
+ * audience:     0 current, 1 desired
+ * goals:        0 outcomes, 1 twelve-month marker
+ * personality:  0 attract, 1 avoid, 2 close
+ */
+export const SECTIONS = [
+  { id: "welcome", label: "Intro", path: "/demo/start", steps: 1 },
+  { id: "business", label: "Business", path: "/demo/business", steps: 4 },
+  { id: "audience", label: "Audience", path: "/demo/audience", steps: 2 },
+  { id: "goals", label: "Goals", path: "/demo/goals", steps: 2 },
+  { id: "personality", label: "Personality", path: "/demo/personality", steps: 3 },
+] as const satisfies ReadonlyArray<{
+  id: SectionId;
+  label: string;
+  path: string;
+  steps: number;
+}>;
+
+export function sectionIndex(section: SectionId): number {
+  return SECTIONS.findIndex((item) => item.id === section);
+}
+
+export function sectionById(section: SectionId) {
+  const found = SECTIONS.find((item) => item.id === section);
+  if (!found) {
+    throw new Error(`Unknown section: ${section}`);
+  }
+  return found;
+}
+
+export function pathFor(section: SectionId): string {
+  return sectionById(section).path;
+}
+
+export function stepCount(section: SectionId): number {
+  return sectionById(section).steps;
+}
+
+export function adjacentSection(section: SectionId, direction: -1 | 1): SectionId | null {
+  const next = SECTIONS[sectionIndex(section) + direction];
+  return next ? next.id : null;
+}
+
+export function laterSection(a: SectionId, b: SectionId): SectionId {
+  return sectionIndex(a) >= sectionIndex(b) ? a : b;
+}
+
+export function sectionReached(furthest: SectionId, section: SectionId): boolean {
+  return sectionIndex(section) <= sectionIndex(furthest);
+}
