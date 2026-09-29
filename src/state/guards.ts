@@ -1,5 +1,6 @@
-import type { DiscoverySession, SectionId } from "../types/discovery";
 import { poleCount } from "../domain/personality";
+import { VOICE_ROUNDS } from "../domain/voice";
+import type { DiscoverySession, SectionId } from "../types/discovery";
 import { desiredReady, hasText } from "./textEvidence";
 
 /** Whether Continue should accept the current beat. Does not display a count. */
@@ -55,6 +56,20 @@ export function canAdvance(session: DiscoverySession, section: SectionId, step: 
       if (section === "visual" && step > 0) {
         const comparison = session.visualPreferences.comparisons[step - 1];
         return comparison?.choice.state === "selected";
+      }
+      if (section === "voice") {
+        if (step === 0 || step > VOICE_ROUNDS.length) return true;
+        const round = session.voicePreferences.comparisons[step - 1];
+        return round?.choice.state === "selected" || round?.choice.state === "none";
+      }
+      if (section === "inspiration" || section === "complete") return true;
+      if (section === "clarify") {
+        if (step === 0) {
+          const status = session.agentObservations.status;
+          return status === "ready" || status === "failed";
+        }
+        const question = session.agentQuestions.selected[step - 1];
+        return !!question && question.response.state !== "unanswered";
       }
       return false;
     }

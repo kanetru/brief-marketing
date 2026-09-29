@@ -221,6 +221,11 @@ button {
   text-wrap: pretty;
 }
 
+.question.is-conversation .display {
+  font-size: clamp(1.65rem, 3vw, 2.3rem);
+  line-height: 1.16;
+}
+
 .question.is-hero .display {
   font-size: clamp(2.8rem, 8vw, 5rem);
   line-height: 0.96;
@@ -690,9 +695,9 @@ button {
   }
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 1480px) {
   .progress {
-    width: min(100%, 46rem);
+    width: min(100%, 62rem);
   }
 
   .progress-current {
@@ -702,8 +707,8 @@ button {
   .progress .label {
     display: block;
     margin-top: 0.4rem;
-    font-size: 0.58rem;
-    letter-spacing: 0.08em;
+    font-size: 0.52rem;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--muted);
   }
@@ -1639,6 +1644,120 @@ button {
   }
 }
 
+.voice-stack,
+.clarify-options {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.voice-option {
+  width: 100%;
+  padding: 1.05rem 1.1rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 252, 248, 0.55);
+  text-align: left;
+  font-family: var(--serif);
+  font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.voice-option:hover {
+  border-color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.voice-option.is-pressed {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+.reference-composer {
+  display: grid;
+  gap: 0.15rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--ink);
+}
+
+.reference-name,
+.reference-optional {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0.45rem 0;
+}
+
+.reference-name {
+  font-family: var(--serif);
+  font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+  letter-spacing: -0.03em;
+}
+
+.reference-name::placeholder,
+.reference-optional::placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.reference-optional {
+  border-top: 1px solid var(--line);
+  font-size: 1rem;
+}
+
+.reference-name:focus,
+.reference-optional:focus {
+  outline: none;
+}
+
+.reference-add {
+  justify-self: start;
+  padding-left: 0;
+}
+
+.reference-list {
+  list-style: none;
+  margin: 1.1rem 0 0;
+  padding: 0;
+}
+
+.reference-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.reference-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.reference-note,
+.reference-url {
+  margin: 0.2rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.reference-url {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .transition,
   .reveal,
@@ -1648,7 +1767,8 @@ button {
   .compare-panel,
   .palette-card,
   .type-card,
-  .imagery-card {
+  .imagery-card,
+  .voice-option {
     animation: none;
     transition: none;
   }

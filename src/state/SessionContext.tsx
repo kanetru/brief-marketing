@@ -7,7 +7,10 @@ import {
   useReducer,
   type ReactNode,
 } from "react";
+import type { AnalysisSuccess } from "../domain/analysis";
+import type { DiscoveryEvidence } from "../domain/evidence";
 import type {
+  AnalysisFailureCode,
   BusinessTextField,
   ColourRelationship,
   DiscoverySession,
@@ -51,6 +54,15 @@ interface SessionApi {
   toggleAvoidedType: (directionId: TypographyDirectionId) => void;
   togglePreferredImagery: (directionId: ImageryDirectionId) => void;
   toggleAvoidedImagery: (directionId: ImageryDirectionId) => void;
+  chooseVoice: (roundId: string, optionId: string) => void;
+  setVoiceLanguage: (field: "preferred" | "avoided", value: string) => void;
+  addInspiration: (polarity: "positive" | "negative", name: string, url: string, note: string) => void;
+  removeInspiration: (polarity: "positive" | "negative", id: string) => void;
+  beginAnalysis: () => void;
+  recordAnalysis: (result: AnalysisSuccess, evidence: DiscoveryEvidence) => void;
+  failAnalysis: (error: AnalysisFailureCode) => void;
+  answerClarification: (questionId: string, answer: { text?: string; optionId?: string }) => void;
+  clarifyUncertain: (questionId: string) => void;
   reset: () => void;
 }
 
@@ -153,6 +165,42 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (directionId: ImageryDirectionId) => send({ type: "toggle-avoided-imagery", directionId }),
     [send],
   );
+  const chooseVoice = useCallback(
+    (roundId: string, optionId: string) => send({ type: "choose-voice", roundId, optionId }),
+    [send],
+  );
+  const setVoiceLanguage = useCallback(
+    (field: "preferred" | "avoided", value: string) => send({ type: "voice-language", field, value }),
+    [send],
+  );
+  const addInspiration = useCallback(
+    (polarity: "positive" | "negative", name: string, url: string, note: string) =>
+      send({ type: "add-inspiration", polarity, name, url, note }),
+    [send],
+  );
+  const removeInspiration = useCallback(
+    (polarity: "positive" | "negative", id: string) => send({ type: "remove-inspiration", polarity, id }),
+    [send],
+  );
+  const beginAnalysis = useCallback(() => send({ type: "begin-analysis" }), [send]);
+  const recordAnalysis = useCallback(
+    (result: AnalysisSuccess, evidence: DiscoveryEvidence) =>
+      send({ type: "record-analysis", sessionId: session.id, result, evidenceSent: evidence }),
+    [send, session.id],
+  );
+  const failAnalysis = useCallback(
+    (error: AnalysisFailureCode) => send({ type: "fail-analysis", sessionId: session.id, error }),
+    [send, session.id],
+  );
+  const answerClarification = useCallback(
+    (questionId: string, answer: { text?: string; optionId?: string }) =>
+      send({ type: "answer-clarification", questionId, ...answer }),
+    [send],
+  );
+  const clarifyUncertain = useCallback(
+    (questionId: string) => send({ type: "clarify-uncertain", questionId }),
+    [send],
+  );
   const reset = useCallback(() => send({ type: "reset" }), [send]);
 
   const api = useMemo<SessionApi>(
@@ -184,6 +232,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toggleAvoidedType,
       togglePreferredImagery,
       toggleAvoidedImagery,
+      chooseVoice,
+      setVoiceLanguage,
+      addInspiration,
+      removeInspiration,
+      beginAnalysis,
+      recordAnalysis,
+      failAnalysis,
+      answerClarification,
+      clarifyUncertain,
       reset,
     }),
     [
@@ -214,6 +271,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toggleAvoidedType,
       togglePreferredImagery,
       toggleAvoidedImagery,
+      chooseVoice,
+      setVoiceLanguage,
+      addInspiration,
+      removeInspiration,
+      beginAnalysis,
+      recordAnalysis,
+      failAnalysis,
+      answerClarification,
+      clarifyUncertain,
       reset,
     ],
   );

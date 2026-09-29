@@ -1,14 +1,19 @@
-import { VISUAL_COMPARISON_PAIRS, snapshotDirection } from "../domain/visualDirections";
 import { blankSpectrumDimensions } from "../domain/spectrum";
+import { VISUAL_COMPARISON_PAIRS, snapshotDirection } from "../domain/visualDirections";
+import { VOICE_ROUNDS, snapshotVoiceOption } from "../domain/voice";
 import type {
+  AgentObservationLayer,
+  AgentQuestionLayer,
   ColourPreferences,
   DiscoverySession,
   ImageryPreferences,
+  InspirationSection,
   NotStartedSection,
   PersonalityPole,
   SectionId,
   TypographyPreferences,
   VisualPreferences,
+  VoicePreferences,
 } from "../types/discovery";
 import { unanswered } from "./textEvidence";
 
@@ -32,7 +37,52 @@ function blankSteps(): Record<SectionId, number> {
     colour: 0,
     type: 0,
     imagery: 0,
+    voice: 0,
+    inspiration: 0,
+    clarify: 0,
+    complete: 0,
   };
+}
+
+export function blankObservations(): AgentObservationLayer {
+  return {
+    status: "not_generated",
+    analysisVersion: null,
+    provider: null,
+    model: null,
+    generatedAt: null,
+    failureCode: null,
+    items: [],
+    rawModelResponse: null,
+    evidenceSent: null,
+  };
+}
+
+export function blankQuestions(): AgentQuestionLayer {
+  return {
+    status: "not_generated",
+    candidates: [],
+    selected: [],
+    generatedAt: null,
+  };
+}
+
+function blankVoice(): VoicePreferences {
+  return {
+    comparisons: VOICE_ROUNDS.map((round, index) => ({
+      roundId: round.id,
+      order: index + 1,
+      situation: round.situation,
+      options: round.options.map(snapshotVoiceOption),
+      choice: { state: "unanswered" },
+    })),
+    preferredLanguage: unanswered(),
+    avoidedLanguage: unanswered(),
+  };
+}
+
+function blankInspiration(): InspirationSection {
+  return { positiveReferences: [], negativeReferences: [] };
 }
 
 function blankVisual(): VisualPreferences {
@@ -79,7 +129,7 @@ function blankImagery(): ImageryPreferences {
 export function createSession(timestamp = new Date().toISOString()): DiscoverySession {
   return {
     id: crypto.randomUUID(),
-    version: 2,
+    version: 3,
     createdAt: timestamp,
     updatedAt: timestamp,
     agency: { id: "lover-lover", name: "Lover Lover" },
@@ -112,11 +162,11 @@ export function createSession(timestamp = new Date().toISOString()): DiscoverySe
     colourPreferences: blankColour(),
     typographyPreferences: blankType(),
     imageryPreferences: blankImagery(),
-    voicePreferences: notStarted(),
-    inspiration: notStarted(),
+    voicePreferences: blankVoice(),
+    inspiration: blankInspiration(),
     existingAssets: notStarted(),
-    agentObservations: { status: "not_generated", items: [] },
-    agentQuestions: { status: "not_generated", items: [] },
+    agentObservations: blankObservations(),
+    agentQuestions: blankQuestions(),
     discoveryProfile: { status: "not_compiled", managerInterpretation: [] },
   };
 }

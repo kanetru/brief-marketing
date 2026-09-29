@@ -6,6 +6,8 @@ export const LIMITS = {
   palettes: 3,
   typePreferred: 2,
   imageryPreferred: 2,
+  inspirationPositive: 5,
+  inspirationNegative: 3,
 } as const;
 
 export const MARKETING_OUTCOMES: ReadonlyArray<{ id: MarketingOutcome; label: string }> = [

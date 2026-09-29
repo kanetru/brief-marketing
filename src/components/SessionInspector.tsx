@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { buildDiscoveryEvidence } from "../domain/evidence";
 import { deriveVisualSignal } from "../domain/visualSignal";
 import { useSession } from "../state/SessionContext";
 
@@ -50,6 +51,7 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const json = JSON.stringify(session, null, 2);
   const visualSignal = deriveVisualSignal(session.visualPreferences);
+  const evidence = buildDiscoveryEvidence(session);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -86,8 +88,8 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
         <div>
           <p className="inspector-title">Discovery session</p>
           <p className="inspector-note">
-            Client evidence, structured choices, and explicit uncertainty. Observations and the
-            profile stay empty until a later layer writes them.
+            Client evidence, then the analysis payload, observations, and the questions that were kept.
+            Nothing here is a brand decision.
           </p>
         </div>
         <div className="inspector-actions">
@@ -114,6 +116,25 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
         <EvidenceBlock title="colourPreferences" data={session.colourPreferences} startOpen />
         <EvidenceBlock title="typographyPreferences" data={session.typographyPreferences} startOpen />
         <EvidenceBlock title="imageryPreferences" data={session.imageryPreferences} startOpen />
+        <EvidenceBlock title="voicePreferences" data={session.voicePreferences} startOpen />
+        <EvidenceBlock title="inspiration" data={session.inspiration} startOpen />
+        <EvidenceBlock
+          title="Evidence sent to agent"
+          note="Built from the session on demand. Derived signals are labelled derived_signal. This is the shape posted to /api/discovery/analyze."
+          data={evidence}
+        />
+        <EvidenceBlock
+          title="Evidence from the last analysis"
+          note="The payload stored with the analysis, so you can see exactly what was sent even if the session has moved on."
+          data={session.agentObservations.evidenceSent ?? { state: "not_sent" }}
+        />
+        <EvidenceBlock
+          title="Raw structured agent response"
+          data={session.agentObservations.rawModelResponse ?? { state: session.agentObservations.status, failureCode: session.agentObservations.failureCode }}
+        />
+        <EvidenceBlock title="Filtered observations" data={session.agentObservations.items} startOpen />
+        <EvidenceBlock title="Selected questions" data={session.agentQuestions.selected} startOpen />
+        <EvidenceBlock title="Candidate questions" data={session.agentQuestions.candidates} />
         <EvidenceBlock title="Earlier evidence" data={{
           business: session.business,
           audience: session.audience,

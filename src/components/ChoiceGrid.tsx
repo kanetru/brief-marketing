@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 interface ChoiceGridProps {
   children: ReactNode;
-  columns?: 2 | 3;
+  columns?: 1 | 2 | 3;
   labelledBy?: string;
 }
 

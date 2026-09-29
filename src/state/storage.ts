@@ -1,17 +1,21 @@
 import { stepCount } from "../domain/sections";
 import type {
+  AgentObservationLayer,
+  AgentQuestionLayer,
   ColourPreferences,
   DiscoverySession,
   ImageryPreferences,
+  InspirationSection,
   PersonalitySpectrumSection,
   SectionId,
   TypographyPreferences,
   VisualPreferences,
+  VoicePreferences,
 } from "../types/discovery";
-import { createSession } from "./createSession";
+import { blankObservations, blankQuestions, createSession } from "./createSession";
 
-export const STORAGE_KEY = "lover-lover.discovery-session.v2";
-const LEGACY_KEY = "lover-lover.discovery-session.v1";
+export const STORAGE_KEY = "lover-lover.discovery-session.v3";
+const LEGACY_KEYS = ["lover-lover.discovery-session.v2", "lover-lover.discovery-session.v1"];
 
 const SECTION_IDS: readonly SectionId[] = [
   "welcome",
@@ -24,6 +28,10 @@ const SECTION_IDS: readonly SectionId[] = [
   "colour",
   "type",
   "imagery",
+  "voice",
+  "inspiration",
+  "clarify",
+  "complete",
 ];
 
 function isSectionId(value: unknown): value is SectionId {
@@ -54,6 +62,30 @@ function isImagery(value: unknown): value is ImageryPreferences {
   return Array.isArray((value as ImageryPreferences).preferredDirectionIds);
 }
 
+function isVoice(value: unknown): value is VoicePreferences {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Partial<VoicePreferences>;
+  return Array.isArray(record.comparisons) && !!record.preferredLanguage && !!record.avoidedLanguage;
+}
+
+function isInspiration(value: unknown): value is InspirationSection {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Partial<InspirationSection>;
+  return Array.isArray(record.positiveReferences) && Array.isArray(record.negativeReferences);
+}
+
+function isObservationLayer(value: unknown): value is AgentObservationLayer {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Partial<AgentObservationLayer>;
+  return typeof record.status === "string" && Array.isArray(record.items) && "failureCode" in record;
+}
+
+function isQuestionLayer(value: unknown): value is AgentQuestionLayer {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Partial<AgentQuestionLayer>;
+  return typeof record.status === "string" && Array.isArray(record.selected) && Array.isArray(record.candidates);
+}
+
 function mergeSpectrum(existing: unknown, fresh: PersonalitySpectrumSection): PersonalitySpectrumSection {
   if (!isSpectrum(existing)) return fresh;
   return {
@@ -78,11 +110,21 @@ function mergeVisual(existing: unknown, fresh: VisualPreferences): VisualPrefere
   };
 }
 
+function mergeVoice(existing: unknown, fresh: VoicePreferences): VoicePreferences {
+  if (!isVoice(existing)) return fresh;
+  const known = new Map(existing.comparisons.map((round) => [round.roundId, round]));
+  return {
+    comparisons: fresh.comparisons.map((round) => known.get(round.roundId) ?? round),
+    preferredLanguage: existing.preferredLanguage,
+    avoidedLanguage: existing.avoidedLanguage,
+  };
+}
+
 /** Keep older sessions and fill any collection areas this version introduced. */
 export function migrateSession(value: unknown): DiscoverySession | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
-  if (raw.version !== 1 && raw.version !== 2) return null;
+  if (raw.version !== 1 && raw.version !== 2 && raw.version !== 3) return null;
   const record = value as Partial<DiscoverySession>;
   if (!record.business || !record.audience || !record.goals || !record.personality || !record.progress) {
     return null;
@@ -102,7 +144,7 @@ export function migrateSession(value: unknown): DiscoverySession | null {
   return {
     ...fresh,
     id: record.id,
-    version: 2,
+    version: 3,
     createdAt: typeof record.createdAt === "string" ? record.createdAt : fresh.createdAt,
     updatedAt: typeof record.updatedAt === "string" ? record.updatedAt : fresh.updatedAt,
     progress: {
@@ -119,18 +161,18 @@ export function migrateSession(value: unknown): DiscoverySession | null {
     colourPreferences: isColour(record.colourPreferences) ? record.colourPreferences : fresh.colourPreferences,
     typographyPreferences: isType(record.typographyPreferences) ? record.typographyPreferences : fresh.typographyPreferences,
     imageryPreferences: isImagery(record.imageryPreferences) ? record.imageryPreferences : fresh.imageryPreferences,
-    voicePreferences: record.voicePreferences ?? fresh.voicePreferences,
-    inspiration: record.inspiration ?? fresh.inspiration,
+    voicePreferences: mergeVoice(record.voicePreferences, fresh.voicePreferences),
+    inspiration: isInspiration(record.inspiration) ? record.inspiration : fresh.inspiration,
     existingAssets: record.existingAssets ?? fresh.existingAssets,
-    agentObservations: record.agentObservations ?? fresh.agentObservations,
-    agentQuestions: record.agentQuestions ?? fresh.agentQuestions,
+    agentObservations: isObservationLayer(record.agentObservations) ? record.agentObservations : blankObservations(),
+    agentQuestions: isQuestionLayer(record.agentQuestions) ? record.agentQuestions : blankQuestions(),
     discoveryProfile: record.discoveryProfile ?? fresh.discoveryProfile,
   };
 }
 
 export function loadSession(): DiscoverySession {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_KEY);
+    const raw = [STORAGE_KEY, ...LEGACY_KEYS].map((key) => localStorage.getItem(key)).find((value) => value !== null);
     if (!raw) return createSession();
     const parsed: unknown = JSON.parse(raw);
     return migrateSession(parsed) ?? createSession();
