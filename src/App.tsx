@@ -6,7 +6,9 @@ import { GoalsScreen } from "./screens/GoalsScreen";
 import { ClarifyScreen } from "./screens/ClarifyScreen";
 import { ColourScreen } from "./screens/ColourScreen";
 import { CompleteScreen } from "./screens/CompleteScreen";
+import { HandoverScreen } from "./screens/HandoverScreen";
 import { ImageryScreen } from "./screens/ImageryScreen";
+import { ProfileScreen } from "./screens/ProfileScreen";
 import { InspirationScreen } from "./screens/InspirationScreen";
 import { PersonalityScreen } from "./screens/PersonalityScreen";
 import { SpectrumScreen } from "./screens/SpectrumScreen";
@@ -34,6 +36,8 @@ export function App() {
         <Route path="/demo/voice" element={<VoiceScreen />} />
         <Route path="/demo/inspiration" element={<InspirationScreen />} />
         <Route path="/demo/clarify" element={<ClarifyScreen />} />
+        <Route path="/demo/profile" element={<ProfileScreen />} />
+        <Route path="/demo/handover" element={<HandoverScreen />} />
         <Route path="/demo/complete" element={<CompleteScreen />} />
         <Route path="*" element={<Navigate to="/demo/start" replace />} />
       </Routes>

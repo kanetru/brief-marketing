@@ -1,11 +1,13 @@
 import type { Connect, Plugin } from "vite";
 import type { DiscoveryEvidence } from "../src/domain/evidence";
+import type { ProfileGenerationRequest, ProfileRefinementRequest } from "../src/domain/profileRequest";
 import { analyzeDiscovery } from "./analyze";
+import { generateDiscoveryProfile, refineDiscoveryProfile } from "./profile";
 
 export function discoveryApiPlugin(): Plugin {
   const handle: Connect.NextHandleFunction = (req, res, next) => {
     const url = req.url?.split("?")[0];
-    if (url !== "/api/discovery/analyze") {
+    if (url !== "/api/discovery/analyze" && url !== "/api/discovery/profile" && url !== "/api/discovery/profile/refine") {
       next();
       return;
     }
@@ -15,16 +17,30 @@ export function discoveryApiPlugin(): Plugin {
     }
     void readBody(req)
       .then(async (raw) => {
-        const body = JSON.parse(raw) as { evidence?: DiscoveryEvidence };
-        if (!body?.evidence) {
+        const body: unknown = JSON.parse(raw);
+        if (url === "/api/discovery/analyze") {
+          const evidence = (body as { evidence?: DiscoveryEvidence }).evidence;
+          if (!evidence) {
+            send(res, 400, { ok: false, error: "invalid_response" });
+            return;
+          }
+          const result = await analyzeDiscovery(evidence);
+          send(res, result.ok ? 200 : result.error === "not_configured" ? 503 : 502, result);
+          return;
+        }
+        const request = body as ProfileGenerationRequest;
+        if (!request?.evidence) {
           send(res, 400, { ok: false, error: "invalid_response" });
           return;
         }
-        const result = await analyzeDiscovery(body.evidence);
-        send(res, result.ok ? 200 : result.error === "not_configured" ? 503 : 502, result);
+        const result =
+          url === "/api/discovery/profile/refine"
+            ? await refineDiscoveryProfile(body as ProfileRefinementRequest)
+            : await generateDiscoveryProfile(request);
+        send(res, 200, result);
       })
       .catch((error: unknown) => {
-        console.error("Discovery analysis endpoint failed", error instanceof Error ? error.message : "request");
+        console.error("Discovery endpoint failed", error instanceof Error ? error.message : "request");
         send(res, 502, { ok: false, error: "unavailable" });
       });
   };

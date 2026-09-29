@@ -8,7 +8,7 @@
  * - Structured selections: values chosen from a controlled vocabulary.
  * - Unresolved uncertainty: an explicit "I'm not sure", never an empty string.
  * - Agent observations and clarification questions. Written only by the analysis pass.
- * - Media-manager interpretation: discoveryProfile.managerInterpretation. Empty here.
+ * - Discovery profile: a derived handover. It never overwrites client answers.
  *
  * Navigation progress is session state, not evidence.
  */
@@ -29,6 +29,7 @@ export type SectionId =
   | "voice"
   | "inspiration"
   | "clarify"
+  | "profile"
   | "complete";
 
 export interface AgencyRef {
@@ -461,11 +462,110 @@ export interface ManagerInterpretation {
 }
 
 /**
- * Compiled later from evidence, observations, and manager interpretation.
- * This prototype does not produce one.
+ * How a profile statement is allowed to speak.
+ * Shown as a kind of reading, never as a percentage.
  */
+export type ProfileStatementStatus =
+  | "direct"
+  | "strong_pattern"
+  | "possible_pattern"
+  | "tension"
+  | "explicit_uncertainty";
+
+export interface ProfileStatement {
+  id: string;
+  type: string;
+  statement: string;
+  evidenceReferences: string[];
+  confidence: AgentConfidence;
+  status: ProfileStatementStatus;
+}
+
+export interface NarrativeSection {
+  summary: string;
+  statements: ProfileStatement[];
+}
+
+export interface ProfileClarification {
+  id: string;
+  question: string;
+  response: "unanswered" | "text" | "selected" | "manager_help";
+  detail: string | null;
+}
+
+export interface DiscussionPoint {
+  id: string;
+  prompt: string;
+  evidenceReferences: string[];
+}
+
+/** Something the client explicitly rejected. Built from evidence, not from the model. */
+export interface HardAvoid {
+  label: string;
+  detail: string;
+  sourcePath: string;
+}
+
+/** Derived handover. Separate from the raw answers it was read from. */
+export interface ProfileContent {
+  businessSummary: NarrativeSection;
+  audienceSummary: NarrativeSection;
+  marketingGoals: NarrativeSection;
+  personalitySummary: NarrativeSection;
+  visualPreferences: NarrativeSection;
+  colourPreferences: NarrativeSection;
+  typographyPreferences: NarrativeSection;
+  imageryPreferences: NarrativeSection;
+  voicePreferences: NarrativeSection;
+  inspirationSummary: NarrativeSection;
+  strongSignals: ProfileStatement[];
+  mixedSignals: ProfileStatement[];
+  unresolvedQuestions: ProfileStatement[];
+  discussionPoints: DiscussionPoint[];
+  hardAvoids: HardAvoid[];
+}
+
+export interface RejectedProfileStatement {
+  statement: string;
+  code: string;
+  reason: string;
+}
+
+export type ProfileSource = "model" | "fallback" | "refinement";
+
+export type ProfileFeedbackResponse = "yes" | "mostly" | "not_really";
+
+export interface ProfileFeedback {
+  response: ProfileFeedbackResponse;
+  note: string | null;
+  capturedAt: IsoDateTime;
+}
+
+export interface DiscoveryProfileVersion {
+  version: number;
+  generatedAt: IsoDateTime;
+  evidenceHash: string;
+  source: ProfileSource;
+  promptVersion: string | null;
+  provider: string | null;
+  model: string | null;
+  content: ProfileContent;
+  /** The client note that caused this revision. Empty on the first version. */
+  feedback: ProfileFeedback | null;
+  rawModelResponse: unknown;
+  rejectedStatements: RejectedProfileStatement[];
+  usedFallback: boolean;
+}
+
+export type ProfileStatus = "not_compiled" | "running" | "ready" | "refining";
+
 export interface DiscoveryProfile {
-  status: "not_compiled";
+  status: ProfileStatus;
+  activeVersion: number | null;
+  versions: DiscoveryProfileVersion[];
+  clientFeedback: ProfileFeedback | null;
+  /** Why the model was skipped, when the shown profile was assembled from answers. */
+  failureCode: AnalysisFailureCode | null;
   managerInterpretation: ManagerInterpretation[];
 }
 

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
 import { QuestionScreen } from "../components/QuestionScreen";
@@ -26,13 +27,16 @@ export function CompleteScreen() {
       <QuestionScreen
         size="hero"
         kicker="Handover"
-        title="That's plenty to work with."
-        supporting="Your responses are ready for your media manager. They'll use what you've shared here alongside their own experience and conversations with you to shape the next step."
+        title="You're done."
+        supporting="Thanks — your responses are ready for your media manager. They'll use this alongside their own experience and conversations with you to shape the creative direction."
       >
         <aside className="statement">
           <p className="statement-lead">We haven't defined your brand here.</p>
-          <p>And that's the point.</p>
+          <p>We've given them a much better place to start.</p>
         </aside>
+        <p className="handover-link">
+          <Link to="/demo/handover">Open the media manager handover</Link>
+        </p>
       </QuestionScreen>
     </DiscoveryLayout>
   );

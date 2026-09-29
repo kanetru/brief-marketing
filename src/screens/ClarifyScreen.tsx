@@ -58,8 +58,8 @@ export function ClarifyScreen() {
   }
 
   function finish() {
-    activate("complete");
-    navigate(pathFor("complete"));
+    activate("profile");
+    navigate(pathFor("profile"));
   }
 
   function forward() {

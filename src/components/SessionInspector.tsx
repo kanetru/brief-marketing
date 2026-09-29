@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildDiscoveryEvidence } from "../domain/evidence";
+import { activeProfileVersion } from "../domain/profileRequest";
 import { deriveVisualSignal } from "../domain/visualSignal";
 import { useSession } from "../state/SessionContext";
 
@@ -49,9 +50,11 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [tab, setTab] = useState<"session" | "evidence" | "clarification" | "profile" | "versions">("session");
   const json = JSON.stringify(session, null, 2);
   const visualSignal = deriveVisualSignal(session.visualPreferences);
   const evidence = buildDiscoveryEvidence(session);
+  const profileVersion = activeProfileVersion(session.discoveryProfile.versions, session.discoveryProfile.activeVersion);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -104,44 +107,71 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
+      <div className="inspector-tabs" role="tablist" aria-label="Inspector sections">
+        {(
+          [
+            ["session", "Session"],
+            ["evidence", "Evidence"],
+            ["clarification", "Clarification"],
+            ["profile", "Profile"],
+            ["versions", "Profile versions"],
+          ] as const
+        ).map(([id, label]) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="inspector-scroll">
-        <EvidenceBlock title="personalitySpectrum" data={session.personalitySpectrum} startOpen />
-        <EvidenceBlock title="visualPreferences" data={session.visualPreferences} startOpen />
-        <EvidenceBlock
-          title="Derived visual signal"
-          note="Computed from the raw choices while this panel is open. Not stored on the session, and not an observation."
-          data={visualSignal ?? { state: "not_enough_choices" }}
-          startOpen
-        />
-        <EvidenceBlock title="colourPreferences" data={session.colourPreferences} startOpen />
-        <EvidenceBlock title="typographyPreferences" data={session.typographyPreferences} startOpen />
-        <EvidenceBlock title="imageryPreferences" data={session.imageryPreferences} startOpen />
-        <EvidenceBlock title="voicePreferences" data={session.voicePreferences} startOpen />
-        <EvidenceBlock title="inspiration" data={session.inspiration} startOpen />
-        <EvidenceBlock
-          title="Evidence sent to agent"
-          note="Built from the session on demand. Derived signals are labelled derived_signal. This is the shape posted to /api/discovery/analyze."
-          data={evidence}
-        />
-        <EvidenceBlock
-          title="Evidence from the last analysis"
-          note="The payload stored with the analysis, so you can see exactly what was sent even if the session has moved on."
-          data={session.agentObservations.evidenceSent ?? { state: "not_sent" }}
-        />
-        <EvidenceBlock
-          title="Raw structured agent response"
-          data={session.agentObservations.rawModelResponse ?? { state: session.agentObservations.status, failureCode: session.agentObservations.failureCode }}
-        />
-        <EvidenceBlock title="Filtered observations" data={session.agentObservations.items} startOpen />
-        <EvidenceBlock title="Selected questions" data={session.agentQuestions.selected} startOpen />
-        <EvidenceBlock title="Candidate questions" data={session.agentQuestions.candidates} />
-        <EvidenceBlock title="Earlier evidence" data={{
-          business: session.business,
-          audience: session.audience,
-          goals: session.goals,
-          personality: session.personality,
-        }} />
-        <EvidenceBlock title="Full session" data={session} />
+        {tab === "session" ? (
+          <>
+            <EvidenceBlock title="Earlier evidence" data={{ business: session.business, audience: session.audience, goals: session.goals, personality: session.personality }} startOpen />
+            <EvidenceBlock title="personalitySpectrum" data={session.personalitySpectrum} />
+            <EvidenceBlock title="visualPreferences" data={session.visualPreferences} />
+            <EvidenceBlock title="Derived visual signal" note="Computed while this panel is open. Not stored, and not an observation." data={visualSignal ?? { state: "not_enough_choices" }} />
+            <EvidenceBlock title="colourPreferences" data={session.colourPreferences} />
+            <EvidenceBlock title="typographyPreferences" data={session.typographyPreferences} />
+            <EvidenceBlock title="imageryPreferences" data={session.imageryPreferences} />
+            <EvidenceBlock title="voicePreferences" data={session.voicePreferences} />
+            <EvidenceBlock title="inspiration" data={session.inspiration} />
+            <EvidenceBlock title="Full session" data={session} />
+          </>
+        ) : null}
+        {tab === "evidence" ? (
+          <>
+            <EvidenceBlock title="Evidence sent to agent" note="Built on demand. Derived signals are labelled derived_signal." data={evidence} startOpen />
+            <EvidenceBlock title="Evidence from the last analysis" data={session.agentObservations.evidenceSent ?? { state: "not_sent" }} />
+          </>
+        ) : null}
+        {tab === "clarification" ? (
+          <>
+            <EvidenceBlock title="Raw structured agent response" data={session.agentObservations.rawModelResponse ?? { state: session.agentObservations.status, failureCode: session.agentObservations.failureCode }} startOpen />
+            <EvidenceBlock title="Filtered observations" data={session.agentObservations.items} startOpen />
+            <EvidenceBlock title="Selected questions" data={session.agentQuestions.selected} />
+            <EvidenceBlock title="Candidate questions" data={session.agentQuestions.candidates} />
+          </>
+        ) : null}
+        {tab === "profile" ? (
+          <>
+            <EvidenceBlock
+              title="Profile state"
+              data={{
+                status: session.discoveryProfile.status,
+                failureCode: session.discoveryProfile.failureCode,
+                clientFeedback: session.discoveryProfile.clientFeedback,
+                source: profileVersion?.source ?? null,
+                usedFallback: profileVersion?.usedFallback ?? null,
+                provider: profileVersion?.provider ?? null,
+                model: profileVersion?.model ?? null,
+              }}
+              startOpen
+            />
+            <EvidenceBlock title="Rejected statements" data={profileVersion?.rejectedStatements ?? []} startOpen />
+            <EvidenceBlock title="Validated profile" data={profileVersion?.content ?? { state: "not_compiled" }} />
+            <EvidenceBlock title="Raw profile response" data={profileVersion?.rawModelResponse ?? { state: "none" }} />
+          </>
+        ) : null}
+        {tab === "versions" ? <EvidenceBlock title="Profile versions" data={session.discoveryProfile.versions} startOpen /> : null}
       </div>
     </aside>
   );

@@ -20,6 +20,7 @@ import { VOICE_ROUNDS } from "./voice";
  * voice:        0 intro, then one step per round, then preferred language, then avoided language
  * inspiration:  0 admired, 1 avoid
  * clarify:      0 transition, then one step per selected question (unused slots stay empty)
+ * profile:      0 the client review
  * complete:     0 handover
  */
 export const SECTIONS = [
@@ -36,7 +37,8 @@ export const SECTIONS = [
   { id: "voice", label: "Voice", path: "/demo/voice", steps: 1 + VOICE_ROUNDS.length + 2 },
   { id: "inspiration", label: "Inspiration", path: "/demo/inspiration", steps: 2 },
   { id: "clarify", label: "Clarify", path: "/demo/clarify", steps: 1 + MAX_CLARIFICATION_QUESTIONS },
-  { id: "complete", label: "Ready", path: "/demo/complete", steps: 1 },
+  { id: "profile", label: "Profile", path: "/demo/profile", steps: 1 },
+  { id: "complete", label: "Done", path: "/demo/complete", steps: 1 },
 ] as const satisfies ReadonlyArray<{
   id: SectionId;
   label: string;

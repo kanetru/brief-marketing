@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "fixtures": "node scripts/run-fixtures.mjs",
-    "fixtures:live": "node scripts/run-fixtures.mjs --live"
+    "fixtures:live": "node scripts/run-fixtures.mjs --live",
+    "profiles": "node scripts/run-profiles.mjs"
   },
   "repository": {
     "type": "git",
