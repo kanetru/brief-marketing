@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ChoiceGrid } from "../components/ChoiceGrid";
@@ -8,20 +8,25 @@ import { ProfileReveal } from "../components/ProfileReveal";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { TextResponse } from "../components/TextResponse";
 import { TransitionWrapper } from "../components/TransitionWrapper";
+import { buildBrandIntelligence } from "../domain/brandIntelligence";
 import { activeProfileVersion, hashEvidence, profileRequestFromSession } from "../domain/profileRequest";
 import { pathFor } from "../domain/sections";
 import { requestProfile } from "../services/ai/profileClient";
 import { useSession } from "../state/SessionContext";
 import { useConversation } from "../state/useConversation";
-import type { ProfileFeedbackResponse } from "../types/discovery";
+import type { ProfileFeedbackResponse, TerritoryReactionResponse } from "../types/discovery";
 
 const inFlight = new Set<string>();
 
 export function ProfileScreen() {
   const navigate = useNavigate();
-  const { session, beginProfile, recordProfile, setProfileFeedback, beginRefinement, recordRefinement } = useSession();
+  const { session, beginProfile, recordProfile, setProfileFeedback, beginRefinement, recordRefinement, setTerritoryReaction, setTerritoryPreference } = useSession();
   const { step, goBack, showBack } = useConversation("profile");
   const profile = session.discoveryProfile;
+  const intelligence = useMemo(() => buildBrandIntelligence(session), [session]);
+  const consistent = intelligence.draftModel.signals.filter(
+    (signal) => signal.polarity === "positive" && signal.strength !== "exploratory",
+  );
   const version = activeProfileVersion(profile.versions, profile.activeVersion);
   const [choice, setChoice] = useState<ProfileFeedbackResponse | null>(profile.clientFeedback?.response ?? null);
   const [note, setNote] = useState(profile.clientFeedback?.note ?? "");
@@ -86,14 +91,34 @@ export function ProfileScreen() {
           size="hero"
           kicker="Discovery"
           title="Here's what we're hearing."
-          supporting="This is an interpretation of what you've told us — not a finished brand identity or creative strategy."
+          supporting="Your answers and choices point toward a few interesting creative directions."
         >
-          <p className="closing-copy">It gives your media manager a stronger starting point for working with you.</p>
+          <p className="closing-copy">
+            These aren't finished brand concepts. They're starting points for you and your media manager to explore together.
+          </p>
           {waiting || !version ? (
             <p className="profile-note">{profile.status === "refining" ? "Revising this from what you said." : "Reading what you've told us."}</p>
           ) : (
             <>
-              <ProfileReveal content={version.content} assembled={version.usedFallback} />
+              <ProfileReveal
+                content={version.content}
+                assembled={version.usedFallback}
+                signals={consistent}
+                territories={intelligence.draftTerritories}
+                renderTerritory={(territory) => (
+                  <TerritoryReaction
+                    territoryId={territory.id}
+                    response={session.territoryFeedback.reactions.find((item) => item.territoryId === territory.id)?.response ?? null}
+                    note={session.territoryFeedback.reactions.find((item) => item.territoryId === territory.id)?.note ?? ""}
+                    onRespond={(response, note) => setTerritoryReaction(territory.id, response, note)}
+                  />
+                )}
+              />
+              <DirectionPick
+                territories={intelligence.draftTerritories}
+                preference={session.territoryFeedback.preference}
+                onPick={setTerritoryPreference}
+              />
               {revised ? (
                 <div className="profile-feedback">
                   <p className="profile-summary">
@@ -120,6 +145,88 @@ export function ProfileScreen() {
         </QuestionScreen>
       </TransitionWrapper>
     </DiscoveryLayout>
+  );
+}
+
+function TerritoryReaction({
+  territoryId,
+  response,
+  note,
+  onRespond,
+}: {
+  territoryId: string;
+  response: TerritoryReactionResponse | null;
+  note: string;
+  onRespond: (response: TerritoryReactionResponse, note: string) => void;
+}) {
+  const options: Array<{ id: TerritoryReactionResponse; label: string }> = [
+    { id: "very_close", label: "Very close" },
+    { id: "something_here", label: "There's something here" },
+    { id: "not_for_us", label: "Not for us" },
+  ];
+  return (
+    <div className="territory-reaction">
+      <p>How does this feel?</p>
+      <div className="reaction-row">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className="reaction-button"
+            aria-pressed={response === option.id}
+            onClick={() => onRespond(option.id, note)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <label className="reaction-note">
+        <span>Optional note</span>
+        <input
+          value={note}
+          aria-label={`Note on ${territoryId}`}
+          disabled={!response}
+          placeholder={response ? "Anything we should keep" : "Pick a response first"}
+          onChange={(event) => {
+            if (response) onRespond(response, event.target.value);
+          }}
+        />
+      </label>
+    </div>
+  );
+}
+
+function DirectionPick({
+  territories,
+  preference,
+  onPick,
+}: {
+  territories: Array<{ id: string; name: string }>;
+  preference: string | null;
+  onPick: (preference: string) => void;
+}) {
+  const options = [
+    ...territories.map((territory) => ({ id: territory.id, label: territory.name })),
+    { id: "mix", label: "A mix" },
+    { id: "guidance", label: "I'm not sure — I'd like their guidance" },
+  ];
+  return (
+    <div className="direction-pick">
+      <h2>Which direction would you most like your media manager to explore?</h2>
+      <div className="reaction-row">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className="reaction-button"
+            aria-pressed={preference === option.id}
+            onClick={() => onPick(option.id)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

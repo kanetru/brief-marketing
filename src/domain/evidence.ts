@@ -168,6 +168,16 @@ export function buildDiscoveryEvidence(session: DiscoverySession): DiscoveryEvid
     if (reference.note) rejected[`${path}.note`] = reference.note;
   });
 
+  if (session.territoryFeedback?.preference) {
+    selected["territory.preference"] = session.territoryFeedback.preference;
+  }
+  for (const reaction of session.territoryFeedback?.reactions ?? []) {
+    selected[`territory.${reaction.territoryId}`] = {
+      response: reaction.response,
+      note: reaction.note,
+    };
+  }
+
   return {
     clientSaid: said,
     clientSelected: selected,

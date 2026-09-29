@@ -168,6 +168,33 @@ export function migrateSession(value: unknown): DiscoverySession | null {
     agentObservations: isObservationLayer(record.agentObservations) ? record.agentObservations : blankObservations(),
     agentQuestions: isQuestionLayer(record.agentQuestions) ? record.agentQuestions : blankQuestions(),
     discoveryProfile: normaliseProfile(record.discoveryProfile, fresh.discoveryProfile),
+    territoryFeedback: normaliseTerritoryFeedback(record.territoryFeedback, fresh.territoryFeedback),
+  };
+}
+
+function normaliseTerritoryFeedback(
+  value: unknown,
+  fresh: DiscoverySession["territoryFeedback"],
+): DiscoverySession["territoryFeedback"] {
+  if (!value || typeof value !== "object") return fresh;
+  const record = value as Partial<DiscoverySession["territoryFeedback"]>;
+  const reactions = Array.isArray(record.reactions)
+    ? record.reactions.filter(
+        (item) =>
+          !!item &&
+          typeof item === "object" &&
+          typeof item.territoryId === "string" &&
+          (item.response === "very_close" || item.response === "something_here" || item.response === "not_for_us"),
+      )
+    : [];
+  return {
+    reactions: reactions.map((item) => ({
+      territoryId: item.territoryId,
+      response: item.response,
+      note: typeof item.note === "string" ? item.note : "",
+    })),
+    preference: typeof record.preference === "string" ? record.preference : null,
+    capturedAt: typeof record.capturedAt === "string" ? record.capturedAt : null,
   };
 }
 

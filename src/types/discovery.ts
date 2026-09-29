@@ -418,6 +418,8 @@ export type AnswerMode = "free_text" | "single_choice";
 export interface ClarificationOption {
   id: string;
   label: string;
+  /** Set when a creative fork should be shown as a mini board. */
+  visualDirectionId?: string;
 }
 
 /** A candidate the model proposed. Not yet a question the client sees. */
@@ -569,6 +571,22 @@ export interface DiscoveryProfile {
   managerInterpretation: ManagerInterpretation[];
 }
 
+export type TerritoryReactionResponse = "very_close" | "something_here" | "not_for_us";
+
+/** How a client felt about a creative territory. Evidence, not a final decision. */
+export interface TerritoryReaction {
+  territoryId: string;
+  response: TerritoryReactionResponse;
+  note: string;
+}
+
+export interface TerritoryFeedback {
+  reactions: TerritoryReaction[];
+  /** A territory id, "mix", or "guidance". */
+  preference: string | null;
+  capturedAt: IsoDateTime | null;
+}
+
 export interface DiscoverySession {
   id: string;
   version: 3;
@@ -591,6 +609,7 @@ export interface DiscoverySession {
   agentObservations: AgentObservationLayer;
   agentQuestions: AgentQuestionLayer;
   discoveryProfile: DiscoveryProfile;
+  territoryFeedback: TerritoryFeedback;
 }
 
 export type BusinessTextField = "name" | "description" | "peopleComeFor" | "differentiation";

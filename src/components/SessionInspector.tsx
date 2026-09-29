@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { buildBrandIntelligence } from "../domain/brandIntelligence";
 import { buildDiscoveryEvidence } from "../domain/evidence";
 import { activeProfileVersion } from "../domain/profileRequest";
 import { deriveVisualSignal } from "../domain/visualSignal";
@@ -50,7 +51,8 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [tab, setTab] = useState<"session" | "evidence" | "clarification" | "profile" | "versions">("session");
+  const [tab, setTab] = useState<"session" | "evidence" | "clarification" | "profile" | "versions" | "signals">("session");
+  const intelligence = buildBrandIntelligence(session);
   const json = JSON.stringify(session, null, 2);
   const visualSignal = deriveVisualSignal(session.visualPreferences);
   const evidence = buildDiscoveryEvidence(session);
@@ -115,6 +117,7 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
             ["clarification", "Clarification"],
             ["profile", "Profile"],
             ["versions", "Profile versions"],
+            ["signals", "Brand signals"],
           ] as const
         ).map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
@@ -172,6 +175,19 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
           </>
         ) : null}
         {tab === "versions" ? <EvidenceBlock title="Profile versions" data={session.discoveryProfile.versions} startOpen /> : null}
+        {tab === "signals" ? (
+          <>
+            <EvidenceBlock title="Weights" note={intelligence.weightingNotes} data={{ note: intelligence.weightingNotes }} startOpen />
+            <EvidenceBlock title="Normalised contributions" data={intelligence.model.contributions} startOpen />
+            <EvidenceBlock title="Cross-modal reinforcement" data={intelligence.model.reinforcement} />
+            <EvidenceBlock title="Negative evidence" data={{ hardAvoids: intelligence.model.hardAvoids, softAvoids: intelligence.model.softAvoids }} />
+            <EvidenceBlock title="Final brand signal model" data={intelligence.model} />
+            <EvidenceBlock title="Draft territories" data={intelligence.draftTerritories} />
+            <EvidenceBlock title="Unresolved fork" data={{ question: intelligence.forkQuestion, tensions: intelligence.draftModel.tensions }} />
+            <EvidenceBlock title="Clarification decision" data={session.agentQuestions.selected.filter((question) => question.id === "creative-fork")} />
+            <EvidenceBlock title="Final territories" data={intelligence.territories} />
+          </>
+        ) : null}
       </div>
     </aside>
   );

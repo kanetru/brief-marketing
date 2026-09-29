@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChoiceCard } from "../components/ChoiceCard";
+import { VisualBoard } from "../components/VisualBoard";
 import { ChoiceGrid } from "../components/ChoiceGrid";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
@@ -100,6 +101,7 @@ export function ClarifyScreen() {
                   <ChoiceCard
                     key={option.id}
                     label={option.label}
+                    board={option.visualDirectionId ? <VisualBoard id={option.visualDirectionId} /> : undefined}
                     pressed={
                       option.id === MANAGER_HELP_ID
                         ? question.response.state === "uncertain"

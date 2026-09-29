@@ -181,5 +181,6 @@ export function createSession(timestamp = new Date().toISOString()): DiscoverySe
     agentObservations: blankObservations(),
     agentQuestions: blankQuestions(),
     discoveryProfile: blankProfile(),
+    territoryFeedback: { reactions: [], preference: null, capturedAt: null },
   };
 }
