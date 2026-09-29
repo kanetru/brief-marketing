@@ -109,6 +109,7 @@ function InspectorPanel({ onClose }: { onClose: () => void }) {
           title="Derived visual signal"
           note="Computed from the raw choices while this panel is open. Not stored on the session, and not an observation."
           data={visualSignal ?? { state: "not_enough_choices" }}
+          startOpen
         />
         <EvidenceBlock title="colourPreferences" data={session.colourPreferences} startOpen />
         <EvidenceBlock title="typographyPreferences" data={session.typographyPreferences} startOpen />
