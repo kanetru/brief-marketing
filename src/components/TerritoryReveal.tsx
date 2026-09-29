@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CreativeTerritory, TerritoryVisualSpec } from "../types/brandIntelligence";
+import type { CreativeReading } from "../types/creativeReading";
 import type { TerritoryReactionResponse } from "../types/discovery";
 import { visualForkIsClear } from "../domain/territoryVisual";
 import { TerritoryStage } from "./TerritoryStage";
@@ -14,9 +15,11 @@ export function TerritoryReveal({
   onReact,
   onPrefer,
   onBeat,
+  reading,
 }: {
   territories: CreativeTerritory[];
   specs: TerritoryVisualSpec[];
+  reading?: CreativeReading;
   reactions: Array<{ territoryId: string; response: TerritoryReactionResponse; note: string }>;
   preference: string | null;
   onReact: (territoryId: string, response: TerritoryReactionResponse, note: string) => void;
@@ -65,6 +68,7 @@ export function TerritoryReveal({
         <TerritoryBeat
           territory={territories[beat.index]}
           spec={specs[beat.index]}
+          reading={reading}
           index={beat.index}
           reaction={reactions.find((item) => item.territoryId === territories[beat.index]?.id)}
           onReact={onReact}
@@ -80,10 +84,10 @@ export function TerritoryReveal({
             {territories.map((territory, index) => {
               const spec = specs[index];
               if (!spec) return null;
-              return <TerritoryStage key={territory.id} spec={spec} index={index} label={territory.name} mode="compare" />;
+              return <TerritoryStage key={territory.id} spec={spec} index={index} label={readingName(reading, territory)} mode="compare" />;
             })}
           </div>
-          <DirectionPick territories={territories} preference={preference} onPick={onPrefer} />
+          <DirectionPick territories={territories} preference={preference} onPick={onPrefer} reading={reading} />
           <button type="button" className="text-button reveal-previous" onClick={() => setBeat({ kind: "territory", index: Math.max(0, territories.length - 1) })}>
             Back to the last territory
           </button>
@@ -96,6 +100,7 @@ export function TerritoryReveal({
 function TerritoryBeat({
   territory,
   spec,
+  reading,
   index,
   reaction,
   onReact,
@@ -105,6 +110,7 @@ function TerritoryBeat({
 }: {
   territory: CreativeTerritory | undefined;
   spec: TerritoryVisualSpec | undefined;
+  reading?: CreativeReading;
   index: number;
   reaction: { response: TerritoryReactionResponse; note: string } | undefined;
   onReact: (territoryId: string, response: TerritoryReactionResponse, note: string) => void;
@@ -113,9 +119,11 @@ function TerritoryBeat({
   nextLabel: string;
 }) {
   if (!territory || !spec) return null;
+  const chapter = reading?.territories.find((item) => item.archetypeId === territory.id);
   return (
     <div className="reveal-beat">
-      <TerritoryStage spec={spec} index={index} label={territory.name} mode="immersive" />
+      <TerritoryStage spec={spec} index={index} label={chapter?.name ?? territory.name} mode="immersive" />
+      {chapter ? <p className="territory-idea">{chapter.idea}</p> : null}
       <Reaction
         territoryId={territory.id}
         response={reaction?.response ?? null}
@@ -190,13 +198,15 @@ export function DirectionPick({
   territories,
   preference,
   onPick,
+  reading,
 }: {
   territories: Array<{ id: string; name: string }>;
   preference: string | null;
   onPick: (preference: string) => void;
+  reading?: CreativeReading;
 }) {
   const options = [
-    ...territories.map((territory, index) => ({ id: territory.id, label: `Territory ${String(index + 1).padStart(2, "0")} · ${territory.name}` })),
+    ...territories.map((territory, index) => ({ id: territory.id, label: `Territory ${String(index + 1).padStart(2, "0")} · ${readingName(reading, territory)}` })),
     { id: "mix", label: "A mix of both" },
     { id: "neither", label: "Neither" },
     { id: "guidance", label: "I'm not sure — I'd like their guidance" },
@@ -212,4 +222,8 @@ export function DirectionPick({
       </div>
     </div>
   );
+}
+
+function readingName(reading: CreativeReading | undefined, territory: { id: string; name: string }): string {
+  return reading?.territories.find((item) => item.archetypeId === territory.id)?.name ?? territory.name;
 }

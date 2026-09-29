@@ -29,6 +29,7 @@ export function HandoverDocument({
         </p>
       </header>
 
+      <ReadingBrief intelligence={intelligence} />
       <TerritoryBrief intelligence={intelligence} feedback={feedback} />
       <StartingPoint intelligence={intelligence} />
       <BeforeAfter intelligence={intelligence} feedback={feedback} />
@@ -239,6 +240,40 @@ function SignalColumn({ title, signals }: { title: string; signals: BrandIntelli
   );
 }
 
+function ReadingBrief({ intelligence }: { intelligence: BrandIntelligence }) {
+  const reading = intelligence.reading;
+  const lead = reading.territories[0];
+  return (
+    <section className="handover-section reading-brief">
+      <p className="profile-kicker">{reading.source === "strategist" ? "Strategist reading" : "Fallback reading"}</p>
+      <h2>If you start work tomorrow</h2>
+      <p className="profile-summary">{reading.hypothesis.centralIdea}</p>
+      <p>{reading.hypothesis.strategicOpportunity}</p>
+      <div className="working-point">
+        <Point title="Type" body={reading.tomorrow.type} />
+        <Point title="Colour" body={reading.tomorrow.colour} />
+        <Point title="Photography" body={reading.tomorrow.photography.join(" · ")} />
+        <Point title="Design" body={reading.tomorrow.design.join(" · ")} />
+        <Point title="Voice" body={reading.tomorrow.voice.join(" · ")} />
+        <Point title="Avoid" body={reading.tomorrow.avoid.join(" · ")} />
+        <Point title="Still worth asking" body={reading.tomorrow.questions.join(" ")} />
+      </div>
+      {lead ? (
+        <>
+          <h3>Look outside the category</h3>
+          <ul className="working-list">
+            {lead.references.map((item) => (
+              <li key={item.world}>
+                <strong>{item.world}.</strong> {item.take}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
 function TerritoryBrief({
   intelligence,
   feedback,
@@ -253,12 +288,34 @@ function TerritoryBrief({
         {intelligence.territories.map((territory, index) => {
           const spec = intelligence.visualSpecs.find((item) => item.territoryId === territory.id) ?? intelligence.visualSpecs[index];
           const reaction = feedback.reactions.find((item) => item.territoryId === territory.id);
+          const chapter = intelligence.reading.territories.find((item) => item.archetypeId === territory.id);
           return (
             <article key={territory.id} className="handover-territory">
               {spec ? (
                 <div className="handover-stage">
-                  <TerritoryStage spec={spec} index={index} label={territory.name} mode="handover" />
+                  <TerritoryStage spec={spec} index={index} label={chapter?.name ?? territory.name} mode="handover" />
                 </div>
+              ) : null}
+              {chapter ? (
+                <>
+                  <h3>{chapter.name}</h3>
+                  <p className="territory-idea">{chapter.idea}</p>
+                  <p>{chapter.whyThisBusiness}</p>
+                  <p>Borrowed from {chapter.borrowedWorld}. {chapter.distinctive}</p>
+                  <h3>Risk</h3>
+                  <p>{chapter.risk}</p>
+                  <h3>Pairings</h3>
+                  <ul className="working-list">
+                    {chapter.pairings.map((pairing) => (
+                      <li key={`${pairing.headingId}-${pairing.bodyId}`}>
+                        <strong>{pairing.heading} + {pairing.body}.</strong> {pairing.reason}
+                      </li>
+                    ))}
+                  </ul>
+                  <h3>Voice</h3>
+                  <p>{chapter.voice.idea}</p>
+                  <p className="territory-phrase">{chapter.voice.examples[0]}</p>
+                </>
               ) : null}
               <p>Client response: {reaction ? reactionLabel(reaction.response) : "No reaction yet."}{reaction?.note ? ` — ${reaction.note}` : ""}</p>
               <p className="territory-why">{territory.rationale}</p>

@@ -116,6 +116,7 @@ function blankColour(): ColourPreferences {
     avoidedPaletteIds: [],
     preferredCapturedAt: null,
     avoidedCapturedAt: null,
+    colourPush: null,
     existingColourRelationship: { state: "unanswered" },
     existingBrandColours: [],
   };
@@ -127,7 +128,13 @@ function blankType(): TypographyPreferences {
     avoidedDirectionIds: [],
     preferredCapturedAt: null,
     avoidedCapturedAt: null,
+    worldIds: [],
+    refinementIds: [],
   };
+}
+
+function blankStrategist(): DiscoverySession["strategist"] {
+  return { status: "idle", evidenceHash: null, reading: null, failureCode: null };
 }
 
 function blankImagery(): ImageryPreferences {
@@ -182,5 +189,6 @@ export function createSession(timestamp = new Date().toISOString()): DiscoverySe
     agentQuestions: blankQuestions(),
     discoveryProfile: blankProfile(),
     territoryFeedback: { reactions: [], preference: null, capturedAt: null },
+    strategist: blankStrategist(),
   };
 }

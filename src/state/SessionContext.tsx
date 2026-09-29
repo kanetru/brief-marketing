@@ -50,10 +50,13 @@ interface SessionApi {
   chooseVisual: (comparisonId: string, choice: VisualChoice) => void;
   togglePreferredPalette: (paletteId: string) => void;
   toggleAvoidedPalette: (paletteId: string) => void;
+  setColourPush: (push: import("../types/creativeReading").ColourPush | null) => void;
   setColourRelationship: (value: ColourRelationship) => void;
   addExistingColour: (hex: string) => void;
   removeExistingColour: (hex: string) => void;
+  toggleTypeWorld: (worldId: string, directionId: TypographyDirectionId) => void;
   togglePreferredType: (directionId: TypographyDirectionId) => void;
+  toggleTypeRefinement: (faceId: string) => void;
   toggleAvoidedType: (directionId: TypographyDirectionId) => void;
   togglePreferredImagery: (directionId: ImageryDirectionId) => void;
   toggleAvoidedImagery: (directionId: ImageryDirectionId) => void;
@@ -73,6 +76,9 @@ interface SessionApi {
   recordRefinement: (version: DiscoveryProfileVersion, failureCode: AnalysisFailureCode | null) => void;
   setTerritoryReaction: (territoryId: string, response: TerritoryReactionResponse, note: string) => void;
   setTerritoryPreference: (preference: string | null) => void;
+  beginStrategist: () => void;
+  recordStrategist: (evidenceHash: string, reading: import("../types/creativeReading").CreativeReading) => void;
+  failStrategist: (evidenceHash: string, failureCode: string) => void;
   reset: () => void;
 }
 
@@ -153,16 +159,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (paletteId: string) => send({ type: "toggle-avoided-palette", paletteId }),
     [send],
   );
+  const setColourPush = useCallback(
+    (push: import("../types/creativeReading").ColourPush | null) => send({ type: "set-colour-push", push }),
+    [send],
+  );
   const setColourRelationship = useCallback(
     (value: ColourRelationship) => send({ type: "set-colour-relationship", value }),
     [send],
   );
   const addExistingColour = useCallback((hex: string) => send({ type: "add-existing-colour", hex }), [send]);
   const removeExistingColour = useCallback((hex: string) => send({ type: "remove-existing-colour", hex }), [send]);
+  const toggleTypeWorld = useCallback(
+    (worldId: string, directionId: TypographyDirectionId) => send({ type: "toggle-type-world", worldId, directionId }),
+    [send],
+  );
   const togglePreferredType = useCallback(
     (directionId: TypographyDirectionId) => send({ type: "toggle-preferred-type", directionId }),
     [send],
   );
+  const toggleTypeRefinement = useCallback((faceId: string) => send({ type: "toggle-type-refinement", faceId }), [send]);
   const toggleAvoidedType = useCallback(
     (directionId: TypographyDirectionId) => send({ type: "toggle-avoided-type", directionId }),
     [send],
@@ -236,6 +251,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (preference: string | null) => send({ type: "set-territory-preference", preference }),
     [send],
   );
+  const beginStrategist = useCallback(() => send({ type: "begin-strategist" }), [send]);
+  const recordStrategist = useCallback(
+    (evidenceHash: string, reading: import("../types/creativeReading").CreativeReading) =>
+      send({ type: "record-strategist", evidenceHash, reading }),
+    [send],
+  );
+  const failStrategist = useCallback(
+    (evidenceHash: string, failureCode: string) => send({ type: "fail-strategist", evidenceHash, failureCode }),
+    [send],
+  );
   const reset = useCallback(() => send({ type: "reset" }), [send]);
 
   const api = useMemo<SessionApi>(
@@ -260,10 +285,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       chooseVisual,
       togglePreferredPalette,
       toggleAvoidedPalette,
+      setColourPush,
       setColourRelationship,
       addExistingColour,
       removeExistingColour,
+      toggleTypeWorld,
       togglePreferredType,
+      toggleTypeRefinement,
       toggleAvoidedType,
       togglePreferredImagery,
       toggleAvoidedImagery,
@@ -283,6 +311,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       recordRefinement,
       setTerritoryReaction,
       setTerritoryPreference,
+      beginStrategist,
+      recordStrategist,
+      failStrategist,
       reset,
     }),
     [
@@ -306,10 +337,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       chooseVisual,
       togglePreferredPalette,
       toggleAvoidedPalette,
+      setColourPush,
       setColourRelationship,
       addExistingColour,
       removeExistingColour,
+      toggleTypeWorld,
       togglePreferredType,
+      toggleTypeRefinement,
       toggleAvoidedType,
       togglePreferredImagery,
       toggleAvoidedImagery,
@@ -329,6 +363,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       recordRefinement,
       setTerritoryReaction,
       setTerritoryPreference,
+      beginStrategist,
+      recordStrategist,
+      failStrategist,
       reset,
     ],
   );

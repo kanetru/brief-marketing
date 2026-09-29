@@ -9,9 +9,11 @@ import { QuestionScreen } from "../components/QuestionScreen";
 import { TerritoryReveal, type RevealBeat } from "../components/TerritoryReveal";
 import { TextResponse } from "../components/TextResponse";
 import { buildBrandIntelligence } from "../domain/brandIntelligence";
+import { strategistEvidenceHash } from "../domain/creativeReading";
 import { activeProfileVersion, hashEvidence, profileRequestFromSession } from "../domain/profileRequest";
 import { pathFor } from "../domain/sections";
 import { requestProfile } from "../services/ai/profileClient";
+import { requestStrategist } from "../services/ai/strategistClient";
 import { useSession } from "../state/SessionContext";
 import { useConversation } from "../state/useConversation";
 import type { CreativeTerritory } from "../types/brandIntelligence";
@@ -22,7 +24,7 @@ const COUNT_WORDS = ["one", "two", "three", "four"];
 
 export function ProfileScreen() {
   const navigate = useNavigate();
-  const { session, beginProfile, recordProfile, setProfileFeedback, beginRefinement, recordRefinement, setTerritoryReaction, setTerritoryPreference } = useSession();
+  const { session, beginProfile, recordProfile, setProfileFeedback, beginRefinement, recordRefinement, setTerritoryReaction, setTerritoryPreference, beginStrategist, recordStrategist, failStrategist } = useSession();
   const { step, goBack, showBack } = useConversation("profile");
   const profile = session.discoveryProfile;
   const intelligence = useMemo(() => buildBrandIntelligence(session), [session]);
@@ -48,6 +50,22 @@ export function ProfileScreen() {
       recordProfile(result.version, result.failureCode);
     });
   }, [beginProfile, profile.clientFeedback, profile.status, recordProfile, session, version]);
+
+  useEffect(() => {
+    const hash = strategistEvidenceHash(session);
+    const strategist = session.strategist;
+    if (strategist.status === "running") return;
+    if (strategist.evidenceHash === hash && (strategist.status === "ready" || strategist.status === "failed")) return;
+    const flight = `strategist:${session.id}:${hash}`;
+    if (inFlight.has(flight)) return;
+    inFlight.add(flight);
+    beginStrategist();
+    void requestStrategist(session, intelligence).then((result) => {
+      inFlight.delete(flight);
+      if (result.reading) recordStrategist(hash, result.reading);
+      else failStrategist(hash, result.failureCode ?? "unavailable");
+    });
+  }, [beginStrategist, failStrategist, intelligence, recordStrategist, session]);
 
   function finish(response: ProfileFeedbackResponse, written: string | null) {
     setProfileFeedback({ response, note: written, capturedAt: new Date().toISOString() });
@@ -99,6 +117,7 @@ export function ProfileScreen() {
             onReact={setTerritoryReaction}
             onPrefer={setTerritoryPreference}
             onBeat={setBeat}
+            reading={intelligence.reading}
           />
           {readyToLeave ? (
             <button

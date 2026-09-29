@@ -3,6 +3,7 @@ import type { DiscoveryEvidence } from "../src/domain/evidence";
 import type { ProfileGenerationRequest, ProfileRefinementRequest } from "../src/domain/profileRequest";
 import { analyzeDiscovery } from "./analyze";
 import { generateDiscoveryProfile, refineDiscoveryProfile } from "./profile";
+import { generateCreativeReading, type StrategistRequest } from "./strategist";
 import { resolveTerritoryImages, type TerritoryImageRequest } from "./territoryImages";
 
 export function discoveryApiPlugin(): Plugin {
@@ -12,6 +13,7 @@ export function discoveryApiPlugin(): Plugin {
       url !== "/api/discovery/analyze" &&
       url !== "/api/discovery/profile" &&
       url !== "/api/discovery/profile/refine" &&
+      url !== "/api/discovery/strategist" &&
       url !== "/api/territory-images"
     ) {
       next();
@@ -25,7 +27,11 @@ export function discoveryApiPlugin(): Plugin {
       .then(async (raw) => {
         const body: unknown = JSON.parse(raw);
         if (url === "/api/territory-images") {
-          send(res, 200, resolveTerritoryImages(body as TerritoryImageRequest));
+          send(res, 200, await resolveTerritoryImages(body as TerritoryImageRequest));
+          return;
+        }
+        if (url === "/api/discovery/strategist") {
+          send(res, 200, await generateCreativeReading(body as StrategistRequest));
           return;
         }
         if (url === "/api/discovery/analyze") {

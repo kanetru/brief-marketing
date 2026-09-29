@@ -6,6 +6,7 @@ import { MANAGER_HELP_ID } from "../domain/questionSelection";
 import { laterSection, stepCount } from "../domain/sections";
 import { withCreativeFork } from "../domain/creativeFork";
 import { clampSpectrumValue } from "../domain/spectrum";
+import { TYPE_WORLDS } from "../domain/typeWorlds";
 import { syncAdaptiveComparisons } from "../domain/visualDirections";
 import type {
   AnalysisFailureCode,
@@ -49,10 +50,13 @@ export type Action =
   | { type: "choose-visual"; comparisonId: string; choice: VisualChoice }
   | { type: "toggle-preferred-palette"; paletteId: string }
   | { type: "toggle-avoided-palette"; paletteId: string }
+  | { type: "set-colour-push"; push: import("../types/creativeReading").ColourPush | null }
   | { type: "set-colour-relationship"; value: ColourRelationship }
   | { type: "add-existing-colour"; hex: string }
   | { type: "remove-existing-colour"; hex: string }
+  | { type: "toggle-type-world"; worldId: string; directionId: TypographyDirectionId }
   | { type: "toggle-preferred-type"; directionId: TypographyDirectionId }
+  | { type: "toggle-type-refinement"; faceId: string }
   | { type: "toggle-avoided-type"; directionId: TypographyDirectionId }
   | { type: "toggle-preferred-imagery"; directionId: ImageryDirectionId }
   | { type: "toggle-avoided-imagery"; directionId: ImageryDirectionId }
@@ -71,7 +75,10 @@ export type Action =
   | { type: "begin-refinement" }
   | { type: "record-refinement"; sessionId: string; version: DiscoveryProfileVersion; failureCode: AnalysisFailureCode | null }
   | { type: "set-territory-reaction"; territoryId: string; response: TerritoryReactionResponse; note: string }
-  | { type: "set-territory-preference"; preference: string | null };
+  | { type: "set-territory-preference"; preference: string | null }
+  | { type: "begin-strategist" }
+  | { type: "record-strategist"; evidenceHash: string; reading: import("../types/creativeReading").CreativeReading }
+  | { type: "fail-strategist"; evidenceHash: string; failureCode: string };
 
 function withDimension(
   state: DiscoverySession,
@@ -383,6 +390,14 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
         },
       };
     }
+    case "set-colour-push": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        colourPreferences: { ...state.colourPreferences, colourPush: action.push },
+      };
+    }
     case "set-colour-relationship": {
       const timestamp = new Date().toISOString();
       return {
@@ -419,6 +434,30 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
         },
       };
     }
+    case "toggle-type-world": {
+      const timestamp = new Date().toISOString();
+      const current = state.typographyPreferences.worldIds;
+      const has = current.includes(action.worldId);
+      if (!has && current.length >= LIMITS.typePreferred) return state;
+      const worldIds = has ? current.filter((id) => id !== action.worldId) : [...current, action.worldId];
+      const preferredDirectionIds = [
+        ...new Set(
+          worldIds
+            .map((id) => TYPE_WORLDS.find((world) => world.id === id)?.directionId)
+            .filter((id): id is TypographyDirectionId => !!id),
+        ),
+      ];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        typographyPreferences: {
+          ...state.typographyPreferences,
+          worldIds,
+          preferredDirectionIds,
+          preferredCapturedAt: preferredDirectionIds.length > 0 ? timestamp : null,
+        },
+      };
+    }
     case "toggle-preferred-type": {
       const timestamp = new Date().toISOString();
       const current = state.typographyPreferences.preferredDirectionIds;
@@ -435,6 +474,18 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
           preferredDirectionIds,
           preferredCapturedAt: preferredDirectionIds.length > 0 ? timestamp : null,
         },
+      };
+    }
+    case "toggle-type-refinement": {
+      const timestamp = new Date().toISOString();
+      const current = state.typographyPreferences.refinementIds;
+      const has = current.includes(action.faceId);
+      if (!has && current.length >= 2) return state;
+      const refinementIds = has ? current.filter((id) => id !== action.faceId) : [...current, action.faceId];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        typographyPreferences: { ...state.typographyPreferences, refinementIds },
       };
     }
     case "toggle-avoided-type": {
@@ -728,6 +779,27 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
         ...state,
         updatedAt: timestamp,
         territoryFeedback: { ...state.territoryFeedback, preference: action.preference, capturedAt: timestamp },
+      };
+    }
+    case "begin-strategist": {
+      return {
+        ...state,
+        updatedAt: new Date().toISOString(),
+        strategist: { ...state.strategist, status: "running", failureCode: null },
+      };
+    }
+    case "record-strategist": {
+      return {
+        ...state,
+        updatedAt: new Date().toISOString(),
+        strategist: { status: "ready", evidenceHash: action.evidenceHash, reading: action.reading, failureCode: null },
+      };
+    }
+    case "fail-strategist": {
+      return {
+        ...state,
+        updatedAt: new Date().toISOString(),
+        strategist: { status: "failed", evidenceHash: action.evidenceHash, reading: null, failureCode: action.failureCode },
       };
     }
     default:

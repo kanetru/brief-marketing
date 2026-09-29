@@ -257,6 +257,8 @@ export interface ColourPreferences {
   avoidedPaletteIds: string[];
   preferredCapturedAt: IsoDateTime | null;
   avoidedCapturedAt: IsoDateTime | null;
+  /** A visual nudge after the first palette lean. Null until they touch it. */
+  colourPush: import("./creativeReading").ColourPush | null;
   existingColourRelationship:
     | { state: "unanswered" }
     | { state: "selected"; value: ColourRelationship; capturedAt: IsoDateTime };
@@ -280,6 +282,10 @@ export interface TypographyPreferences {
   avoidedDirectionIds: TypographyDirectionId[];
   preferredCapturedAt: IsoDateTime | null;
   avoidedCapturedAt: IsoDateTime | null;
+  /** Which typographic worlds they actually pointed at. */
+  worldIds: string[];
+  /** Faces they preferred inside that world. Catalogue ids. */
+  refinementIds: string[];
 }
 
 export type ImageryDirectionId =
@@ -610,6 +616,8 @@ export interface DiscoverySession {
   agentQuestions: AgentQuestionLayer;
   discoveryProfile: DiscoveryProfile;
   territoryFeedback: TerritoryFeedback;
+  /** Creative strategist reading. Derived. Never overwrites client evidence. */
+  strategist: import("./creativeReading").StrategistState;
 }
 
 export type BusinessTextField = "name" | "description" | "peopleComeFor" | "differentiation";

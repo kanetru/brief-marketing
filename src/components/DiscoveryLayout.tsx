@@ -4,6 +4,7 @@ import { pathFor, sectionById } from "../domain/sections";
 import type { SectionId } from "../types/discovery";
 import { useSession } from "../state/SessionContext";
 import { AgencyMark } from "./AgencyMark";
+import { EmergingPicture } from "./EmergingPicture";
 import { ProgressIndicator } from "./ProgressIndicator";
 import { SessionToggle } from "./SessionInspector";
 
@@ -43,7 +44,7 @@ export function DiscoveryLayout({
   }, [section]);
 
   return (
-    <div className="shell">
+    <div className="shell" data-section={section} data-step={step}>
       <header className="top">
         <div className="brand">
           <AgencyMark />
@@ -60,7 +61,10 @@ export function DiscoveryLayout({
           }}
         />
       </header>
-      <main className={`column is-${width}`}>{children}</main>
+      <main className={`column is-${width}`}>
+        <EmergingPicture />
+        {children}
+      </main>
       {footer ? <footer className={`dock is-${width}`}>{footer}</footer> : null}
     </div>
   );

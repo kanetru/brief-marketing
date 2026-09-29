@@ -172,6 +172,25 @@ export function formatBrandReport(report: BrandFixtureReport): string {
     );
   }
   lines.push("starting point:", report.intelligence.startingPoint.headline, `feel: ${report.intelligence.startingPoint.feel.join(", ")}`, `type: ${report.intelligence.startingPoint.typeToExplore.join(", ")}`, "");
+  const reading = report.intelligence.reading;
+  lines.push(
+    `reading source: ${reading.source}`,
+    `central idea: ${reading.hypothesis.centralIdea}`,
+    `opportunity: ${reading.hypothesis.strategicOpportunity}`,
+    ...reading.territories.flatMap((chapter) => [
+      `chapter: ${chapter.name}`,
+      chapter.idea,
+      `risk: ${chapter.risk}`,
+      `voice: ${chapter.voice.idea}`,
+      `lines: ${chapter.voice.examples.join(" | ")}`,
+      `pairings: ${chapter.pairings.map((pairing) => `${pairing.heading} + ${pairing.body} — ${pairing.reason}`).join(" || ")}`,
+      `palette: ${chapter.colour.colours.map((colour) => `${colour.name} ${colour.hex}`).join(", ")}`,
+      `why colour: ${chapter.colour.why}`,
+      `prompt: ${chapter.imagePrompts[0]?.prompt ?? ""}`,
+    ]),
+    `tomorrow type: ${reading.tomorrow.type}`,
+    "",
+  );
   const filler = textsContainFiller(report.intelligence.territories.flatMap((territory) => territoryPlainText(territory)));
   if (filler) lines.push(`filler warning: ${filler}`);
   return lines.join("\n");

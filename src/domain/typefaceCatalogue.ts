@@ -1,5 +1,6 @@
 import type { TypographyDirectionId } from "../types/discovery";
 import type { TypefaceCandidate } from "../types/brandIntelligence";
+import { MORE_TYPEFACES } from "./typefaceExpansion";
 
 /**
  * Local catalogue of faces that can be named in a handover.
@@ -24,9 +25,15 @@ export interface TypefaceEntry {
   accessibility: string;
   directions: TypographyDirectionId[];
   signals: Record<string, number>;
+  width: "condensed" | "normal" | "wide";
+  xHeight: "small" | "medium" | "large";
+  /** Humanist drawing versus constructed geometry. */
+  geometry: "human" | "geometric" | "mixed";
+  historical: string;
+  pairingNote: string;
 }
 
-export const TYPEFACE_CATALOGUE: readonly TypefaceEntry[] = [
+const CORE_TYPEFACES: readonly TypefaceEntry[] = [
   face("fraunces", "Fraunces", '"Fraunces Variable", Georgia, serif', "serif", "old-style", "high", "mixed", "expressive", "editorial", "contemporary", "warm", "Optical sizes help small text.", ["editorial_serif"], { editorial: 0.9, warm: 0.7, expressive: 0.6, organic: 0.4, classic: 0.3 }),
   face("newsreader", "Newsreader", "Newsreader, Georgia, serif", "serif", "transitional", "medium", "mixed", "restrained", "editorial", "contemporary", "warm", "Designed for long text.", ["editorial_serif"], { editorial: 0.85, restrained: 0.5, warm: 0.4, classic: 0.3 }),
   face("libre-baskerville", "Libre Baskerville", '"Libre Baskerville", Palatino, serif', "serif", "transitional", "medium", "formal", "restrained", "editorial", "classic", "neutral", "Sturdy at text sizes.", ["classic_serif"], { classic: 0.9, formal: 0.6, polished: 0.4, traditional: 0.5 }),
@@ -94,7 +101,23 @@ function face(
     accessibility,
     directions,
     signals,
+    width: "normal",
+    xHeight: classification === "display" || use === "display" ? "large" : "medium",
+    geometry: classification === "serif" || voice === "humanist" ? "human" : voice === "geometric" ? "geometric" : "mixed",
+    historical: `${era} ${voice}`,
+    pairingNote: classification === "serif" ? "Holds a headline; wants a plain sans for the practical text." : "Carries information; wants a serif or a mono when the headline needs a different job.",
   };
+}
+
+export const TYPEFACE_CATALOGUE: readonly TypefaceEntry[] = [...CORE_TYPEFACES, ...MORE_TYPEFACES];
+
+export function catalogueCategories(): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const entry of TYPEFACE_CATALOGUE) {
+    const key = entry.voice;
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
 }
 
 export function shortlistTypefaces(

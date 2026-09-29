@@ -1,11 +1,14 @@
 import { creativeFork } from "./archetypes";
 import { buildBrandSignalModel } from "./brandSignals";
+import { buildCreativeReading, strategistEvidenceHash } from "./creativeReading";
 import { buildCreativeTerritories } from "./creativeTerritories";
 import { WEIGHTING_NOTES } from "./signalWeights";
+import { typefaceById } from "./typefaceCatalogue";
 import { buildTerritoryVisualSpec } from "./territoryVisual";
 import { buildStartingPoint } from "./workingDirection";
 import type { DiscoverySession } from "../types/discovery";
-import type { BrandIntelligence, CreativeTerritory, WorkingBrief } from "../types/brandIntelligence";
+import type { BrandIntelligence, ColourRoleName, CreativeTerritory, TerritoryTypeface, TerritoryVisualSpec, WorkingBrief } from "../types/brandIntelligence";
+import type { CreativeReading } from "../types/creativeReading";
 
 export function buildBrandIntelligence(session: DiscoverySession): BrandIntelligence {
   const draftModel = buildBrandSignalModel(session, { includeReaction: false });
@@ -13,8 +16,9 @@ export function buildBrandIntelligence(session: DiscoverySession): BrandIntellig
   const draftTerritories = buildCreativeTerritories(session, draftModel);
   const territories = buildCreativeTerritories(session, model);
   const fork = creativeFork(draftModel);
-  const draftVisualSpecs = draftTerritories.map((territory) => buildTerritoryVisualSpec(session, territory));
-  const visualSpecs = territories.map((territory) => buildTerritoryVisualSpec(session, territory));
+  const reading = resolveReading(session, territories);
+  const draftVisualSpecs = draftTerritories.map((territory) => applyReading(buildTerritoryVisualSpec(session, territory), reading));
+  const visualSpecs = territories.map((territory) => applyReading(buildTerritoryVisualSpec(session, territory), reading));
   const brief = workingBrief(territories, session);
   return {
     draftModel,
@@ -30,7 +34,53 @@ export function buildBrandIntelligence(session: DiscoverySession): BrandIntellig
     workingBrief: brief,
     startingPoint: buildStartingPoint(session, territories, visualSpecs, brief.headline),
     firstConversation: firstConversation(session, model.uncertainty, model.tensions.map((tension) => tension.statement)),
+    reading,
   };
+}
+
+function resolveReading(session: DiscoverySession, territories: CreativeTerritory[]): CreativeReading {
+  const hash = strategistEvidenceHash(session);
+  const stored = session.strategist;
+  if (stored?.status === "ready" && stored.reading && stored.evidenceHash === hash && stored.reading.territories.length > 0) {
+    return stored.reading;
+  }
+  return buildCreativeReading(session, territories);
+}
+
+function applyReading(spec: TerritoryVisualSpec, reading: CreativeReading): TerritoryVisualSpec {
+  const chapter = reading.territories.find((item) => item.archetypeId === spec.territoryId);
+  if (!chapter) return spec;
+  const palette = chapter.colour.colours.map((colour) => ({
+    hex: colour.hex,
+    name: colour.name,
+    possibleRole: asRole(colour.possibleRole),
+  }));
+  const pairing = chapter.pairings[0];
+  return {
+    ...spec,
+    paletteName: chapter.colour.name,
+    palette: palette.length > 0 ? palette : spec.palette,
+    headingTypeface: faceOf(pairing?.headingId, spec.headingTypeface),
+    bodyTypeface: faceOf(pairing?.bodyId, spec.bodyTypeface),
+    examplePhrase: chapter.voice.examples[0] || spec.examplePhrase,
+    supportingLine: chapter.idea,
+    versionKey: `${spec.versionKey}:${chapter.name}`,
+    imageAssets: spec.imageAssets.map((asset) => {
+      const prompt = chapter.imagePrompts.find((item) => item.role === asset.role);
+      return prompt ? { ...asset, prompt: prompt.prompt } : asset;
+    }),
+  };
+}
+
+function asRole(value: string): ColourRoleName {
+  if (value === "Background" || value === "Primary type" || value === "Accent" || value === "Supporting") return value;
+  return "Supporting";
+}
+
+function faceOf(id: string | undefined, fallback: TerritoryTypeface): TerritoryTypeface {
+  const entry = id ? typefaceById(id) : undefined;
+  if (!entry) return fallback;
+  return { id: entry.id, name: entry.name, fontFamily: entry.fontFamily, license: entry.license, source: entry.source };
 }
 
 function workingBrief(territories: CreativeTerritory[], session: DiscoverySession): WorkingBrief {

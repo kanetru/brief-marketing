@@ -1,0 +1,150 @@
+import type { TypographyDirectionId } from "../types/discovery";
+import type { TypefaceEntry } from "./typefaceCatalogue";
+
+type Row = [
+  id: string,
+  name: string,
+  classification: TypefaceEntry["classification"],
+  voice: string,
+  contrast: TypefaceEntry["contrast"],
+  formality: TypefaceEntry["formality"],
+  energy: TypefaceEntry["energy"],
+  use: TypefaceEntry["use"],
+  era: TypefaceEntry["era"],
+  warmth: TypefaceEntry["warmth"],
+  direction: TypographyDirectionId,
+  width: TypefaceEntry["width"],
+  xHeight: TypefaceEntry["xHeight"],
+  geometry: TypefaceEntry["geometry"],
+  historical: string,
+  pairingNote: string,
+];
+
+const ROWS: readonly Row[] = [
+  ["crimson-pro", "Crimson Pro", "serif", "old-style", "high", "mixed", "restrained", "editorial", "classic", "warm", "editorial_serif", "normal", "medium", "human", "Garalde old-style, contemporary cut", "Headline warmth beside a neutral grotesk."],
+  ["spectral", "Spectral", "serif", "old-style", "medium", "mixed", "restrained", "editorial", "contemporary", "warm", "editorial_serif", "normal", "medium", "human", "Screen-first old style", "Long reading; pair with a plain sans for captions."],
+  ["libre-caslon-text", "Libre Caslon Text", "serif", "old-style", "medium", "formal", "restrained", "editorial", "classic", "warm", "classic_serif", "normal", "small", "human", "Caslon text lineage", "Book pages, not posters."],
+  ["gentium-plus", "Gentium Plus", "serif", "old-style", "medium", "mixed", "restrained", "editorial", "classic", "warm", "classic_serif", "normal", "medium", "human", "Scholarly book face", "Notes and essays, with a sans for labels."],
+  ["vollkorn", "Vollkorn", "serif", "old-style", "medium", "informal", "restrained", "editorial", "classic", "warm", "editorial_serif", "normal", "large", "human", "Heavy old-style for small sizes", "Sturdy body text under a sharper display serif."],
+  ["neuton", "Neuton", "serif", "old-style", "medium", "mixed", "restrained", "editorial", "classic", "warm", "classic_serif", "normal", "medium", "human", "Low-contrast old style", "Quiet headlines, practical sans underneath."],
+  ["alegreya", "Alegreya", "serif", "old-style", "medium", "mixed", "restrained", "editorial", "contemporary", "warm", "editorial_serif", "normal", "medium", "human", "Calligraphic old style", "Human headlines; grotesk for the facts."],
+  ["cardo", "Cardo", "serif", "old-style", "medium", "formal", "restrained", "editorial", "classic", "neutral", "classic_serif", "normal", "small", "human", "Scholarly old style", "Essays and citations, not advertising."],
+  ["merriweather", "Merriweather", "serif", "transitional", "medium", "mixed", "restrained", "editorial", "contemporary", "warm", "editorial_serif", "normal", "large", "human", "Screen transitional", "Body serif with a grotesque caption face."],
+  ["gelasio", "Gelasio", "serif", "transitional", "medium", "formal", "restrained", "editorial", "classic", "neutral", "classic_serif", "normal", "medium", "human", "Transitional text roman", "Metrics close to Georgia; pair with a sans."],
+  ["tinos", "Tinos", "serif", "transitional", "medium", "formal", "restrained", "utilitarian", "classic", "neutral", "classic_serif", "normal", "medium", "human", "Times-like transitional", "Documents and specifications."],
+  ["crimson-text", "Crimson Text", "serif", "old-style", "high", "formal", "restrained", "editorial", "classic", "warm", "classic_serif", "normal", "small", "human", "Garalde text", "Book setting beside a modern sans."],
+  ["bodoni-moda", "Bodoni Moda", "serif", "didone", "high", "formal", "expressive", "display", "classic", "neutral", "expressive_display", "normal", "small", "human", "High-contrast modern", "Headlines only. Fails at small sizes."],
+  ["oranienbaum", "Oranienbaum", "serif", "didone", "high", "formal", "restrained", "display", "classic", "neutral", "classic_serif", "normal", "small", "human", "Display didone", "One elegant line, then a plain sans."],
+  ["unna", "Unna", "serif", "didone", "high", "formal", "restrained", "editorial", "classic", "neutral", "editorial_serif", "normal", "small", "human", "Quiet didone", "Editorial headlines, not body copy."],
+  ["gilda-display", "Gilda Display", "serif", "didone", "high", "formal", "expressive", "display", "classic", "warm", "expressive_display", "normal", "small", "human", "High-contrast display", "Short titles. Needs a workhorse sans."],
+  ["italiana", "Italiana", "serif", "didone", "high", "formal", "expressive", "display", "classic", "neutral", "expressive_display", "normal", "small", "human", "Fashion-leaning didone", "A single word, never a paragraph."],
+  ["bitter", "Bitter", "serif", "slab", "low", "mixed", "restrained", "editorial", "contemporary", "warm", "editorial_serif", "normal", "large", "mixed", "Contemporary slab for screens", "Headlines with a humanist sans body."],
+  ["zilla-slab", "Zilla Slab", "serif", "slab", "low", "informal", "expressive", "display", "contemporary", "warm", "bold_grotesk", "normal", "large", "geometric", "Mozilla slab", "Chunky titles; mono or sans for the notes."],
+  ["roboto-slab", "Roboto Slab", "serif", "slab", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "classic_serif", "normal", "large", "geometric", "Neo-grotesk slab", "Practical emphasis beside Roboto or a mono."],
+  ["crete-round", "Crete Round", "serif", "slab", "low", "informal", "restrained", "editorial", "contemporary", "warm", "editorial_serif", "normal", "large", "human", "Soft slab", "Friendly titles without a script."],
+  ["arvo", "Arvo", "serif", "slab", "medium", "mixed", "restrained", "editorial", "contemporary", "neutral", "classic_serif", "normal", "medium", "geometric", "Geometric slab", "Firm headlines, grotesk body."],
+  ["josefin-slab", "Josefin Slab", "serif", "slab", "low", "formal", "expressive", "display", "contemporary", "cool", "expressive_display", "normal", "large", "geometric", "Geometric display slab", "Fashion or poster lines only."],
+  ["alegreya-sans", "Alegreya Sans", "sans", "humanist", "low", "mixed", "restrained", "utilitarian", "contemporary", "warm", "humanist_sans", "normal", "medium", "human", "Humanist companion to Alegreya", "Body under an old-style serif."],
+  ["merriweather-sans", "Merriweather Sans", "sans", "humanist", "low", "mixed", "restrained", "utilitarian", "contemporary", "warm", "humanist_sans", "normal", "large", "human", "Humanist sans for screens", "Captions under Merriweather."],
+  ["nunito", "Nunito", "sans", "rounded", "low", "informal", "restrained", "utilitarian", "contemporary", "warm", "humanist_sans", "normal", "large", "human", "Rounded humanist", "Soft interface text. Not for serious headlines."],
+  ["mulish", "Mulish", "sans", "humanist", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "humanist_sans", "normal", "medium", "human", "Minimal humanist", "Long interface copy."],
+  ["work-sans", "Work Sans", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "mixed", "Optimised for screens", "UI and captions beside a serif."],
+  ["barlow", "Barlow", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Slightly condensed grotesque", "Wayfinding and practical text."],
+  ["rubik", "Rubik", "sans", "rounded", "low", "informal", "restrained", "utilitarian", "contemporary", "warm", "humanist_sans", "normal", "large", "geometric", "Rounded grotesque", "Approachable labels, not editorial body."],
+  ["quicksand", "Quicksand", "sans", "rounded", "low", "informal", "expressive", "display", "contemporary", "warm", "humanist_sans", "normal", "large", "geometric", "Rounded display sans", "Short friendly lines."],
+  ["varela-round", "Varela Round", "sans", "rounded", "low", "informal", "restrained", "utilitarian", "contemporary", "warm", "humanist_sans", "normal", "large", "geometric", "Single-weight rounded", "Small labels. One weight only."],
+  ["comfortaa", "Comfortaa", "sans", "rounded", "low", "informal", "expressive", "display", "contemporary", "warm", "expressive_display", "normal", "large", "geometric", "Rounded display", "A wordmark experiment, not paragraphs."],
+  ["roboto", "Roboto", "sans", "neo-grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Neo-grotesk workhorse", "Interface text beside a serif headline."],
+  ["noto-sans", "Noto Sans", "sans", "neo-grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Broad neo-grotesk", "When the copy has to cover many languages."],
+  ["commissioner", "Commissioner", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Variable grotesque", "Flexible text with a serif display."],
+  ["epilogue", "Epilogue", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Contemporary grotesque", "Calm UI type."],
+  ["red-hat-text", "Red Hat Text", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "mixed", "Text grotesque", "Body under Red Hat Display."],
+  ["red-hat-display", "Red Hat Display", "sans", "grotesk", "low", "mixed", "expressive", "display", "contemporary", "neutral", "bold_grotesk", "normal", "large", "geometric", "Display grotesque", "Headlines, with Red Hat Text for copy."],
+  ["overpass", "Overpass", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Highway-sign grotesque", "Wayfinding and technical labels."],
+  ["chivo", "Chivo", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "large", "geometric", "Plain grotesque", "Neutral text."],
+  ["hanken-grotesk", "Hanken Grotesk", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Scandinavian grotesque", "Quiet interface type."],
+  ["schibsted-grotesk", "Schibsted Grotesk", "sans", "grotesk", "low", "mixed", "restrained", "editorial", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "News grotesque", "Editorial captions and UI."],
+  ["instrument-sans", "Instrument Sans", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Companion to Instrument Serif", "Practical text under a sharp serif."],
+  ["poppins", "Poppins", "sans", "geometric", "low", "informal", "expressive", "display", "contemporary", "neutral", "clean_sans", "normal", "large", "geometric", "Geometric, circular forms", "Short lines. Too constructed for long text."],
+  ["montserrat", "Montserrat", "sans", "geometric", "low", "mixed", "expressive", "display", "contemporary", "neutral", "bold_grotesk", "normal", "large", "geometric", "Urban geometric", "Posters and section titles."],
+  ["josefin-sans", "Josefin Sans", "sans", "geometric", "low", "formal", "expressive", "display", "contemporary", "cool", "expressive_display", "normal", "large", "geometric", "Vintage geometric", "Elegant short titles."],
+  ["urbanist", "Urbanist", "sans", "geometric", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Geometric grotesque", "Low-key modern text."],
+  ["sora", "Sora", "sans", "geometric", "low", "mixed", "restrained", "utilitarian", "contemporary", "cool", "clean_sans", "normal", "medium", "geometric", "Technical geometric", "Product copy and diagrams."],
+  ["albert-sans", "Albert Sans", "sans", "geometric", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Neutral geometric", "Interface body."],
+  ["league-spartan", "League Spartan", "sans", "geometric", "low", "informal", "expressive", "display", "contemporary", "neutral", "bold_grotesk", "normal", "large", "geometric", "Heavy geometric", "Impact headlines."],
+  ["ibm-plex-mono", "IBM Plex Mono", "sans", "monospace", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Technical mono in the Plex family", "Specifications beside Plex Sans or a serif."],
+  ["space-mono", "Space Mono", "sans", "monospace", "low", "informal", "expressive", "display", "contemporary", "cool", "clean_sans", "normal", "medium", "geometric", "Quirky mono", "Labels and codes, not paragraphs."],
+  ["jetbrains-mono", "JetBrains Mono", "sans", "monospace", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "large", "geometric", "Coding mono with a tall x-height", "Technical notes beside a grotesk."],
+  ["inconsolata", "Inconsolata", "sans", "monospace", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Humanist mono", "Readable code and measurements."],
+  ["roboto-mono", "Roboto Mono", "sans", "monospace", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Neo-grotesk mono", "Data and part numbers."],
+  ["share-tech-mono", "Share Tech Mono", "sans", "monospace", "low", "informal", "expressive", "display", "contemporary", "cool", "expressive_display", "condensed", "medium", "geometric", "Industrial mono", "Signage, one line at a time."],
+  ["courier-prime", "Courier Prime", "sans", "monospace", "medium", "informal", "restrained", "editorial", "classic", "neutral", "classic_serif", "normal", "medium", "human", "Typewriter mono, redrawn", "Manuscripts and workshop notes."],
+  ["fragment-mono", "Fragment Mono", "sans", "monospace", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Coding mono", "Small technical annotation."],
+  ["red-hat-mono", "Red Hat Mono", "sans", "monospace", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Companion mono", "Figures beside Red Hat Text."],
+  ["barlow-condensed", "Barlow Condensed", "sans", "industrial", "low", "mixed", "expressive", "display", "contemporary", "neutral", "bold_grotesk", "condensed", "medium", "geometric", "Condensed grotesque", "Wayfinding and tight headlines."],
+  ["oswald", "Oswald", "sans", "industrial", "low", "mixed", "expressive", "display", "contemporary", "neutral", "bold_grotesk", "condensed", "large", "geometric", "Reworked Alternate Gothic", "Poster lines and section numbers."],
+  ["bebas-neue", "Bebas Neue", "sans", "industrial", "low", "informal", "expressive", "display", "contemporary", "neutral", "expressive_display", "condensed", "large", "geometric", "All-caps gothic", "One shouting line. No lowercase."],
+  ["anton", "Anton", "sans", "industrial", "low", "informal", "expressive", "display", "contemporary", "neutral", "bold_grotesk", "condensed", "large", "geometric", "Impact-like gothic", "Very short headlines."],
+  ["teko", "Teko", "sans", "industrial", "low", "informal", "expressive", "display", "contemporary", "neutral", "expressive_display", "condensed", "large", "geometric", "Square condensed", "Sports and signage energy."],
+  ["pathway-gothic-one", "Pathway Gothic One", "sans", "industrial", "low", "mixed", "expressive", "display", "classic", "neutral", "bold_grotesk", "condensed", "medium", "geometric", "News gothic condensed", "Newspaper headlines."],
+  ["big-shoulders-display", "Big Shoulders Display", "sans", "industrial", "low", "informal", "expressive", "display", "contemporary", "neutral", "expressive_display", "condensed", "large", "geometric", "Condensed display, very tall", "Massive titles, tiny captions beside them."],
+  ["big-shoulders-text", "Big Shoulders Text", "sans", "industrial", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "condensed", "medium", "geometric", "Condensed text gothic", "Compact running text and labels."],
+  ["roboto-condensed", "Roboto Condensed", "sans", "neo-grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "condensed", "medium", "geometric", "Condensed neo-grotesk", "Tables and tight UI."],
+  ["archivo-narrow", "Archivo Narrow", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "condensed", "medium", "geometric", "Narrow grotesque", "Dense information."],
+  ["abril-fatface", "Abril Fatface", "display", "didone", "high", "formal", "expressive", "display", "classic", "warm", "expressive_display", "normal", "small", "human", "Fat-face display", "One word. Never small text."],
+  ["yeseva-one", "Yeseva One", "display", "didone", "high", "formal", "expressive", "display", "classic", "warm", "expressive_display", "normal", "small", "human", "Decorative display serif", "Titles only."],
+  ["ultra", "Ultra", "display", "slab", "low", "informal", "expressive", "display", "classic", "neutral", "expressive_display", "wide", "large", "geometric", "Ultra-bold slab", "A single heavy word."],
+  ["unbounded", "Unbounded", "sans", "geometric", "low", "informal", "expressive", "display", "contemporary", "cool", "expressive_display", "wide", "large", "geometric", "Wide experimental grotesque", "Short display lines with a mono for facts."],
+  ["recursive", "Recursive", "sans", "experimental", "low", "mixed", "expressive", "display", "contemporary", "neutral", "expressive_display", "normal", "medium", "mixed", "Casual-to-mono variable", "When the system needs both a voice and a mono."],
+  ["fredoka", "Fredoka", "sans", "rounded", "low", "informal", "expressive", "display", "contemporary", "warm", "expressive_display", "normal", "large", "geometric", "Soft display sans", "Playful short lines, still legible."],
+  ["anybody", "Anybody", "sans", "experimental", "low", "informal", "expressive", "display", "contemporary", "neutral", "expressive_display", "wide", "large", "geometric", "Width-extreme grotesque", "A poster word next to ordinary text."],
+  ["bricolage-grotesque", "Bricolage Grotesque", "sans", "experimental", "medium", "informal", "expressive", "display", "contemporary", "warm", "expressive_display", "normal", "medium", "mixed", "Optical-size grotesque with quirks", "Headlines that should feel made, not set."],
+  ["young-serif", "Young Serif", "serif", "old-style", "medium", "informal", "expressive", "display", "contemporary", "warm", "editorial_serif", "normal", "large", "human", "Chunky contemporary old style", "Soft heavy headlines."],
+  ["sofia-sans", "Sofia Sans", "sans", "grotesk", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "normal", "medium", "geometric", "Broad grotesque family", "Flexible text when a serif is the voice."],
+  ["news-cycle", "News Cycle", "sans", "grotesk", "low", "mixed", "restrained", "editorial", "contemporary", "neutral", "clean_sans", "condensed", "medium", "geometric", "News gothic for text", "Captions and running heads."],
+  ["encode-sans", "Encode Sans", "sans", "industrial", "low", "mixed", "restrained", "utilitarian", "contemporary", "neutral", "clean_sans", "condensed", "medium", "geometric", "Wide width range", "From compact labels to normal text."],
+  ["exo-2", "Exo 2", "sans", "geometric", "low", "mixed", "expressive", "display", "contemporary", "cool", "clean_sans", "normal", "medium", "geometric", "Technical geometric", "Diagrams and contemporary product lines."],
+  ["signika", "Signika", "sans", "humanist", "low", "informal", "restrained", "utilitarian", "contemporary", "warm", "humanist_sans", "normal", "large", "human", "Signage humanist", "Wayfinding that still feels human."],
+];
+
+export const MORE_TYPEFACES: readonly TypefaceEntry[] = ROWS.map((row) => {
+  const [id, name, classification, voice, contrast, formality, energy, use, era, warmth, direction, width, xHeight, geometry, historical, pairingNote] = row;
+  return {
+    id,
+    name,
+    license: "SIL Open Font License",
+    source: "Google Fonts",
+    fontFamily: `"${name}", ${classification === "serif" ? "Georgia, serif" : "sans-serif"}`,
+    classification,
+    voice,
+    contrast,
+    formality,
+    energy,
+    use,
+    era,
+    warmth,
+    accessibility: use === "display" ? "Display sizes only. Thin or ultra weights fail when small." : "Usable at text sizes in this cut.",
+    directions: [direction],
+    signals: signalsFor(voice, warmth, energy),
+    width,
+    xHeight,
+    geometry,
+    historical,
+    pairingNote,
+  };
+});
+
+function signalsFor(voice: string, warmth: TypefaceEntry["warmth"], energy: TypefaceEntry["energy"]): Record<string, number> {
+  const signals: Record<string, number> = {};
+  if (voice === "old-style" || voice === "transitional" || voice === "didone") signals.editorial = 0.55;
+  if (voice === "slab") signals.editorial = 0.4;
+  if (voice === "humanist" || voice === "rounded") signals.human = 0.55;
+  if (voice === "geometric" || voice === "neo-grotesk" || voice === "grotesk") signals.clean = 0.5;
+  if (voice === "monospace" || voice === "industrial") signals.technical = 0.6;
+  if (voice === "experimental") signals.expressive = 0.7;
+  if (warmth === "warm") signals.warm = 0.45;
+  if (warmth === "cool") signals.cool = 0.4;
+  if (energy === "expressive") signals.expressive = Math.max(signals.expressive ?? 0, 0.6);
+  if (energy === "restrained") signals.restrained = 0.4;
+  return signals;
+}

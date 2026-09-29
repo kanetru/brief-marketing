@@ -4,8 +4,8 @@ import { NavigationControls } from "../components/NavigationControls";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { TransitionWrapper } from "../components/TransitionWrapper";
 import { TypeSpecimen } from "../components/TypeSpecimen";
-import { LIMITS } from "../domain/options";
 import { TYPE_DIRECTIONS } from "../domain/typography";
+import { TYPE_WORLDS, worldsForDirections } from "../domain/typeWorlds";
 import type { TypographyDirectionId } from "../types/discovery";
 import { canAdvance } from "../state/guards";
 import { useSession } from "../state/SessionContext";
@@ -13,16 +13,17 @@ import { textValue } from "../state/textEvidence";
 import { useConversation } from "../state/useConversation";
 
 export function TypeScreen() {
-  const { session, togglePreferredType, toggleAvoidedType } = useSession();
+  const { session, toggleTypeWorld, toggleTypeRefinement, toggleAvoidedType } = useSession();
   const { step, goBack, goForward, showBack, showForward } = useConversation("type");
   const name = textValue(session.business.name).trim() || "Your name";
   const type = session.typographyPreferences;
+  const refinements = worldsForDirections(type.preferredDirectionIds);
 
   return (
     <DiscoveryLayout
       section="type"
       step={step}
-      width="wide"
+      width="stage"
       footer={
         <NavigationControls
           showBack={showBack}
@@ -36,62 +37,83 @@ export function TypeScreen() {
     >
       <TransitionWrapper transitionKey={`type-${step}`}>
         {step === 0 ? (
-          <TypeStep
-            title="How should your name feel?"
-            supporting="We're not choosing a font. We're looking at the character you're drawn toward. Up to two."
-            name={name}
-            missingName={!textValue(session.business.name).trim()}
-            selected={type.preferredDirectionIds}
-            blocked={type.avoidedDirectionIds}
-            atMax={type.preferredDirectionIds.length >= LIMITS.typePreferred}
-            limitNote="Two is plenty. Let one go if this feels closer."
-            onToggle={togglePreferredType}
-          />
-        ) : (
-          <TypeStep
-            title="Which feels least like you?"
-            supporting="One is enough. If it's already a direction you were drawn to, we'll leave it there."
-            name={name}
-            missingName={false}
-            selected={type.avoidedDirectionIds}
-            blocked={type.preferredDirectionIds}
-            atMax={false}
-            onToggle={toggleAvoidedType}
-          />
-        )}
+          <QuestionScreen kicker="Type" title="How should your name feel?" supporting="Ten different worlds. Pick up to two. We're not choosing a final font.">
+            {!textValue(session.business.name).trim() ? <p className="meta">The name field is still open, so this says “Your name” for now.</p> : null}
+            <div className="type-worlds">
+              {TYPE_WORLDS.map((world) => {
+                const pressed = type.worldIds.includes(world.id);
+                return (
+                  <button
+                    key={world.id}
+                    type="button"
+                    className="type-world"
+                    aria-pressed={pressed}
+                    onClick={() => toggleTypeWorld(world.id, world.directionId)}
+                  >
+                    <span
+                      className="type-world-name"
+                      style={{
+                        fontFamily: world.fontFamily,
+                        fontWeight: world.fontWeight,
+                        fontStyle: world.fontStyle,
+                        letterSpacing: world.letterSpacing,
+                        textTransform: world.textTransform,
+                      }}
+                    >
+                      {name}
+                    </span>
+                    <span className="type-world-note">
+                      {world.label}
+                      <small>{world.note}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </QuestionScreen>
+        ) : null}
+        {step === 1 ? (
+          <QuestionScreen kicker="Type" title="Closer to which of these?" supporting="Same broad character. A finer difference. Two is enough, and skipping is fine.">
+            <div className="type-worlds">
+              {refinements.map((face) => {
+                const pressed = type.refinementIds.includes(face.id);
+                return (
+                  <button key={face.id} type="button" className="type-world" aria-pressed={pressed} onClick={() => toggleTypeRefinement(face.id)}>
+                    <span className="type-world-name" style={{ fontFamily: face.fontFamily }}>
+                      {name}
+                    </span>
+                    <span className="type-world-note">
+                      {face.label}
+                      <small>{face.note}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </QuestionScreen>
+        ) : null}
+        {step === 2 ? (
+          <AvoidStep name={name} selected={type.avoidedDirectionIds} blocked={type.preferredDirectionIds} onToggle={toggleAvoidedType} />
+        ) : null}
       </TransitionWrapper>
     </DiscoveryLayout>
   );
 }
 
-function TypeStep({
-  title,
-  supporting,
+function AvoidStep({
   name,
-  missingName,
   selected,
   blocked,
-  atMax,
-  limitNote,
   onToggle,
 }: {
-  title: string;
-  supporting: string;
   name: string;
-  missingName: boolean;
   selected: TypographyDirectionId[];
   blocked: TypographyDirectionId[];
-  atMax: boolean;
-  limitNote?: string;
   onToggle: (id: TypographyDirectionId) => void;
 }) {
   const [note, setNote] = useState<string | null>(null);
-
   return (
-    <QuestionScreen kicker="Type" title={title} supporting={supporting}>
-      {missingName ? (
-        <p className="meta">The name field is still open, so this says “Your name” for now.</p>
-      ) : null}
+    <QuestionScreen kicker="Type" title="Which feels least like you?" supporting="One is enough.">
       <div className="type-grid">
         {TYPE_DIRECTIONS.map((direction) => {
           const pressed = selected.includes(direction.id);
@@ -103,14 +125,9 @@ function TypeStep({
               name={name}
               pressed={pressed}
               blocked={isBlocked}
-              dimmed={atMax && !pressed}
               onClick={() => {
                 if (isBlocked) {
-                  setNote("That's already on the other side. Go back if you want to move it.");
-                  return;
-                }
-                if (atMax && !pressed) {
-                  setNote(limitNote ?? "That's enough.");
+                  setNote("That's already a direction you were drawn to. We'll leave it there.");
                   return;
                 }
                 setNote(null);
