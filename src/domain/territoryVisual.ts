@@ -214,13 +214,24 @@ export function assignPaletteRoles(swatches: readonly string[]): PaletteRole[] {
   const type = [...items].sort((a, b) => a.lum - b.lum || a.index - b.index)[0];
   const rest = items.filter((item) => item.index !== background?.index && item.index !== type?.index);
   const accent = [...rest].sort((a, b) => accentScore(b) - accentScore(a) || a.index - b.index)[0];
-  const roles = items.map((item) => ({
+  const roles: PaletteRole[] = items.map((item) => ({
     hex: item.hex,
     name: colourName(item.hex),
-    possibleRole:
-      item.index === background?.index ? "Background" : item.index === type?.index ? "Primary type" : item.index === accent?.index ? "Accent" : "Supporting",
+    possibleRole: paletteRole(item.index, background?.index, type?.index, accent?.index),
   }));
   return disambiguateNames(roles, items);
+}
+
+function paletteRole(
+  index: number,
+  background: number | undefined,
+  type: number | undefined,
+  accent: number | undefined,
+): PaletteRole["possibleRole"] {
+  if (index === background) return "Background";
+  if (index === type) return "Primary type";
+  if (index === accent) return "Accent";
+  return "Supporting";
 }
 
 function disambiguateNames(roles: PaletteRole[], items: Array<{ lum: number }>): PaletteRole[] {
