@@ -1,21 +1,23 @@
-import type { AgentObservation, CandidateQuestion, ObservationType } from "../types/discovery";
-import { evidencePaths, type DiscoveryEvidence } from "./evidence";
+import type { AgentObservation, CandidateQuestion } from "../types/discovery";
+import type { DiscoveryEvidence } from "./evidence";
+import {
+  FIFTH_QUESTION_SCORE,
+  FOURTH_QUESTION_SCORE,
+  MIN_QUESTION_SCORE,
+  asksOneThing,
+  confirmsDeferral,
+  isPreferenceExplanation,
+  narrativeAlreadyAnswered,
+  questionLanguage,
+  questionUsefulness,
+  validateObservations,
+} from "./qualityGate";
 
 export const MAX_CLARIFICATION_QUESTIONS = 5;
-export const PREFERRED_CLARIFICATION_QUESTIONS = 4;
+export { MIN_QUESTION_SCORE };
 
 export const MANAGER_HELP_ID = "manager_help";
 export const MANAGER_HELP_LABEL = "I'm not sure — that's something I'd like my media manager to help with.";
-
-const TYPE_SCORE: Record<ObservationType, number> = {
-  explicit_uncertainty: 50,
-  missing_information: 42,
-  tension: 38,
-  possible_follow_up: 16,
-  consistent_signal: 6,
-};
-
-const IMPORTANCE_SCORE = { high: 20, medium: 10, low: 0 };
 
 export interface QuestionDecision {
   id: string;
@@ -23,6 +25,10 @@ export interface QuestionDecision {
   outcome: "selected" | "rejected";
   /** Deterministic rule that fired. Not model reasoning. */
   reason: string;
+  topic: string;
+  score: number | null;
+  primaryObservationId: string | null;
+  language: string;
 }
 
 export interface QuestionSelectionTrace {
@@ -30,108 +36,173 @@ export interface QuestionSelectionTrace {
   decisions: QuestionDecision[];
 }
 
+interface RankedQuestion {
+  question: CandidateQuestion;
+  observation: AgentObservation;
+  topic: string;
+  score: number;
+}
+
 /**
  * Same selection as `selectClarificationQuestions`, plus the rule behind each keep or drop.
+ * Zero questions is a valid result. Five is a hard cap, not a target.
  */
 export function traceQuestionSelection(
   candidates: CandidateQuestion[],
   observations: AgentObservation[],
   evidence: DiscoveryEvidence,
 ): QuestionSelectionTrace {
-  const knownPaths = evidencePaths(evidence);
+  const validations = validateObservations(observations, evidence);
   const supported = new Map(
-    observations
-      .filter((observation) => observation.evidenceReferences.some((path) => knownPaths.has(path)))
-      .map((observation) => [observation.id, observation]),
+    validations.filter((item) => item.outcome === "kept").map((item) => [item.observation.id, item.observation]),
+  );
+  const rejectedObservations = new Map(
+    validations.filter((item) => item.outcome === "rejected").map((item) => [item.id, item.reason]),
   );
 
   const seen = new Set<string>();
   const rejected: QuestionDecision[] = [];
-  const ranked: Array<{ question: CandidateQuestion; score: number; observation: AgentObservation; observationScore: number }> = [];
+  const ranked: RankedQuestion[] = [];
 
   for (const candidate of candidates) {
-    const key = normalise(candidate.question);
-    if (seen.has(key)) {
-      rejected.push({ id: candidate.id, question: candidate.question, outcome: "rejected", reason: "duplicate of an earlier question with the same wording" });
+    const language = questionLanguage(candidate);
+    const primaryId = candidate.relatedObservationIds.find((id) => supported.has(id)) ?? candidate.relatedObservationIds[0] ?? null;
+    const base = {
+      id: candidate.id,
+      question: candidate.question,
+      topic: "unscored",
+      score: null as number | null,
+      primaryObservationId: primaryId,
+      language: language.outcome === "accepted" ? "accepted" : (language.code ?? "rejected"),
+    };
+
+    if (language.outcome === "rejected") {
+      rejected.push({ ...base, outcome: "rejected", reason: language.reason });
       continue;
     }
+    if (!asksOneThing(candidate.question)) {
+      rejected.push({ ...base, outcome: "rejected", reason: "asks more than one thing" });
+      continue;
+    }
+    const key = normalise(candidate.question);
+    if (seen.has(key)) {
+      rejected.push({ ...base, outcome: "rejected", reason: "duplicate of an earlier question with the same wording" });
+      continue;
+    }
+
     const related = candidate.relatedObservationIds
       .map((id) => supported.get(id))
       .filter((item): item is AgentObservation => !!item);
     if (related.length === 0) {
+      const dropped = candidate.relatedObservationIds
+        .map((id) => (rejectedObservations.has(id) ? `${id}: ${rejectedObservations.get(id)}` : null))
+        .filter((item): item is string => !!item);
       rejected.push({
-        id: candidate.id,
-        question: candidate.question,
+        ...base,
         outcome: "rejected",
-        reason: "no related observation cites an evidence path that was sent",
+        reason: dropped.length > 0 ? `related observation was rejected (${dropped[0]})` : "no related observation cites an evidence path that was sent",
       });
       continue;
     }
-    if (isAlreadyClear(related)) {
+
+    const usefulness = related
+      .map((observation) => ({ observation, ...questionUsefulness(candidate, observation) }))
+      .sort((a, b) => b.score - a.score)[0];
+    if (!usefulness) continue;
+    const observation = usefulness.observation;
+    const scored = { ...base, topic: usefulness.topic, score: usefulness.score, primaryObservationId: observation.id };
+
+    if (confirmsDeferral(candidate, observation, evidence)) {
       rejected.push({
-        id: candidate.id,
-        question: candidate.question,
+        ...scored,
         outcome: "rejected",
-        reason: "related observations are high-confidence consistent signals, so this asks about something already clear",
+        reason: "explicit uncertainty is already recorded; this only asks to confirm deferral to the media manager",
       });
       continue;
     }
-    if (isTrivia(candidate.question, related)) {
+    if (isPreferenceExplanation(candidate.question) && usefulness.topic === "preference_explanation") {
       rejected.push({
-        id: candidate.id,
-        question: candidate.question,
+        ...scored,
         outcome: "rejected",
-        reason: "asks why a preference was chosen, and the related observations are only consistent signals",
+        reason: "asks why an aesthetic preference was chosen",
       });
       continue;
     }
+    if (narrativeAlreadyAnswered(candidate, observation, evidence)) {
+      rejected.push({
+        ...scored,
+        outcome: "rejected",
+        reason: "the target field is already specific, so the question would not add a new distinction",
+      });
+      continue;
+    }
+    if (usefulness.score < MIN_QUESTION_SCORE) {
+      rejected.push({
+        ...scored,
+        outcome: "rejected",
+        reason: `usefulness ${usefulness.score} is below ${MIN_QUESTION_SCORE}; topic ${usefulness.topic}; observation ${observation.id}`,
+      });
+      continue;
+    }
+
     seen.add(key);
-    const scored = related.map((observation) => ({ observation, score: scoreObservation(observation) }));
-    scored.sort((a, b) => b.score - a.score);
-    const best = scored[0];
-    if (!best) continue;
-    const priorityBoost = (6 - candidate.priority) * 3;
-    ranked.push({
-      question: withUncertaintyOption(candidate),
-      score: best.score + priorityBoost,
-      observation: best.observation,
-      observationScore: best.score,
-    });
+    ranked.push({ question: withUncertaintyOption(candidate), observation, topic: usefulness.topic, score: usefulness.score });
   }
 
   ranked.sort((a, b) => b.score - a.score || a.question.priority - b.question.priority);
-  const limit = questionLimit(ranked);
+
   const selected: QuestionDecision[] = [];
   const capped: QuestionDecision[] = [];
-  ranked.forEach((item, index) => {
-    if (index < limit) {
-      const boost = item.score - item.observationScore;
-      selected.push({
-        id: item.question.id,
-        question: item.question.question,
-        outcome: "selected",
-        reason: `rank ${index + 1} of ${ranked.length}; tied to ${item.observation.id} (${item.observation.observationType}, ${item.observation.importance} importance, observation score ${item.observationScore}); priority ${item.question.priority} adds ${boost}; total ${item.score}; cap ${limit}`,
-      });
-      return;
+  const usedObservations = new Set<string>();
+  let taken = 0;
+
+  for (const item of ranked) {
+    const decisionBase = {
+      id: item.question.id,
+      question: item.question.question,
+      topic: item.topic,
+      score: item.score,
+      primaryObservationId: item.observation.id,
+      language: "accepted",
+    };
+    if (taken >= MAX_CLARIFICATION_QUESTIONS) {
+      capped.push({ ...decisionBase, outcome: "rejected", reason: "ranked past the maximum of 5" });
+      continue;
     }
-    const capReason =
-      limit === MAX_CLARIFICATION_QUESTIONS
-        ? "ranked past the maximum of 5"
-        : "ranked below the preferred cap of 4; the fifth question scored under 58";
-    capped.push({ id: item.question.id, question: item.question.question, outcome: "rejected", reason: capReason });
-  });
+    if (usedObservations.has(item.observation.id)) {
+      capped.push({
+        ...decisionBase,
+        outcome: "rejected",
+        reason: `one question for ${item.observation.id} is already selected`,
+      });
+      continue;
+    }
+    const bar = taken >= 4 ? FIFTH_QUESTION_SCORE : taken >= 3 ? FOURTH_QUESTION_SCORE : MIN_QUESTION_SCORE;
+    if (item.score < bar) {
+      capped.push({
+        ...decisionBase,
+        outcome: "rejected",
+        reason: `usefulness ${item.score} is below ${bar} for question ${taken + 1}; topic ${item.topic}`,
+      });
+      continue;
+    }
+    usedObservations.add(item.observation.id);
+    taken += 1;
+    selected.push({
+      ...decisionBase,
+      outcome: "selected",
+      reason: `rank ${taken}; topic ${item.topic}; observation ${item.observation.id} (${item.observation.epistemicStatus ?? item.observation.observationType}, ${item.observation.importance}); usefulness ${item.score}`,
+    });
+  }
 
   return {
-    selected: ranked.slice(0, limit).map((item) => item.question),
+    selected: ranked
+      .filter((item) => selected.some((decision) => decision.id === item.question.id))
+      .map((item) => item.question),
     decisions: [...selected, ...rejected, ...capped],
   };
 }
 
-/**
- * Deterministic cap after the model responds.
- * Keeps at most five questions, and prefers four unless a fifth is clearly material.
- * Questions that are not grounded in a supported observation are dropped.
- */
 export function selectClarificationQuestions(
   candidates: CandidateQuestion[],
   observations: AgentObservation[],
@@ -140,36 +211,7 @@ export function selectClarificationQuestions(
   return traceQuestionSelection(candidates, observations, evidence).selected;
 }
 
-/** Drop observations that cite nothing we actually sent. */
-export function supportedObservations(observations: AgentObservation[], evidence: DiscoveryEvidence): AgentObservation[] {
-  const knownPaths = evidencePaths(evidence);
-  return observations.filter((observation) => observation.evidenceReferences.some((path) => knownPaths.has(path)));
-}
-
-function questionLimit(ranked: Array<{ score: number }>): number {
-  if (ranked.length <= PREFERRED_CLARIFICATION_QUESTIONS) return ranked.length;
-  const fifth = ranked[4];
-  if (fifth && fifth.score >= 58) return MAX_CLARIFICATION_QUESTIONS;
-  return PREFERRED_CLARIFICATION_QUESTIONS;
-}
-
-function scoreObservation(observation: AgentObservation): number {
-  return TYPE_SCORE[observation.observationType] + IMPORTANCE_SCORE[observation.importance];
-}
-
-function isAlreadyClear(related: AgentObservation[]): boolean {
-  return related.every(
-    (observation) =>
-      observation.observationType === "consistent_signal" &&
-      observation.confidence === "high" &&
-      observation.importance !== "high",
-  );
-}
-
-function isTrivia(question: string, related: AgentObservation[]): boolean {
-  const whyPreference = /\bwhy did you (pick|choose|like|select)\b/i.test(question);
-  return whyPreference && related.every((observation) => observation.observationType === "consistent_signal");
-}
+export { supportedObservations } from "./qualityGate";
 
 function withUncertaintyOption(question: CandidateQuestion): CandidateQuestion {
   if (question.answerMode !== "single_choice") return question;

@@ -1,6 +1,7 @@
 import { buildDiscoveryEvidence, evidencePaths, type DiscoveryEvidence } from "../domain/evidence";
 import { parseAgentResponse } from "../domain/agentSchema";
-import { supportedObservations, traceQuestionSelection, type QuestionDecision } from "../domain/questionSelection";
+import { traceQuestionSelection, type QuestionDecision } from "../domain/questionSelection";
+import { validateObservations, type ObservationValidation } from "../domain/qualityGate";
 import { createSession } from "../state/createSession";
 import type {
   AgentObservation,
@@ -40,11 +41,10 @@ export interface FixtureReport {
   derivedSignals: DiscoveryEvidence["derivedSignals"];
   rawObservations: AgentObservation[];
   filteredObservations: AgentObservation[];
+  observationValidations: ObservationValidation[];
   candidateQuestions: CandidateQuestion[];
   selectedQuestions: CandidateQuestion[];
   decisions: QuestionDecision[];
-  /** Deterministic text scan. The filter does not use this. */
-  languageFlags: string[];
 }
 
 export function buildFixtureReport(fixture: DiscoveryFixture, mode: "mock" | "live" = "mock"): FixtureReport {
@@ -61,9 +61,10 @@ export function reportFromModelJson(
   if (!parsed) {
     throw new Error(`Fixture ${fixture.id} model response failed schema validation`);
   }
-  const filtered = supportedObservations(parsed.observations, evidence);
-  const trace = traceQuestionSelection(parsed.candidateQuestions, filtered, evidence);
-  return reportBody(fixture, evidence, parsed, filtered, trace, mode);
+  const observationValidations = validateObservations(parsed.observations, evidence);
+  const filtered = observationValidations.filter((item) => item.outcome === "kept").map((item) => item.observation);
+  const trace = traceQuestionSelection(parsed.candidateQuestions, parsed.observations, evidence);
+  return reportBody(fixture, evidence, parsed, filtered, observationValidations, trace, mode);
 }
 
 function reportBody(
@@ -71,6 +72,7 @@ function reportBody(
   evidence: DiscoveryEvidence,
   parsed: { observations: AgentObservation[]; candidateQuestions: CandidateQuestion[] },
   filtered: AgentObservation[],
+  observationValidations: ObservationValidation[],
   trace: { selected: CandidateQuestion[]; decisions: QuestionDecision[] },
   mode: "mock" | "live",
 ): FixtureReport {
@@ -88,10 +90,10 @@ function reportBody(
     derivedSignals: evidence.derivedSignals,
     rawObservations: parsed.observations,
     filteredObservations: filtered,
+    observationValidations,
     candidateQuestions: parsed.candidateQuestions,
     selectedQuestions: trace.selected,
     decisions: trace.decisions,
-    languageFlags: languageFlags(parsed.observations, parsed.candidateQuestions),
   };
 }
 
@@ -120,15 +122,13 @@ export function formatFixtureReport(report: FixtureReport): string {
   lines.push("## Raw observations");
   lines.push(observationBlock(report.rawObservations));
   lines.push("");
+  lines.push("## Observation validation");
+  for (const item of report.observationValidations) {
+    lines.push(`- ${item.outcome} ${item.id} [${item.code}${item.epistemicStatus ? `, ${item.epistemicStatus}` : ""}]: ${item.reason}`);
+  }
+  lines.push("");
   lines.push("## Filtered observations");
   lines.push(observationBlock(report.filteredObservations));
-  const dropped = report.rawObservations.filter((item) => !report.filteredObservations.some((kept) => kept.id === item.id));
-  if (dropped.length > 0) {
-    lines.push("dropped before questions:");
-    for (const item of dropped) {
-      lines.push(`- ${item.id}: no evidence path in the payload (${item.evidenceReferences.join(", ")})`);
-    }
-  }
   lines.push("");
   lines.push("## Candidate questions");
   for (const question of report.candidateQuestions) {
@@ -144,11 +144,11 @@ export function formatFixtureReport(report: FixtureReport): string {
   lines.push("");
   lines.push("## Filter decisions");
   for (const decision of report.decisions) {
-    lines.push(`- ${decision.outcome} ${decision.id}: ${decision.reason}`);
+    const score = decision.score === null ? "unscored" : String(decision.score);
+    lines.push(
+      `- ${decision.outcome} ${decision.id}: language ${decision.language}; topic ${decision.topic}; score ${score}; observation ${decision.primaryObservationId ?? "(none)"}; ${decision.reason}`,
+    );
   }
-  lines.push("");
-  lines.push("## Language flags");
-  lines.push(report.languageFlags.length === 0 ? "(none)" : report.languageFlags.map((flag) => `- ${flag}`).join("\n"));
   return lines.join("\n");
 }
 
@@ -195,7 +195,7 @@ function clearFixture(): DiscoveryFixture {
   return {
     id: "clear-consistent",
     name: "Clear / consistent client",
-    expectation: "0–2 clarification questions. Do not invent a tension.",
+    expectation: "Selected: 0. Do not invent a tension.",
     session,
     modelResponse: {
       observations: [aligned, audienceKnown, look, invented],
@@ -254,7 +254,7 @@ function tensionFixture(): DiscoveryFixture {
   return {
     id: "verbal-visual-tension",
     name: "Verbal / visual tension",
-    expectation: "Treat the polish versus approachability lean as a possible tension, ask which matters more, and do not call the brand premium.",
+    expectation: "Selected: 1. Only the approachability versus polished priority question. Reject brand-fact wording.",
     session,
     modelResponse: {
       observations: [tension, brandFact, missingPath],
@@ -316,7 +316,7 @@ function audienceFixture(): DiscoveryFixture {
   return {
     id: "unclear-audience",
     name: "Unclear audience",
-    expectation: "Ask about audience before a minor visual split. Do not spend the question on the aesthetic.",
+    expectation: "Selected: 1. The audience question. The minor visual split does not survive.",
     session,
     modelResponse: {
       observations: [audienceGap, minorVisual, knownLook],
@@ -383,7 +383,7 @@ function uncertaintyFixture(): DiscoveryFixture {
   return {
     id: "explicit-uncertainty",
     name: "Explicit uncertainty",
-    expectation: "Keep the uncertainty. Ask only if it would help the handover, and allow the media manager to hold it.",
+    expectation: "Selected: 0. Uncertainty is already recorded. Do not ask them to confirm they want help, and do not ask for colour precision.",
     session,
     modelResponse: {
       observations: [open, usefulGap, ghost],
@@ -450,7 +450,7 @@ function marketingFixture(): DiscoveryFixture {
   return {
     id: "conflicting-marketing",
     name: "Conflicting marketing signals",
-    expectation: "Notice the commercial goal against the understated voice, ask how that intent should feel, and do not prescribe a tone.",
+    expectation: "Selected: 1. Only the neutral question about how commercial intent should feel.",
     session,
     modelResponse: {
       observations: [tension],
@@ -579,26 +579,6 @@ function recordBlock(record: Record<string, unknown>): string {
   const entries = Object.entries(record);
   if (entries.length === 0) return "(none)";
   return entries.map(([key, value]) => `  ${key}: ${typeof value === "string" ? value : JSON.stringify(value)}`).join("\n");
-}
-
-function languageFlags(observations: AgentObservation[], questions: CandidateQuestion[]): string[] {
-  const flags: string[] = [];
-  const patterns: Array<[RegExp, string]> = [
-    [/\byour brand is\b/i, "states a brand fact"],
-    [/\byour brand should\b/i, "prescribes the brand"],
-    [/\byou should (use|sound|feel)\b/i, "prescribes a treatment"],
-  ];
-  for (const item of observations) {
-    for (const [pattern, label] of patterns) {
-      if (pattern.test(item.statement)) flags.push(`observation ${item.id} ${label}: ${item.statement}`);
-    }
-  }
-  for (const item of questions) {
-    for (const [pattern, label] of patterns) {
-      if (pattern.test(item.question)) flags.push(`question ${item.id} ${label}: ${item.question}`);
-    }
-  }
-  return flags;
 }
 
 /** Used by tests to confirm a cited path really exists, apart from the deliberate misses. */

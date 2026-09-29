@@ -54,4 +54,4 @@ npm run build
 npm run fixtures
 ```
 
-`npm run fixtures` prints the five discovery fixtures through the evidence builder and the question filter, using the checked-in structured responses. `npm run fixtures:live` sends the same evidence to the configured model. That run varies, so the tests stay on the mocked responses.
+`npm run fixtures` prints the five discovery fixtures through the evidence builder and the question filter, using the checked-in structured responses. The filter rejects brand-fact and prescriptive wording, drops questions below a usefulness threshold, and keeps at most one question per observation. Five remains a hard cap. `npm run fixtures:live` sends the same evidence to the configured model. That run varies, so the tests stay on the mocked responses.

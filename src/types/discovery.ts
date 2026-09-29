@@ -372,6 +372,12 @@ export type ObservationType =
 export type AgentConfidence = "low" | "medium" | "high";
 
 /**
+ * How an observation is allowed to speak.
+ * Derived from observationType. The model is not required to send it.
+ */
+export type EpistemicStatus = "direct" | "derived_pattern" | "possible_tension" | "missing" | "explicit_uncertainty";
+
+/**
  * A reading of client evidence. Not a fact about the brand.
  * `consistent_signal` means several choices point the same way, not that the brand is that thing.
  */
@@ -383,6 +389,8 @@ export interface AgentObservation {
   confidence: AgentConfidence;
   importance: AgentConfidence;
   observationType: ObservationType;
+  /** Set by the quality gate. Absent on older sessions and on raw model JSON. */
+  epistemicStatus?: EpistemicStatus;
 }
 
 export type AnalysisStatus = "not_generated" | "running" | "ready" | "failed";

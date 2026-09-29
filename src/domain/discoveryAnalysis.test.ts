@@ -167,18 +167,21 @@ describe("agent schema", () => {
 });
 
 describe("question selection", () => {
-  it("caps at five, prefers four, and keeps the right to stay uncertain", () => {
+  it("caps at five even when more than five distinct gaps clear the bar", () => {
     const evidence = buildDiscoveryEvidence(answeredSession());
-    const observations = [observation("gap", ["business.name"], "missing_information", "high", "high")];
-    const many = Array.from({ length: 8 }, (_, index) =>
-      question(`q-${index}`, "single_choice", ["gap"], [
-        { id: "a", label: "Approachable first" },
-        { id: "b", label: "More refined first" },
-      ], 1),
+    evidence.clientSaid["audience.bestCustomers"] = "Everyone, really.";
+    evidence.clientSelected["goals.outcomes"] = ["Generate enquiries"];
+    const observations = Array.from({ length: 6 }, (_, index) =>
+      observation(`gap-${index}`, ["audience.bestCustomers", "goals.outcomes"], "missing_information", "high", "high"),
+    );
+    const many = observations.map((item, index) =>
+      question(`q-${index}`, "single_choice", [item.id], [
+        { id: "a", label: "Households nearby" },
+        { id: "b", label: "People starting a project" },
+      ], 1, `Who is a good enquiry in situation ${index}?`),
     );
     const selected = selectClarificationQuestions(many, observations, evidence);
-    expect(selected.length).toBeLessThanOrEqual(5);
-    expect(selected.length).toBe(5);
+    expect(selected).toHaveLength(5);
     expect(selected[0]?.options.at(-1)).toEqual({ id: MANAGER_HELP_ID, label: MANAGER_HELP_LABEL });
   });
 

@@ -21,28 +21,24 @@ describe("discovery fixtures", () => {
     const report = buildFixtureReport(fixtureById("clear-consistent"));
     expect(report.selectedQuestions.length).toBeLessThanOrEqual(2);
     expect(report.selectedQuestions).toHaveLength(0);
-    expect(report.decisions.find((item) => item.id === "clear-invented-q")?.reason).toMatch(/no related observation/);
-    expect(report.decisions.find((item) => item.id === "clear-why-colour")?.reason).toMatch(/why a preference/);
+    expect(report.decisions.find((item) => item.id === "clear-invented-q")?.reason).toMatch(/no evidence path/);
+    expect(report.decisions.find((item) => item.id === "clear-why-colour")?.reason).toMatch(/why an aesthetic preference/);
     expect(report.filteredObservations.map((item) => item.id)).not.toContain("clear-invented");
   });
 
-  it("ranks the vague audience ahead of the minor visual split", () => {
+  it("asks only the audience question when the visual split is minor", () => {
     const report = buildFixtureReport(fixtureById("unclear-audience"));
-    const ids = report.selectedQuestions.map((item) => item.id);
-    expect(ids[0]).toBe("audience-who");
-    expect(ids.indexOf("audience-who")).toBeLessThan(ids.indexOf("audience-visual-q"));
-    expect(ids).not.toContain("audience-why-colour");
+    expect(report.selectedQuestions.map((item) => item.id)).toEqual(["audience-who"]);
+    expect(report.observationValidations.find((item) => item.id === "audience-visual")?.code).toBe("weak_tension");
+    expect(report.decisions.find((item) => item.id === "audience-why-colour")?.reason).toMatch(/why an aesthetic preference/);
   });
 
-  it("keeps at most five questions when the model over-asks", () => {
+  it("keeps only the neutral commercial question", () => {
     const report = buildFixtureReport(fixtureById("conflicting-marketing"));
     expect(report.candidateQuestions.length).toBeGreaterThan(5);
-    expect(report.selectedQuestions).toHaveLength(5);
-    expect(report.selectedQuestions.map((item) => item.id)).toContain("marketing-feel");
-    expect(report.selectedQuestions.map((item) => item.id)).toContain("marketing-prescribe");
-    expect(report.languageFlags.some((flag) => flag.includes("marketing-prescribe"))).toBe(true);
-    const capped = report.decisions.filter((item) => item.reason.includes("maximum of 5"));
-    expect(capped.length).toBeGreaterThan(0);
+    expect(report.selectedQuestions.map((item) => item.id)).toEqual(["marketing-feel"]);
+    expect(report.decisions.find((item) => item.id === "marketing-prescribe")?.language).toBe("creative_prescription");
+    expect(report.decisions.filter((item) => item.reason.includes("already selected")).length).toBeGreaterThan(0);
   });
 
   it("stores explicit uncertainty as unresolved", () => {
@@ -92,11 +88,18 @@ describe("discovery fixtures", () => {
     ]);
   });
 
-  it("flags a brand-fact statement without removing it", () => {
+  it("rejects a brand-fact observation and keeps one priority question", () => {
     const report = buildFixtureReport(fixtureById("verbal-visual-tension"));
-    expect(report.languageFlags.some((flag) => flag.includes("tension-brand-fact"))).toBe(true);
-    expect(report.filteredObservations.map((item) => item.id)).toContain("tension-brand-fact");
-    expect(report.selectedQuestions[0]?.question).not.toMatch(/your brand is/i);
+    expect(report.observationValidations.find((item) => item.id === "tension-brand-fact")?.code).toBe("brand_truth_assertion");
+    expect(report.filteredObservations.map((item) => item.id)).not.toContain("tension-brand-fact");
+    expect(report.selectedQuestions.map((item) => item.id)).toEqual(["tension-priority"]);
     expect(report.selectedQuestions[0]?.options.some((option) => option.id === MANAGER_HELP_ID)).toBe(true);
+  });
+
+  it("does not ask Kiln House to confirm uncertainty or describe a colour", () => {
+    const report = buildFixtureReport(fixtureById("explicit-uncertainty"));
+    expect(report.selectedQuestions).toHaveLength(0);
+    expect(report.decisions.find((item) => item.id === "uncertainty-hold")?.reason).toMatch(/confirm deferral/);
+    expect(report.decisions.find((item) => item.id === "uncertainty-colour")?.reason).toMatch(/below 64/);
   });
 });
