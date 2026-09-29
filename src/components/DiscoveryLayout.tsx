@@ -11,6 +11,7 @@ interface DiscoveryLayoutProps {
   section: SectionId;
   step: number;
   width?: "hero" | "narrow" | "wide" | "stage";
+  totalSteps?: number;
   children: ReactNode;
   footer?: ReactNode;
 }
@@ -19,6 +20,7 @@ export function DiscoveryLayout({
   section,
   step,
   width = "narrow",
+  totalSteps,
   children,
   footer,
 }: DiscoveryLayoutProps) {
@@ -51,6 +53,7 @@ export function DiscoveryLayout({
           current={section}
           furthest={session.progress.furthest}
           step={step}
+          totalSteps={totalSteps}
           onSelect={(next) => {
             activate(next);
             navigate(pathFor(next));

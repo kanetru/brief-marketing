@@ -7,7 +7,7 @@
  * - Raw client evidence: verbatim words the client typed.
  * - Structured selections: values chosen from a controlled vocabulary.
  * - Unresolved uncertainty: an explicit "I'm not sure", never an empty string.
- * - AI-derived observations: agentObservations / agentQuestions. Empty here.
+ * - Agent observations and clarification questions. Written only by the analysis pass.
  * - Media-manager interpretation: discoveryProfile.managerInterpretation. Empty here.
  *
  * Navigation progress is session state, not evidence.
@@ -25,7 +25,11 @@ export type SectionId =
   | "visual"
   | "colour"
   | "type"
-  | "imagery";
+  | "imagery"
+  | "voice"
+  | "inspiration"
+  | "clarify"
+  | "complete";
 
 export interface AgencyRef {
   id: "lover-lover";
@@ -298,34 +302,145 @@ export interface NotStartedSection {
   status: "not_started";
 }
 
-/** A future AI reading of the evidence. Not a fact about the client. */
+export type VoiceTrait =
+  | "formal"
+  | "conversational"
+  | "reserved"
+  | "expressive"
+  | "technical"
+  | "simple"
+  | "confident"
+  | "humble"
+  | "polished"
+  | "human"
+  | "promotional"
+  | "understated";
+
+export type VoiceTraitScores = Record<VoiceTrait, number>;
+
+export interface VoiceOptionSnapshot {
+  id: string;
+  text: string;
+  traits: VoiceTraitScores;
+}
+
+/**
+ * One voice round the client was shown.
+ * `none` is an explicit rejection of every line, distinct from not answering.
+ */
+export interface VoiceComparisonEvidence {
+  roundId: string;
+  order: number;
+  situation: string;
+  options: VoiceOptionSnapshot[];
+  choice:
+    | { state: "unanswered" }
+    | { state: "selected"; optionId: string; capturedAt: IsoDateTime }
+    | { state: "none"; capturedAt: IsoDateTime };
+}
+
+/** Raw voice evidence. Not a tone-of-voice profile. */
+export interface VoicePreferences {
+  comparisons: VoiceComparisonEvidence[];
+  /** Raw client evidence. */
+  preferredLanguage: TextEvidenceAnswer;
+  /** Raw client evidence. */
+  avoidedLanguage: TextEvidenceAnswer;
+}
+
+/** A business, person, or account the client named. Not scraped. */
+export interface InspirationReference {
+  id: string;
+  name: string;
+  url: string | null;
+  note: string | null;
+  capturedAt: IsoDateTime;
+}
+
+export interface InspirationSection {
+  positiveReferences: InspirationReference[];
+  negativeReferences: InspirationReference[];
+}
+
+export type ObservationType =
+  | "missing_information"
+  | "tension"
+  | "consistent_signal"
+  | "explicit_uncertainty"
+  | "possible_follow_up";
+
+export type AgentConfidence = "low" | "medium" | "high";
+
+/**
+ * A reading of client evidence. Not a fact about the brand.
+ * `consistent_signal` means several choices point the same way, not that the brand is that thing.
+ */
 export interface AgentObservation {
   id: string;
-  /** Evidence path this reading is based on, e.g. "business.differentiation". */
-  subject: string;
+  category: string;
   statement: string;
-  confidence: "low" | "medium" | "high";
-  basedOn: string[];
-  createdAt: IsoDateTime;
+  evidenceReferences: string[];
+  confidence: AgentConfidence;
+  importance: AgentConfidence;
+  observationType: ObservationType;
 }
+
+export type AnalysisStatus = "not_generated" | "running" | "ready" | "failed";
+
+export type AnalysisFailureCode = "not_configured" | "unavailable" | "invalid_response";
 
 export interface AgentObservationLayer {
-  status: "not_generated";
+  status: AnalysisStatus;
+  analysisVersion: string | null;
+  provider: string | null;
+  model: string | null;
+  generatedAt: IsoDateTime | null;
+  /** Safe code for development. Never a stack trace or a secret. */
+  failureCode: AnalysisFailureCode | null;
   items: AgentObservation[];
+  /** Model JSON before filtering. Development inspection only. */
+  rawModelResponse: unknown;
+  /** Evidence payload actually sent. Development inspection only. */
+  evidenceSent: unknown;
 }
 
-/** A follow-up an agent might ask. Not client evidence. */
-export interface AgentQuestion {
+export type AnswerMode = "free_text" | "single_choice";
+
+export interface ClarificationOption {
   id: string;
-  prompt: string;
+  label: string;
+}
+
+/** A candidate the model proposed. Not yet a question the client sees. */
+export interface CandidateQuestion {
+  id: string;
+  question: string;
   reason: string;
-  relatedEvidence: string[];
-  status: "open" | "resolved" | "dismissed";
+  targetEvidenceGap: string;
+  relatedObservationIds: string[];
+  answerMode: AnswerMode;
+  options: ClarificationOption[];
+  /** 1 is the model's highest priority. */
+  priority: number;
+}
+
+export type ClarificationResponse =
+  | { state: "unanswered" }
+  | { state: "evidence"; text: string; capturedAt: IsoDateTime }
+  | { state: "selected"; optionId: string; capturedAt: IsoDateTime }
+  | { state: "uncertain"; reason: "manager_help"; capturedAt: IsoDateTime };
+
+export interface SelectedQuestion extends CandidateQuestion {
+  response: ClarificationResponse;
 }
 
 export interface AgentQuestionLayer {
-  status: "not_generated";
-  items: AgentQuestion[];
+  status: AnalysisStatus;
+  /** Everything valid the model returned, before the cap. */
+  candidates: CandidateQuestion[];
+  /** The questions the client is actually asked. */
+  selected: SelectedQuestion[];
+  generatedAt: IsoDateTime | null;
 }
 
 /** The media manager's own reading. Never written by the client flow. */
@@ -348,7 +463,7 @@ export interface DiscoveryProfile {
 
 export interface DiscoverySession {
   id: string;
-  version: 2;
+  version: 3;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
   agency: AgencyRef;
@@ -362,8 +477,8 @@ export interface DiscoverySession {
   colourPreferences: ColourPreferences;
   typographyPreferences: TypographyPreferences;
   imageryPreferences: ImageryPreferences;
-  voicePreferences: NotStartedSection;
-  inspiration: NotStartedSection;
+  voicePreferences: VoicePreferences;
+  inspiration: InspirationSection;
   existingAssets: NotStartedSection;
   agentObservations: AgentObservationLayer;
   agentQuestions: AgentQuestionLayer;

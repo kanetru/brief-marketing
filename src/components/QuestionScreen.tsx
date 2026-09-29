@@ -5,7 +5,7 @@ interface QuestionScreenProps {
   title: ReactNode;
   prompt?: string;
   supporting?: string;
-  size?: "hero" | "question";
+  size?: "hero" | "question" | "conversation";
   children?: ReactNode;
 }
 
@@ -18,7 +18,7 @@ export function QuestionScreen({
   children,
 }: QuestionScreenProps) {
   return (
-    <article className={size === "hero" ? "question is-hero" : "question"}>
+    <article className={size === "question" ? "question" : `question is-${size}`}>
       {kicker ? <p className="kicker">{kicker}</p> : null}
       <h1 id="question-title" className="display">
         {title}

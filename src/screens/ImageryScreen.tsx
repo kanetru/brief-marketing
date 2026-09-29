@@ -51,7 +51,6 @@ export function ImageryScreen() {
             selected={imagery.avoidedDirectionIds}
             blocked={imagery.preferredDirectionIds}
             atMax={false}
-            closing
             onToggle={toggleAvoidedImagery}
           />
         )}
@@ -68,7 +67,6 @@ function ImageryStep({
   blocked,
   atMax,
   limitNote,
-  closing = false,
   onToggle,
 }: {
   title: string;
@@ -78,7 +76,6 @@ function ImageryStep({
   blocked: ImageryDirectionId[];
   atMax: boolean;
   limitNote?: string;
-  closing?: boolean;
   onToggle: (id: ImageryDirectionId) => void;
 }) {
   const [note, setNote] = useState<string | null>(null);
@@ -113,7 +110,7 @@ function ImageryStep({
         })}
       </div>
       <p className="gentle" role="status">
-        {note ?? (closing ? "This is as far as the session goes. Nothing here decides the brand." : "")}
+        {note ?? ""}
       </p>
     </QuestionScreen>
   );

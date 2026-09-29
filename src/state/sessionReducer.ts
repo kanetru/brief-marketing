@@ -1,9 +1,12 @@
-import { laterSection, stepCount } from "../domain/sections";
+import type { AnalysisSuccess } from "../domain/analysis";
 import { LIMITS, cleanCustomTrait, matchTrait } from "../domain/options";
-import { customTraitBlock, presetBlock } from "../domain/personality";
-import { clampSpectrumValue } from "../domain/spectrum";
 import { normaliseHex } from "../domain/palettes";
+import { customTraitBlock, presetBlock } from "../domain/personality";
+import { MANAGER_HELP_ID } from "../domain/questionSelection";
+import { laterSection, stepCount } from "../domain/sections";
+import { clampSpectrumValue } from "../domain/spectrum";
 import type {
+  AnalysisFailureCode,
   BusinessTextField,
   ColourRelationship,
   DiscoverySession,
@@ -47,7 +50,16 @@ export type Action =
   | { type: "toggle-preferred-type"; directionId: TypographyDirectionId }
   | { type: "toggle-avoided-type"; directionId: TypographyDirectionId }
   | { type: "toggle-preferred-imagery"; directionId: ImageryDirectionId }
-  | { type: "toggle-avoided-imagery"; directionId: ImageryDirectionId };
+  | { type: "toggle-avoided-imagery"; directionId: ImageryDirectionId }
+  | { type: "choose-voice"; roundId: string; optionId: string }
+  | { type: "voice-language"; field: "preferred" | "avoided"; value: string }
+  | { type: "add-inspiration"; polarity: "positive" | "negative"; name: string; url: string; note: string }
+  | { type: "remove-inspiration"; polarity: "positive" | "negative"; id: string }
+  | { type: "begin-analysis" }
+  | { type: "record-analysis"; sessionId: string; result: AnalysisSuccess; evidenceSent: unknown }
+  | { type: "fail-analysis"; sessionId: string; error: AnalysisFailureCode }
+  | { type: "answer-clarification"; questionId: string; text?: string; optionId?: string }
+  | { type: "clarify-uncertain"; questionId: string };
 
 function withDimension(
   state: DiscoverySession,
@@ -445,6 +457,161 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
           preferredDirectionIds,
           avoidedDirectionIds: state.imageryPreferences.avoidedDirectionIds.filter((id) => id !== action.directionId),
           preferredCapturedAt: preferredDirectionIds.length > 0 ? timestamp : null,
+        },
+      };
+    }
+    case "choose-voice": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        voicePreferences: {
+          ...state.voicePreferences,
+          comparisons: state.voicePreferences.comparisons.map((round) => {
+            if (round.roundId !== action.roundId) return round;
+            if (action.optionId === "none") {
+              if (round.choice.state === "none") return { ...round, choice: { state: "unanswered" } };
+              return { ...round, choice: { state: "none", capturedAt: timestamp } };
+            }
+            if (round.choice.state === "selected" && round.choice.optionId === action.optionId) {
+              return { ...round, choice: { state: "unanswered" } };
+            }
+            return { ...round, choice: { state: "selected", optionId: action.optionId, capturedAt: timestamp } };
+          }),
+        },
+      };
+    }
+    case "voice-language": {
+      const timestamp = new Date().toISOString();
+      const field = action.field === "preferred" ? "preferredLanguage" : "avoidedLanguage";
+      return {
+        ...state,
+        updatedAt: timestamp,
+        voicePreferences: {
+          ...state.voicePreferences,
+          [field]: applyText(state.voicePreferences[field], action.value, timestamp),
+        },
+      };
+    }
+    case "add-inspiration": {
+      const name = action.name.trim().replace(/\s+/g, " ");
+      if (!name) return state;
+      const timestamp = new Date().toISOString();
+      const key = action.polarity === "positive" ? "positiveReferences" : "negativeReferences";
+      const limit = action.polarity === "positive" ? LIMITS.inspirationPositive : LIMITS.inspirationNegative;
+      const current = state.inspiration[key];
+      if (current.length >= limit) return state;
+      const reference = {
+        id: crypto.randomUUID(),
+        name,
+        url: action.url.trim() || null,
+        note: action.note.trim() || null,
+        capturedAt: timestamp,
+      };
+      return {
+        ...state,
+        updatedAt: timestamp,
+        inspiration: { ...state.inspiration, [key]: [...current, reference] },
+      };
+    }
+    case "remove-inspiration": {
+      const timestamp = new Date().toISOString();
+      const key = action.polarity === "positive" ? "positiveReferences" : "negativeReferences";
+      return {
+        ...state,
+        updatedAt: timestamp,
+        inspiration: {
+          ...state.inspiration,
+          [key]: state.inspiration[key].filter((reference) => reference.id !== action.id),
+        },
+      };
+    }
+    case "begin-analysis": {
+      if (state.agentObservations.status === "ready" || state.agentObservations.status === "running") return state;
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        agentObservations: { ...state.agentObservations, status: "running", failureCode: null },
+        agentQuestions: { ...state.agentQuestions, status: "running" },
+      };
+    }
+    case "record-analysis": {
+      if (state.id !== action.sessionId) return state;
+      const timestamp = new Date().toISOString();
+      const result = action.result;
+      return {
+        ...state,
+        updatedAt: timestamp,
+        agentObservations: {
+          status: "ready",
+          analysisVersion: result.analysisVersion,
+          provider: result.provider,
+          model: result.model,
+          generatedAt: timestamp,
+          failureCode: null,
+          items: result.observations,
+          rawModelResponse: result.rawModelResponse,
+          evidenceSent: action.evidenceSent,
+        },
+        agentQuestions: {
+          status: "ready",
+          candidates: result.candidates,
+          selected: result.selected.map((question) => ({ ...question, response: { state: "unanswered" } })),
+          generatedAt: timestamp,
+        },
+      };
+    }
+    case "fail-analysis": {
+      if (state.id !== action.sessionId) return state;
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        agentObservations: {
+          ...state.agentObservations,
+          status: "failed",
+          failureCode: action.error,
+          generatedAt: timestamp,
+        },
+        agentQuestions: { ...state.agentQuestions, status: "failed", generatedAt: timestamp },
+      };
+    }
+    case "answer-clarification": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        agentQuestions: {
+          ...state.agentQuestions,
+          selected: state.agentQuestions.selected.map((question) => {
+            if (question.id !== action.questionId) return question;
+            if (action.optionId === MANAGER_HELP_ID) {
+              return { ...question, response: { state: "uncertain", reason: "manager_help", capturedAt: timestamp } };
+            }
+            if (action.optionId) {
+              return { ...question, response: { state: "selected", optionId: action.optionId, capturedAt: timestamp } };
+            }
+            const text = action.text?.trim() ?? "";
+            if (!text) return { ...question, response: { state: "unanswered" } };
+            const capturedAt = question.response.state === "evidence" ? question.response.capturedAt : timestamp;
+            return { ...question, response: { state: "evidence", text, capturedAt } };
+          }),
+        },
+      };
+    }
+    case "clarify-uncertain": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        agentQuestions: {
+          ...state.agentQuestions,
+          selected: state.agentQuestions.selected.map((question) => {
+            if (question.id !== action.questionId) return question;
+            if (question.response.state === "uncertain") return { ...question, response: { state: "unanswered" } };
+            return { ...question, response: { state: "uncertain", reason: "manager_help", capturedAt: timestamp } };
+          }),
         },
       };
     }

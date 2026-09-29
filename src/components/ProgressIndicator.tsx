@@ -5,6 +5,7 @@ interface ProgressIndicatorProps {
   current: SectionId;
   furthest: SectionId;
   step: number;
+  totalSteps?: number;
   onSelect: (section: SectionId) => void;
 }
 
@@ -15,7 +16,7 @@ function fillFor(index: number, currentIndex: number, step: number, steps: numbe
   return (step + 1) / steps;
 }
 
-export function ProgressIndicator({ current, furthest, step, onSelect }: ProgressIndicatorProps) {
+export function ProgressIndicator({ current, furthest, step, totalSteps, onSelect }: ProgressIndicatorProps) {
   const currentIndex = sectionIndex(current);
   const currentLabel = SECTIONS[currentIndex]?.label ?? "";
 
@@ -26,7 +27,8 @@ export function ProgressIndicator({ current, furthest, step, onSelect }: Progres
         {SECTIONS.map((section, index) => {
           const reached = sectionReached(furthest, section.id);
           const isCurrent = section.id === current;
-          const fill = fillFor(index, currentIndex, step, stepCount(section.id));
+          const steps = isCurrent && totalSteps ? totalSteps : stepCount(section.id);
+          const fill = fillFor(index, currentIndex, step, steps);
           return (
             <li key={section.id}>
               <button

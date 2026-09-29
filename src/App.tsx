@@ -3,12 +3,16 @@ import { SessionInspector } from "./components/SessionInspector";
 import { AudienceScreen } from "./screens/AudienceScreen";
 import { BusinessScreen } from "./screens/BusinessScreen";
 import { GoalsScreen } from "./screens/GoalsScreen";
+import { ClarifyScreen } from "./screens/ClarifyScreen";
 import { ColourScreen } from "./screens/ColourScreen";
+import { CompleteScreen } from "./screens/CompleteScreen";
 import { ImageryScreen } from "./screens/ImageryScreen";
+import { InspirationScreen } from "./screens/InspirationScreen";
 import { PersonalityScreen } from "./screens/PersonalityScreen";
 import { SpectrumScreen } from "./screens/SpectrumScreen";
 import { TypeScreen } from "./screens/TypeScreen";
 import { VisualScreen } from "./screens/VisualScreen";
+import { VoiceScreen } from "./screens/VoiceScreen";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
 
 export function App() {
@@ -27,6 +31,10 @@ export function App() {
         <Route path="/demo/colour" element={<ColourScreen />} />
         <Route path="/demo/type" element={<TypeScreen />} />
         <Route path="/demo/imagery" element={<ImageryScreen />} />
+        <Route path="/demo/voice" element={<VoiceScreen />} />
+        <Route path="/demo/inspiration" element={<InspirationScreen />} />
+        <Route path="/demo/clarify" element={<ClarifyScreen />} />
+        <Route path="/demo/complete" element={<CompleteScreen />} />
         <Route path="*" element={<Navigate to="/demo/start" replace />} />
       </Routes>
     </SessionInspector>

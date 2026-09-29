@@ -1,6 +1,8 @@
 import type { SectionId } from "../types/discovery";
+import { MAX_CLARIFICATION_QUESTIONS } from "./questionSelection";
 import { SPECTRUM_DIMENSIONS } from "./spectrum";
 import { VISUAL_COMPARISON_PAIRS } from "./visualDirections";
+import { VOICE_ROUNDS } from "./voice";
 
 /**
  * Steps are internal to a route. They are never shown as "question N of M".
@@ -15,6 +17,10 @@ import { VISUAL_COMPARISON_PAIRS } from "./visualDirections";
  * colour:       0 preferred, 1 avoided, 2 existing relationship, 3 existing colours
  * type:         0 preferred, 1 avoided
  * imagery:      0 preferred, 1 avoided
+ * voice:        0 intro, then one step per round, then preferred language, then avoided language
+ * inspiration:  0 admired, 1 avoid
+ * clarify:      0 transition, then one step per selected question (unused slots stay empty)
+ * complete:     0 handover
  */
 export const SECTIONS = [
   { id: "welcome", label: "Intro", path: "/demo/start", steps: 1 },
@@ -27,6 +33,10 @@ export const SECTIONS = [
   { id: "colour", label: "Colour", path: "/demo/colour", steps: 4 },
   { id: "type", label: "Type", path: "/demo/type", steps: 2 },
   { id: "imagery", label: "Imagery", path: "/demo/imagery", steps: 2 },
+  { id: "voice", label: "Voice", path: "/demo/voice", steps: 1 + VOICE_ROUNDS.length + 2 },
+  { id: "inspiration", label: "Inspiration", path: "/demo/inspiration", steps: 2 },
+  { id: "clarify", label: "Clarify", path: "/demo/clarify", steps: 1 + MAX_CLARIFICATION_QUESTIONS },
+  { id: "complete", label: "Ready", path: "/demo/complete", steps: 1 },
 ] as const satisfies ReadonlyArray<{
   id: SectionId;
   label: string;
