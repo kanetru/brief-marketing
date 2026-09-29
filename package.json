@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "fixtures": "node scripts/run-fixtures.mjs",
+    "fixtures:live": "node scripts/run-fixtures.mjs --live"
   },
   "repository": {
     "type": "git",

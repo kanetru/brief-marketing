@@ -51,4 +51,7 @@ If the key is missing, or the provider fails, or the response is not valid struc
 ```bash
 npm test
 npm run build
+npm run fixtures
 ```
+
+`npm run fixtures` prints the five discovery fixtures through the evidence builder and the question filter, using the checked-in structured responses. `npm run fixtures:live` sends the same evidence to the configured model. That run varies, so the tests stay on the mocked responses.
