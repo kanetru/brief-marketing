@@ -19,5 +19,10 @@ Open `/demo/start`.
 - `/demo/audience`
 - `/demo/goals`
 - `/demo/personality`
+- `/demo/spectrum`
+- `/demo/visual`
+- `/demo/colour`
+- `/demo/type`
+- `/demo/imagery`
 
-Answers are kept in `localStorage` under `lover-lover.discovery-session.v1`. In development, the Session control shows the live session JSON.
+Answers are kept in `localStorage` under `lover-lover.discovery-session.v2`. A v1 session is migrated in place. In development, the Session control shows the live evidence, including spectrum, visual, colour, type, and imagery. A derived visual signal is computed for inspection only and is not stored.

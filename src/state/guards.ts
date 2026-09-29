@@ -27,9 +27,36 @@ export function canAdvance(session: DiscoverySession, section: SectionId, step: 
       return poleCount(session.personality.attract) > 0;
     case "personality:1":
       return poleCount(session.personality.avoid) > 0;
-    case "personality:2":
+    case "spectrum:0":
+    case "spectrum:1":
+    case "spectrum:2":
+    case "spectrum:3":
+    case "spectrum:4":
+    case "spectrum:5":
+    case "spectrum:6":
+      return true;
+    case "visual:0":
+      return true;
+    case "colour:0":
+    case "colour:1":
+    case "imagery:1":
+      return true;
+    case "colour:2":
+      return session.colourPreferences.existingColourRelationship.state === "selected";
+    case "colour:3":
+      return session.colourPreferences.existingBrandColours.length > 0;
+    case "type:0":
+      return session.typographyPreferences.preferredDirectionIds.length > 0;
+    case "type:1":
+      return session.typographyPreferences.avoidedDirectionIds.length > 0;
+    case "imagery:0":
+      return session.imageryPreferences.preferredDirectionIds.length > 0;
+    default: {
+      if (section === "visual" && step > 0) {
+        const comparison = session.visualPreferences.comparisons[step - 1];
+        return comparison?.choice.state === "selected";
+      }
       return false;
-    default:
-      return false;
+    }
   }
 }

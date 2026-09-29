@@ -10,7 +10,7 @@ import { SessionToggle } from "./SessionInspector";
 interface DiscoveryLayoutProps {
   section: SectionId;
   step: number;
-  width?: "hero" | "narrow" | "wide";
+  width?: "hero" | "narrow" | "wide" | "stage";
   children: ReactNode;
   footer?: ReactNode;
 }

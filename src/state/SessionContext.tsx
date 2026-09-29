@@ -9,11 +9,16 @@ import {
 } from "react";
 import type {
   BusinessTextField,
+  ColourRelationship,
   DiscoverySession,
+  ImageryDirectionId,
   MarketingOutcome,
   PersonalityPoleId,
   PersonalityTrait,
   SectionId,
+  SpectrumDimensionId,
+  TypographyDirectionId,
+  VisualChoice,
 } from "../types/discovery";
 import { loadSession, saveSession } from "./storage";
 import { sessionReducer, type Action } from "./sessionReducer";
@@ -34,6 +39,18 @@ interface SessionApi {
   toggleTrait: (pole: PersonalityPoleId, trait: PersonalityTrait) => void;
   addCustomTrait: (pole: PersonalityPoleId, value: string) => void;
   removeCustomTrait: (pole: PersonalityPoleId, value: string) => void;
+  setSpectrum: (dimensionId: SpectrumDimensionId, value: number) => void;
+  neutralSpectrum: (dimensionId: SpectrumDimensionId) => void;
+  chooseVisual: (comparisonId: string, choice: VisualChoice) => void;
+  togglePreferredPalette: (paletteId: string) => void;
+  toggleAvoidedPalette: (paletteId: string) => void;
+  setColourRelationship: (value: ColourRelationship) => void;
+  addExistingColour: (hex: string) => void;
+  removeExistingColour: (hex: string) => void;
+  togglePreferredType: (directionId: TypographyDirectionId) => void;
+  toggleAvoidedType: (directionId: TypographyDirectionId) => void;
+  togglePreferredImagery: (directionId: ImageryDirectionId) => void;
+  toggleAvoidedImagery: (directionId: ImageryDirectionId) => void;
   reset: () => void;
 }
 
@@ -94,6 +111,48 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (pole: PersonalityPoleId, value: string) => send({ type: "remove-custom-trait", pole, value }),
     [send],
   );
+  const setSpectrum = useCallback(
+    (dimensionId: SpectrumDimensionId, value: number) => send({ type: "set-spectrum", dimensionId, value }),
+    [send],
+  );
+  const neutralSpectrum = useCallback(
+    (dimensionId: SpectrumDimensionId) => send({ type: "neutral-spectrum", dimensionId }),
+    [send],
+  );
+  const chooseVisual = useCallback(
+    (comparisonId: string, choice: VisualChoice) => send({ type: "choose-visual", comparisonId, choice }),
+    [send],
+  );
+  const togglePreferredPalette = useCallback(
+    (paletteId: string) => send({ type: "toggle-preferred-palette", paletteId }),
+    [send],
+  );
+  const toggleAvoidedPalette = useCallback(
+    (paletteId: string) => send({ type: "toggle-avoided-palette", paletteId }),
+    [send],
+  );
+  const setColourRelationship = useCallback(
+    (value: ColourRelationship) => send({ type: "set-colour-relationship", value }),
+    [send],
+  );
+  const addExistingColour = useCallback((hex: string) => send({ type: "add-existing-colour", hex }), [send]);
+  const removeExistingColour = useCallback((hex: string) => send({ type: "remove-existing-colour", hex }), [send]);
+  const togglePreferredType = useCallback(
+    (directionId: TypographyDirectionId) => send({ type: "toggle-preferred-type", directionId }),
+    [send],
+  );
+  const toggleAvoidedType = useCallback(
+    (directionId: TypographyDirectionId) => send({ type: "toggle-avoided-type", directionId }),
+    [send],
+  );
+  const togglePreferredImagery = useCallback(
+    (directionId: ImageryDirectionId) => send({ type: "toggle-preferred-imagery", directionId }),
+    [send],
+  );
+  const toggleAvoidedImagery = useCallback(
+    (directionId: ImageryDirectionId) => send({ type: "toggle-avoided-imagery", directionId }),
+    [send],
+  );
   const reset = useCallback(() => send({ type: "reset" }), [send]);
 
   const api = useMemo<SessionApi>(
@@ -113,6 +172,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toggleTrait,
       addCustomTrait,
       removeCustomTrait,
+      setSpectrum,
+      neutralSpectrum,
+      chooseVisual,
+      togglePreferredPalette,
+      toggleAvoidedPalette,
+      setColourRelationship,
+      addExistingColour,
+      removeExistingColour,
+      togglePreferredType,
+      toggleAvoidedType,
+      togglePreferredImagery,
+      toggleAvoidedImagery,
       reset,
     }),
     [
@@ -131,6 +202,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toggleTrait,
       addCustomTrait,
       removeCustomTrait,
+      setSpectrum,
+      neutralSpectrum,
+      chooseVisual,
+      togglePreferredPalette,
+      toggleAvoidedPalette,
+      setColourRelationship,
+      addExistingColour,
+      removeExistingColour,
+      togglePreferredType,
+      toggleAvoidedType,
+      togglePreferredImagery,
+      toggleAvoidedImagery,
       reset,
     ],
   );

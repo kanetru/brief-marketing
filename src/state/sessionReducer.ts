@@ -1,14 +1,21 @@
 import { laterSection, stepCount } from "../domain/sections";
 import { LIMITS, cleanCustomTrait, matchTrait } from "../domain/options";
 import { customTraitBlock, presetBlock } from "../domain/personality";
+import { clampSpectrumValue } from "../domain/spectrum";
+import { normaliseHex } from "../domain/palettes";
 import type {
   BusinessTextField,
+  ColourRelationship,
   DiscoverySession,
+  ImageryDirectionId,
   MarketingOutcome,
   PersonalityPole,
   PersonalityPoleId,
   PersonalityTrait,
   SectionId,
+  SpectrumDimensionId,
+  TypographyDirectionId,
+  VisualChoice,
 } from "../types/discovery";
 import { createSession } from "./createSession";
 import { applyText, unanswered } from "./textEvidence";
@@ -28,7 +35,36 @@ export type Action =
   | { type: "goals-horizon"; value: string }
   | { type: "toggle-trait"; pole: PersonalityPoleId; trait: PersonalityTrait }
   | { type: "add-custom-trait"; pole: PersonalityPoleId; value: string }
-  | { type: "remove-custom-trait"; pole: PersonalityPoleId; value: string };
+  | { type: "remove-custom-trait"; pole: PersonalityPoleId; value: string }
+  | { type: "set-spectrum"; dimensionId: SpectrumDimensionId; value: number }
+  | { type: "neutral-spectrum"; dimensionId: SpectrumDimensionId }
+  | { type: "choose-visual"; comparisonId: string; choice: VisualChoice }
+  | { type: "toggle-preferred-palette"; paletteId: string }
+  | { type: "toggle-avoided-palette"; paletteId: string }
+  | { type: "set-colour-relationship"; value: ColourRelationship }
+  | { type: "add-existing-colour"; hex: string }
+  | { type: "remove-existing-colour"; hex: string }
+  | { type: "toggle-preferred-type"; directionId: TypographyDirectionId }
+  | { type: "toggle-avoided-type"; directionId: TypographyDirectionId }
+  | { type: "toggle-preferred-imagery"; directionId: ImageryDirectionId }
+  | { type: "toggle-avoided-imagery"; directionId: ImageryDirectionId };
+
+function withDimension(
+  state: DiscoverySession,
+  dimensionId: SpectrumDimensionId,
+  answer: DiscoverySession["personalitySpectrum"]["dimensions"][number]["answer"],
+  timestamp: string,
+): DiscoverySession {
+  return {
+    ...state,
+    updatedAt: timestamp,
+    personalitySpectrum: {
+      dimensions: state.personalitySpectrum.dimensions.map((dimension) =>
+        dimension.id === dimensionId ? { ...dimension, answer } : dimension,
+      ),
+    },
+  };
+}
 
 function finishPole(
   selected: PersonalityTrait[],
@@ -250,6 +286,182 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
         personality: {
           ...state.personality,
           [action.pole]: finishPole(pole.selected, custom, timestamp),
+        },
+      };
+    }
+    case "set-spectrum": {
+      const timestamp = new Date().toISOString();
+      return withDimension(
+        state,
+        action.dimensionId,
+        { state: "selected", value: clampSpectrumValue(action.value), capturedAt: timestamp },
+        timestamp,
+      );
+    }
+    case "neutral-spectrum": {
+      const timestamp = new Date().toISOString();
+      const current = state.personalitySpectrum.dimensions.find((dimension) => dimension.id === action.dimensionId);
+      const answer =
+        current?.answer.state === "neutral"
+          ? { state: "unanswered" as const }
+          : { state: "neutral" as const, capturedAt: timestamp };
+      return withDimension(state, action.dimensionId, answer, timestamp);
+    }
+    case "choose-visual": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        visualPreferences: {
+          comparisons: state.visualPreferences.comparisons.map((comparison) => {
+            if (comparison.comparisonId !== action.comparisonId) return comparison;
+            const current = comparison.choice.state === "selected" ? comparison.choice.value : null;
+            if (current === action.choice) return { ...comparison, choice: { state: "unanswered" } };
+            return {
+              ...comparison,
+              choice: { state: "selected", value: action.choice, capturedAt: timestamp },
+            };
+          }),
+        },
+      };
+    }
+    case "toggle-preferred-palette": {
+      const timestamp = new Date().toISOString();
+      const current = state.colourPreferences.preferredPaletteIds;
+      const has = current.includes(action.paletteId);
+      if (!has && (current.length >= LIMITS.palettes || state.colourPreferences.avoidedPaletteIds.includes(action.paletteId))) {
+        return state;
+      }
+      const preferredPaletteIds = has ? current.filter((id) => id !== action.paletteId) : [...current, action.paletteId];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        colourPreferences: {
+          ...state.colourPreferences,
+          preferredPaletteIds,
+          preferredCapturedAt: preferredPaletteIds.length > 0 ? timestamp : null,
+        },
+      };
+    }
+    case "toggle-avoided-palette": {
+      const timestamp = new Date().toISOString();
+      if (state.colourPreferences.preferredPaletteIds.includes(action.paletteId)) return state;
+      const current = state.colourPreferences.avoidedPaletteIds;
+      const avoidedPaletteIds = current.includes(action.paletteId)
+        ? current.filter((id) => id !== action.paletteId)
+        : [...current, action.paletteId];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        colourPreferences: {
+          ...state.colourPreferences,
+          avoidedPaletteIds,
+          avoidedCapturedAt: avoidedPaletteIds.length > 0 ? timestamp : null,
+        },
+      };
+    }
+    case "set-colour-relationship": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        colourPreferences: {
+          ...state.colourPreferences,
+          existingColourRelationship: { state: "selected", value: action.value, capturedAt: timestamp },
+        },
+      };
+    }
+    case "add-existing-colour": {
+      const hex = normaliseHex(action.hex);
+      if (!hex) return state;
+      if (state.colourPreferences.existingBrandColours.some((colour) => colour.hex === hex)) return state;
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        colourPreferences: {
+          ...state.colourPreferences,
+          existingBrandColours: [...state.colourPreferences.existingBrandColours, { hex, capturedAt: timestamp }],
+        },
+      };
+    }
+    case "remove-existing-colour": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        colourPreferences: {
+          ...state.colourPreferences,
+          existingBrandColours: state.colourPreferences.existingBrandColours.filter((colour) => colour.hex !== action.hex),
+        },
+      };
+    }
+    case "toggle-preferred-type": {
+      const timestamp = new Date().toISOString();
+      const current = state.typographyPreferences.preferredDirectionIds;
+      const has = current.includes(action.directionId);
+      if (!has && (current.length >= LIMITS.typePreferred || state.typographyPreferences.avoidedDirectionIds.includes(action.directionId))) {
+        return state;
+      }
+      const preferredDirectionIds = has ? current.filter((id) => id !== action.directionId) : [...current, action.directionId];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        typographyPreferences: {
+          ...state.typographyPreferences,
+          preferredDirectionIds,
+          preferredCapturedAt: preferredDirectionIds.length > 0 ? timestamp : null,
+        },
+      };
+    }
+    case "toggle-avoided-type": {
+      const timestamp = new Date().toISOString();
+      if (state.typographyPreferences.preferredDirectionIds.includes(action.directionId)) return state;
+      const current = state.typographyPreferences.avoidedDirectionIds;
+      const avoidedDirectionIds = current.includes(action.directionId) ? [] : [action.directionId];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        typographyPreferences: {
+          ...state.typographyPreferences,
+          avoidedDirectionIds,
+          avoidedCapturedAt: avoidedDirectionIds.length > 0 ? timestamp : null,
+        },
+      };
+    }
+    case "toggle-preferred-imagery": {
+      const timestamp = new Date().toISOString();
+      const current = state.imageryPreferences.preferredDirectionIds;
+      const has = current.includes(action.directionId);
+      if (!has && (current.length >= LIMITS.imageryPreferred || state.imageryPreferences.avoidedDirectionIds.includes(action.directionId))) {
+        return state;
+      }
+      const preferredDirectionIds = has ? current.filter((id) => id !== action.directionId) : [...current, action.directionId];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        imageryPreferences: {
+          ...state.imageryPreferences,
+          preferredDirectionIds,
+          avoidedDirectionIds: state.imageryPreferences.avoidedDirectionIds.filter((id) => id !== action.directionId),
+          preferredCapturedAt: preferredDirectionIds.length > 0 ? timestamp : null,
+        },
+      };
+    }
+    case "toggle-avoided-imagery": {
+      const timestamp = new Date().toISOString();
+      if (state.imageryPreferences.preferredDirectionIds.includes(action.directionId)) return state;
+      const current = state.imageryPreferences.avoidedDirectionIds;
+      const avoidedDirectionIds = current.includes(action.directionId)
+        ? current.filter((id) => id !== action.directionId)
+        : [...current, action.directionId];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        imageryPreferences: {
+          ...state.imageryPreferences,
+          avoidedDirectionIds,
+          avoidedCapturedAt: avoidedDirectionIds.length > 0 ? timestamp : null,
         },
       };
     }
