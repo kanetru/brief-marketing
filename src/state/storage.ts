@@ -12,7 +12,7 @@ import type {
   VisualPreferences,
   VoicePreferences,
 } from "../types/discovery";
-import { blankObservations, blankQuestions, createSession } from "./createSession";
+import { blankObservations, blankProfile, blankQuestions, createSession } from "./createSession";
 
 export const STORAGE_KEY = "lover-lover.discovery-session.v3";
 const LEGACY_KEYS = ["lover-lover.discovery-session.v2", "lover-lover.discovery-session.v1"];
@@ -31,6 +31,7 @@ const SECTION_IDS: readonly SectionId[] = [
   "voice",
   "inspiration",
   "clarify",
+  "profile",
   "complete",
 ];
 
@@ -166,7 +167,25 @@ export function migrateSession(value: unknown): DiscoverySession | null {
     existingAssets: record.existingAssets ?? fresh.existingAssets,
     agentObservations: isObservationLayer(record.agentObservations) ? record.agentObservations : blankObservations(),
     agentQuestions: isQuestionLayer(record.agentQuestions) ? record.agentQuestions : blankQuestions(),
-    discoveryProfile: record.discoveryProfile ?? fresh.discoveryProfile,
+    discoveryProfile: normaliseProfile(record.discoveryProfile, fresh.discoveryProfile),
+  };
+}
+
+function normaliseProfile(value: unknown, fresh: DiscoverySession["discoveryProfile"]): DiscoverySession["discoveryProfile"] {
+  if (!value || typeof value !== "object") return fresh;
+  const record = value as Partial<DiscoverySession["discoveryProfile"]>;
+  const managerInterpretation = Array.isArray(record.managerInterpretation) ? record.managerInterpretation : [];
+  if (!Array.isArray(record.versions) || record.versions.some((version) => !version || typeof version !== "object" || !("content" in version))) {
+    return { ...blankProfile(), managerInterpretation };
+  }
+  const status = record.status;
+  return {
+    status: status === "running" || status === "ready" || status === "refining" || status === "not_compiled" ? status : "not_compiled",
+    activeVersion: typeof record.activeVersion === "number" ? record.activeVersion : null,
+    versions: record.versions,
+    clientFeedback: record.clientFeedback ?? null,
+    failureCode: record.failureCode ?? null,
+    managerInterpretation,
   };
 }
 

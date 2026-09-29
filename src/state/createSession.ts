@@ -5,6 +5,7 @@ import type {
   AgentObservationLayer,
   AgentQuestionLayer,
   ColourPreferences,
+  DiscoveryProfile,
   DiscoverySession,
   ImageryPreferences,
   InspirationSection,
@@ -40,6 +41,7 @@ function blankSteps(): Record<SectionId, number> {
     voice: 0,
     inspiration: 0,
     clarify: 0,
+    profile: 0,
     complete: 0,
   };
 }
@@ -55,6 +57,17 @@ export function blankObservations(): AgentObservationLayer {
     items: [],
     rawModelResponse: null,
     evidenceSent: null,
+  };
+}
+
+export function blankProfile(): DiscoveryProfile {
+  return {
+    status: "not_compiled",
+    activeVersion: null,
+    versions: [],
+    clientFeedback: null,
+    failureCode: null,
+    managerInterpretation: [],
   };
 }
 
@@ -167,6 +180,6 @@ export function createSession(timestamp = new Date().toISOString()): DiscoverySe
     existingAssets: notStarted(),
     agentObservations: blankObservations(),
     agentQuestions: blankQuestions(),
-    discoveryProfile: { status: "not_compiled", managerInterpretation: [] },
+    discoveryProfile: blankProfile(),
   };
 }

@@ -8,6 +8,8 @@ import { clampSpectrumValue } from "../domain/spectrum";
 import type {
   AnalysisFailureCode,
   BusinessTextField,
+  DiscoveryProfileVersion,
+  ProfileFeedback,
   ColourRelationship,
   DiscoverySession,
   ImageryDirectionId,
@@ -59,7 +61,12 @@ export type Action =
   | { type: "record-analysis"; sessionId: string; result: AnalysisSuccess; evidenceSent: unknown }
   | { type: "fail-analysis"; sessionId: string; error: AnalysisFailureCode }
   | { type: "answer-clarification"; questionId: string; text?: string; optionId?: string }
-  | { type: "clarify-uncertain"; questionId: string };
+  | { type: "clarify-uncertain"; questionId: string }
+  | { type: "begin-profile" }
+  | { type: "record-profile"; sessionId: string; version: DiscoveryProfileVersion; failureCode: AnalysisFailureCode | null }
+  | { type: "set-profile-feedback"; feedback: ProfileFeedback }
+  | { type: "begin-refinement" }
+  | { type: "record-refinement"; sessionId: string; version: DiscoveryProfileVersion; failureCode: AnalysisFailureCode | null };
 
 function withDimension(
   state: DiscoverySession,
@@ -597,6 +604,72 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
             const capturedAt = question.response.state === "evidence" ? question.response.capturedAt : timestamp;
             return { ...question, response: { state: "evidence", text, capturedAt } };
           }),
+        },
+      };
+    }
+    case "begin-profile": {
+      const profile = state.discoveryProfile;
+      if (profile.status === "running" || profile.status === "refining") return state;
+      if (profile.status === "ready" && profile.clientFeedback) return state;
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        discoveryProfile: { ...profile, status: "running", failureCode: null },
+      };
+    }
+    case "record-profile": {
+      if (state.id !== action.sessionId) return state;
+      if (state.discoveryProfile.clientFeedback) return state;
+      const timestamp = new Date().toISOString();
+      const version = { ...action.version, version: 1, feedback: null };
+      return {
+        ...state,
+        updatedAt: timestamp,
+        discoveryProfile: {
+          ...state.discoveryProfile,
+          status: "ready",
+          activeVersion: 1,
+          versions: [version],
+          failureCode: action.failureCode,
+        },
+      };
+    }
+    case "set-profile-feedback": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        discoveryProfile: { ...state.discoveryProfile, clientFeedback: action.feedback },
+      };
+    }
+    case "begin-refinement": {
+      const profile = state.discoveryProfile;
+      if (profile.status !== "ready" || profile.versions.length !== 1) return state;
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        discoveryProfile: { ...profile, status: "refining" },
+      };
+    }
+    case "record-refinement": {
+      if (state.id !== action.sessionId || state.discoveryProfile.status !== "refining") return state;
+      const timestamp = new Date().toISOString();
+      const version = {
+        ...action.version,
+        version: state.discoveryProfile.versions.length + 1,
+        feedback: state.discoveryProfile.clientFeedback,
+      };
+      return {
+        ...state,
+        updatedAt: timestamp,
+        discoveryProfile: {
+          ...state.discoveryProfile,
+          status: "ready",
+          activeVersion: version.version,
+          versions: [...state.discoveryProfile.versions, version],
+          failureCode: action.failureCode,
         },
       };
     }

@@ -62,7 +62,7 @@ export function canAdvance(session: DiscoverySession, section: SectionId, step: 
         const round = session.voicePreferences.comparisons[step - 1];
         return round?.choice.state === "selected" || round?.choice.state === "none";
       }
-      if (section === "inspiration" || section === "complete") return true;
+      if (section === "inspiration" || section === "profile" || section === "complete") return true;
       if (section === "clarify") {
         if (step === 0) {
           const status = session.agentObservations.status;

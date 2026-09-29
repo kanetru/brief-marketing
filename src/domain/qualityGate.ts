@@ -188,6 +188,21 @@ export function asksOneThing(text: string): boolean {
   return (text.match(/\?/g) ?? []).length <= 1;
 }
 
+/** True when the cited paths are a cross-group tension a media manager could use. */
+export function citesMeaningfulTension(paths: string[]): boolean {
+  return (
+    tensionQuality({
+      id: "tension-check",
+      category: "tension",
+      statement: "A possible tension.",
+      evidenceReferences: paths,
+      confidence: "medium",
+      importance: "medium",
+      observationType: "tension",
+    }) === null
+  );
+}
+
 function tensionQuality(observation: AgentObservation): string | null {
   const groups = evidenceGroups(observation.evidenceReferences);
   const paths = observation.evidenceReferences;

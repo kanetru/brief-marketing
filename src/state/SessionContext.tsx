@@ -12,6 +12,8 @@ import type { DiscoveryEvidence } from "../domain/evidence";
 import type {
   AnalysisFailureCode,
   BusinessTextField,
+  DiscoveryProfileVersion,
+  ProfileFeedback,
   ColourRelationship,
   DiscoverySession,
   ImageryDirectionId,
@@ -63,6 +65,11 @@ interface SessionApi {
   failAnalysis: (error: AnalysisFailureCode) => void;
   answerClarification: (questionId: string, answer: { text?: string; optionId?: string }) => void;
   clarifyUncertain: (questionId: string) => void;
+  beginProfile: () => void;
+  recordProfile: (version: DiscoveryProfileVersion, failureCode: AnalysisFailureCode | null) => void;
+  setProfileFeedback: (feedback: ProfileFeedback) => void;
+  beginRefinement: () => void;
+  recordRefinement: (version: DiscoveryProfileVersion, failureCode: AnalysisFailureCode | null) => void;
   reset: () => void;
 }
 
@@ -201,6 +208,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (questionId: string) => send({ type: "clarify-uncertain", questionId }),
     [send],
   );
+  const beginProfile = useCallback(() => send({ type: "begin-profile" }), [send]);
+  const recordProfile = useCallback(
+    (version: DiscoveryProfileVersion, failureCode: AnalysisFailureCode | null) =>
+      send({ type: "record-profile", sessionId: session.id, version, failureCode }),
+    [send, session.id],
+  );
+  const setProfileFeedback = useCallback(
+    (feedback: ProfileFeedback) => send({ type: "set-profile-feedback", feedback }),
+    [send],
+  );
+  const beginRefinement = useCallback(() => send({ type: "begin-refinement" }), [send]);
+  const recordRefinement = useCallback(
+    (version: DiscoveryProfileVersion, failureCode: AnalysisFailureCode | null) =>
+      send({ type: "record-refinement", sessionId: session.id, version, failureCode }),
+    [send, session.id],
+  );
   const reset = useCallback(() => send({ type: "reset" }), [send]);
 
   const api = useMemo<SessionApi>(
@@ -241,6 +264,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       failAnalysis,
       answerClarification,
       clarifyUncertain,
+      beginProfile,
+      recordProfile,
+      setProfileFeedback,
+      beginRefinement,
+      recordRefinement,
       reset,
     }),
     [
@@ -280,6 +308,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       failAnalysis,
       answerClarification,
       clarifyUncertain,
+      beginProfile,
+      recordProfile,
+      setProfileFeedback,
+      beginRefinement,
+      recordRefinement,
       reset,
     ],
   );
