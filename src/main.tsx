@@ -9,9 +9,17 @@ import "@fontsource/libre-baskerville/400-italic.css";
 import "@fontsource/nunito-sans/500.css";
 import "@fontsource/archivo-black/400.css";
 import "@fontsource/syne/700.css";
+import "@fontsource/lora/400.css";
+import "@fontsource/lora/500.css";
+import "@fontsource/lora/400-italic.css";
+import "@fontsource/space-grotesk/500.css";
+import "@fontsource/space-grotesk/600.css";
+import "@fontsource/cabin/400.css";
+import "@fontsource/cabin/500.css";
 import { App } from "./App";
 import { SessionProvider } from "./state/SessionContext";
 import "./styles/global.css";
+import "./styles/territories.css";
 
 const root = document.getElementById("root");
 if (!root) {

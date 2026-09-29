@@ -145,6 +145,94 @@ export interface WorkingBrief {
   stillOpen: string;
 }
 
+export type CompositionStyle = "editorial" | "raw" | "grid" | "expressive" | "classic" | "warm-structure";
+
+export type ImageTreatment = "documentary" | "raw" | "precise" | "graphic" | "formal" | "clear";
+
+export type ImageAssetRole = "hero" | "detail" | "context" | "texture";
+
+export type ImageAssetSource = "generated" | "curated" | "fallback";
+
+export type ColourRoleName = "Background" | "Primary type" | "Accent" | "Supporting";
+
+export interface PaletteRole {
+  hex: string;
+  name: string;
+  possibleRole: ColourRoleName;
+}
+
+export interface TerritoryTypeface {
+  id: string;
+  name: string;
+  fontFamily: string;
+  license: string;
+  source: string;
+}
+
+export interface TerritoryImageAsset {
+  role: ImageAssetRole;
+  source: ImageAssetSource;
+  prompt: string;
+  treatment: ImageTreatment;
+  status: "ready" | "fallback" | "failed";
+  url: string | null;
+  provider: string | null;
+  model: string | null;
+}
+
+/** What the territory renderer consumes. Visual decisions live here, not in scattered view conditionals. */
+export interface TerritoryVisualSpec {
+  territoryId: string;
+  versionKey: string;
+  paletteId: string;
+  paletteName: string;
+  palette: PaletteRole[];
+  headingTypeface: TerritoryTypeface;
+  bodyTypeface: TerritoryTypeface;
+  typographyScale: "editorial" | "oversized" | "controlled" | "display" | "classic";
+  imageTreatment: ImageTreatment;
+  imageAssets: TerritoryImageAsset[];
+  texture: "paper" | "grain" | "none" | "ink";
+  borderStyle: "hairline" | "rough" | "none" | "frame";
+  spacingCharacter: "generous" | "tight" | "measured" | "dense";
+  compositionStyle: CompositionStyle;
+  graphicMotifs: string[];
+  examplePhrase: string;
+  supportingLine: string;
+  businessName: string;
+  temperature: "warm" | "cool" | "neutral";
+  axes: {
+    polish: "raw" | "restrained" | "polished";
+    expression: "restrained" | "expressive";
+    composition: CompositionStyle;
+    typography: "serif" | "sans" | "display";
+    imagery: ImageTreatment;
+    colour: "warm" | "cool" | "neutral";
+    graphic: string;
+    voice: string;
+  };
+}
+
+export interface CreativeStartingPoint {
+  headline: string;
+  feel: string[];
+  typeToExplore: string[];
+  colourToExplore: Array<{ name: string; hex: string; possibleRole: string }>;
+  imageDirection: string[];
+  graphicLanguage: string[];
+  voice: string[];
+  examplePhrase: string;
+  avoid: string[];
+  stillOpen: string[];
+  why: {
+    type: string[];
+    colour: string[];
+    imagery: string[];
+    graphic: string[];
+    voice: string[];
+  };
+}
+
 export interface BrandIntelligence {
   /** Signal model before territory reactions. */
   draftModel: BrandSignalModel;
@@ -152,9 +240,14 @@ export interface BrandIntelligence {
   model: BrandSignalModel;
   draftTerritories: CreativeTerritory[];
   territories: CreativeTerritory[];
+  /** Render specs for the pre-reaction territories. */
+  draftVisualSpecs: TerritoryVisualSpec[];
+  /** Render specs for the territories after reaction evidence. */
+  visualSpecs: TerritoryVisualSpec[];
   /** The one creative fork worth asking, if the draft model is split. */
   forkQuestion: string | null;
   weightingNotes: string;
   workingBrief: WorkingBrief;
+  startingPoint: CreativeStartingPoint;
   firstConversation: string[];
 }

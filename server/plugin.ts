@@ -3,11 +3,17 @@ import type { DiscoveryEvidence } from "../src/domain/evidence";
 import type { ProfileGenerationRequest, ProfileRefinementRequest } from "../src/domain/profileRequest";
 import { analyzeDiscovery } from "./analyze";
 import { generateDiscoveryProfile, refineDiscoveryProfile } from "./profile";
+import { resolveTerritoryImages, type TerritoryImageRequest } from "./territoryImages";
 
 export function discoveryApiPlugin(): Plugin {
   const handle: Connect.NextHandleFunction = (req, res, next) => {
     const url = req.url?.split("?")[0];
-    if (url !== "/api/discovery/analyze" && url !== "/api/discovery/profile" && url !== "/api/discovery/profile/refine") {
+    if (
+      url !== "/api/discovery/analyze" &&
+      url !== "/api/discovery/profile" &&
+      url !== "/api/discovery/profile/refine" &&
+      url !== "/api/territory-images"
+    ) {
       next();
       return;
     }
@@ -18,6 +24,10 @@ export function discoveryApiPlugin(): Plugin {
     void readBody(req)
       .then(async (raw) => {
         const body: unknown = JSON.parse(raw);
+        if (url === "/api/territory-images") {
+          send(res, 200, resolveTerritoryImages(body as TerritoryImageRequest));
+          return;
+        }
         if (url === "/api/discovery/analyze") {
           const evidence = (body as { evidence?: DiscoveryEvidence }).evidence;
           if (!evidence) {

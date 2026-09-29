@@ -1,6 +1,9 @@
 import { distinctArchetypes, type ArchetypeDefinition, type RankedArchetype } from "./archetypes";
 import { imageryLabel } from "./imagery";
 import { paletteById } from "./palettes";
+import { writeRationale } from "./strategistCopy";
+import { imagePromptsFor } from "./territoryImagery";
+import { colourWords, readEvidence, visualRecipe } from "./territoryVisual";
 import { shortlistTypefaces } from "./typefaceCatalogue";
 import type { DiscoverySession } from "../types/discovery";
 import type {
@@ -87,7 +90,16 @@ function assembleTerritory(session: DiscoverySession, model: BrandSignalModel, a
   if (!suggested) {
     throw new Error("A territory needs a colour starting point.");
   }
-  const rationale = rationaleFor(archetype, sources);
+  const rationale = writeRationale(archetype.name, archetype.oneLineIdea, sources);
+  const prompts = imagePromptsFor({
+    businessName: readEvidence(session.business.name),
+    description: readEvidence(session.business.description),
+    paletteName: suggested.name,
+    colourWords: colourWords(suggested.swatches),
+    treatment: visualRecipe(archetype.id).imageTreatment,
+    notes: imagery.notes,
+    avoids: [...imagery.avoid, ...model.hardAvoids.map((item) => item.summary)],
+  });
   return {
     id: archetype.id,
     name: archetype.name,
@@ -111,20 +123,9 @@ function assembleTerritory(session: DiscoverySession, model: BrandSignalModel, a
     explorationLevel: archetype.score >= 8 ? "supported" : "exploratory",
     previewDirectionId: archetype.previewDirectionId,
     generatedMoodboardAssets: [],
-    generatedImagePrompts: [archetype.imagePrompt],
+    generatedImagePrompts: prompts.map((prompt) => prompt.prompt),
     referenceImages: [],
   };
-}
-
-function rationaleFor(archetype: ArchetypeDefinition, sources: SignalEvidenceNote[]): string {
-  if (sources.length === 0) {
-    return `${archetype.name} is an exploratory starting point. The discovery does not yet point hard in one direction.`;
-  }
-  const because = sources
-    .slice(0, 4)
-    .map((item) => item.summary)
-    .join("; ");
-  return `Your discovery points toward ${archetype.name}. ${archetype.oneLineIdea} It is here because ${because}. This is a territory to explore, not a finished identity.`;
 }
 
 function evidenceFor(model: BrandSignalModel, archetype: ArchetypeDefinition): SignalEvidenceNote[] {

@@ -1,5 +1,5 @@
 import { EvidenceNote } from "./EvidenceNote";
-import { TerritoryCard } from "./TerritoryCard";
+import { TerritoryStage } from "./TerritoryStage";
 import { strengthLabel } from "../domain/brandSignals";
 import type { DiscoveryEvidence } from "../domain/evidence";
 import { describeEvidence } from "../domain/evidenceLabels";
@@ -23,15 +23,16 @@ export function HandoverDocument({
     <article className="handover-doc">
       <header className="handover-mast">
         <p className="profile-kicker">Media manager handover</p>
-        <h1>What we heard</h1>
+        <h1>Client creative picture</h1>
         <p className="profile-summary">
-          Evidence, signals, and creative territories to explore. Not a finished identity, and not an instruction to use one direction.
+          Two directions to explore, with the client's reaction and the evidence underneath. Not a finished identity.
         </p>
       </header>
 
-      <BrandSignalBrief intelligence={intelligence} />
       <TerritoryBrief intelligence={intelligence} feedback={feedback} />
       <StartingPoint intelligence={intelligence} />
+      <BeforeAfter intelligence={intelligence} feedback={feedback} />
+      <BrandSignalBrief intelligence={intelligence} />
 
       <div className="handover-grid cols-3">
         <Snapshot title="Business" section={content.businessSummary} evidence={evidence} clarifications={clarifications} />
@@ -250,19 +251,53 @@ function TerritoryBrief({
       <h2>Creative territories</h2>
       <div className="territory-list">
         {intelligence.territories.map((territory, index) => {
+          const spec = intelligence.visualSpecs.find((item) => item.territoryId === territory.id) ?? intelligence.visualSpecs[index];
           const reaction = feedback.reactions.find((item) => item.territoryId === territory.id);
           return (
-            <TerritoryCard key={territory.id} territory={territory} index={index}>
-              <p className="territory-why">Why it fits: {territory.supportingEvidence.map((item) => item.summary).join(" · ") || "Exploratory — the evidence is still thin."}</p>
-              <p>Client reaction: {reaction ? reactionLabel(reaction.response) : "No reaction yet."}{reaction?.note ? ` ${reaction.note}` : ""}</p>
-              {territory.typeDirection.candidates.length > 0 ? (
-                <ul className="type-why">
-                  {territory.typeDirection.candidates.map((candidate) => (
-                    <li key={candidate.id}><strong>{candidate.name}</strong> — {candidate.why[0]}</li>
-                  ))}
-                </ul>
+            <article key={territory.id} className="handover-territory">
+              {spec ? (
+                <div className="handover-stage">
+                  <TerritoryStage spec={spec} index={index} label={territory.name} mode="handover" />
+                </div>
               ) : null}
-            </TerritoryCard>
+              <p>Client response: {reaction ? reactionLabel(reaction.response) : "No reaction yet."}{reaction?.note ? ` — ${reaction.note}` : ""}</p>
+              <p className="territory-why">{territory.rationale}</p>
+              <details className="why-block">
+                <summary>Why it was generated</summary>
+                {territory.supportingEvidence.length === 0 ? (
+                  <p className="profile-summary">Exploratory. The evidence is still thin.</p>
+                ) : (
+                  <ul>
+                    {territory.supportingEvidence.map((item) => (
+                      <li key={`${item.source}-${item.summary}`}>{item.summary}</li>
+                    ))}
+                  </ul>
+                )}
+              </details>
+              <h3>Image direction</h3>
+              <p>{territory.imageryDirection.summary}</p>
+              <ul className="working-list">
+                {territory.imageryDirection.notes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+              <h3>Graphic language</h3>
+              <ul className="working-list">
+                {territory.stylingNotes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+              <h3>Voice</h3>
+              <p>{territory.voiceDirection.characteristics.join(" · ")}</p>
+              <p className="territory-phrase">{territory.examplePhrases[0]}</p>
+              <p className="stage-example">Example line</p>
+              <h3>Avoid</h3>
+              <ul className="working-list">
+                {(territory.imageryDirection.avoid.length > 0 ? territory.imageryDirection.avoid : territory.hardAvoidsRespected).map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </article>
           );
         })}
       </div>
@@ -271,20 +306,22 @@ function TerritoryBrief({
 }
 
 function StartingPoint({ intelligence }: { intelligence: BrandIntelligence }) {
-  const brief = intelligence.workingBrief;
+  const point = intelligence.startingPoint;
   return (
     <section className="handover-section">
       <h2>Creative starting point</h2>
-      <p className="profile-summary">{brief.headline}</p>
-      <dl className="territory-meta">
-        <div><dt>Feel</dt><dd>{brief.feel}</dd></div>
-        <div><dt>Colour to explore</dt><dd>{brief.colour}</dd></div>
-        <div><dt>Type to explore</dt><dd>{brief.type}</dd></div>
-        <div><dt>Imagery to explore</dt><dd>{brief.imagery}</dd></div>
-        <div><dt>Voice to explore</dt><dd>{brief.voice}</dd></div>
-        <div><dt>Avoid</dt><dd>{brief.avoid}</dd></div>
-        <div><dt>Still open</dt><dd>{brief.stillOpen}</dd></div>
-      </dl>
+      <p className="profile-summary">{point.headline}</p>
+      <div className="working-point">
+        <Point title="Feel" body={point.feel.join(" · ")} />
+        <Point title="Type to explore" body={point.typeToExplore.join(" · ")} why={point.why.type} whyLabel="Why this type?" />
+        <Point title="Colour to explore" body={point.colourToExplore.map((colour) => `${colour.name} (${colour.hex})`).join(" · ")} why={point.why.colour} whyLabel="Why this colour?" />
+        <Point title="Image direction" body={point.imageDirection.join(" · ")} why={point.why.imagery} whyLabel="Why this imagery?" />
+        <Point title="Graphic language" body={point.graphicLanguage.join(" · ")} why={point.why.graphic} whyLabel="Why this graphic language?" />
+        <Point title="Voice" body={point.voice.join(" · ")} why={point.why.voice} whyLabel="Why this voice?" />
+        {point.examplePhrase ? <p className="territory-phrase">Example: {point.examplePhrase}</p> : null}
+        <Point title="Avoid" body={point.avoid.join(" · ")} />
+        <Point title="Still open" body={point.stillOpen.join(" ")} />
+      </div>
       <h3>First conversation</h3>
       {intelligence.firstConversation.length === 0 ? (
         <p className="profile-summary">Nothing further stood out as the first thing to discuss.</p>
@@ -297,8 +334,68 @@ function StartingPoint({ intelligence }: { intelligence: BrandIntelligence }) {
   );
 }
 
+function Point({ title, body, why, whyLabel }: { title: string; body: string; why?: string[]; whyLabel?: string }) {
+  return (
+    <div>
+      <h3>{title}</h3>
+      <p>{body || "Still open."}</p>
+      {why && why.length > 0 ? (
+        <details className="why-block">
+          <summary>{whyLabel ?? "Why?"}</summary>
+          <ul>
+            {why.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+function BeforeAfter({ intelligence, feedback }: { intelligence: BrandIntelligence; feedback: TerritoryFeedback }) {
+  if (feedback.reactions.length === 0 && !feedback.preference) return null;
+  const before = intelligence.draftModel.signals.filter((signal) => signal.polarity === "positive").slice(0, 6);
+  const after = intelligence.model.signals.filter((signal) => signal.polarity === "positive").slice(0, 6);
+  return (
+    <section className="handover-section">
+      <h2>Before and after the reaction</h2>
+      <p className="profile-summary">The pre-reaction model is kept. The reaction refines the starting point and does not erase what came before.</p>
+      <div className="shift-grid">
+        <div>
+          <h3>Before</h3>
+          <p>{intelligence.draftTerritories.map((territory) => territory.name).join(" · ")}</p>
+          <ul className="working-list">
+            {before.map((signal) => (
+              <li key={signal.dimension}>{signal.dimension} · {strengthLabel(signal.strength)}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h3>After</h3>
+          <p>{intelligence.territories.map((territory) => territory.name).join(" · ")}</p>
+          <ul className="working-list">
+            {after.map((signal) => (
+              <li key={signal.dimension}>{signal.dimension} · {strengthLabel(signal.strength)}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <p>Preference: {preferenceLabel(feedback.preference, intelligence)}</p>
+    </section>
+  );
+}
+
+function preferenceLabel(preference: string | null, intelligence: BrandIntelligence): string {
+  if (!preference) return "Not chosen.";
+  if (preference === "mix") return "A mix of both.";
+  if (preference === "neither") return "Neither.";
+  if (preference === "guidance") return "They want guidance.";
+  return intelligence.territories.find((territory) => territory.id === preference)?.name ?? preference;
+}
+
 function reactionLabel(response: string): string {
   if (response === "very_close") return "Very close.";
   if (response === "something_here") return "There's something here.";
-  return "Not for us.";
+  return "Not really us.";
 }
