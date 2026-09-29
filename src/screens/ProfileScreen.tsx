@@ -6,17 +6,19 @@ import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
 import { ProfileReveal } from "../components/ProfileReveal";
 import { QuestionScreen } from "../components/QuestionScreen";
+import { TerritoryReveal, type RevealBeat } from "../components/TerritoryReveal";
 import { TextResponse } from "../components/TextResponse";
-import { TransitionWrapper } from "../components/TransitionWrapper";
 import { buildBrandIntelligence } from "../domain/brandIntelligence";
 import { activeProfileVersion, hashEvidence, profileRequestFromSession } from "../domain/profileRequest";
 import { pathFor } from "../domain/sections";
 import { requestProfile } from "../services/ai/profileClient";
 import { useSession } from "../state/SessionContext";
 import { useConversation } from "../state/useConversation";
-import type { ProfileFeedbackResponse, TerritoryReactionResponse } from "../types/discovery";
+import type { CreativeTerritory } from "../types/brandIntelligence";
+import type { ProfileFeedbackResponse } from "../types/discovery";
 
 const inFlight = new Set<string>();
+const COUNT_WORDS = ["one", "two", "three", "four"];
 
 export function ProfileScreen() {
   const navigate = useNavigate();
@@ -30,6 +32,8 @@ export function ProfileScreen() {
   const version = activeProfileVersion(profile.versions, profile.activeVersion);
   const [choice, setChoice] = useState<ProfileFeedbackResponse | null>(profile.clientFeedback?.response ?? null);
   const [note, setNote] = useState(profile.clientFeedback?.note ?? "");
+  const [beat, setBeat] = useState<RevealBeat>({ kind: "seeing" });
+  const copy = beatCopy(beat, intelligence.draftTerritories);
 
   useEffect(() => {
     const request = profileRequestFromSession(session);
@@ -69,7 +73,7 @@ export function ProfileScreen() {
   }
 
   const revised = profile.versions.length > 1;
-  const waiting = profile.status === "running" || profile.status === "refining" || profile.status === "not_compiled";
+  const readyToLeave = beat.kind === "compare" && session.territoryFeedback.preference != null;
 
   return (
     <DiscoveryLayout
@@ -86,148 +90,68 @@ export function ProfileScreen() {
         />
       }
     >
-      <TransitionWrapper transitionKey={`profile-${profile.status}-${version?.version ?? 0}`}>
-        <QuestionScreen
-          size="hero"
-          kicker="Discovery"
-          title="Here's what we're hearing."
-          supporting="Your answers and choices point toward a few interesting creative directions."
-        >
-          <p className="closing-copy">
-            These aren't finished brand concepts. They're starting points for you and your media manager to explore together.
-          </p>
-          {waiting || !version ? (
-            <p className="profile-note">{profile.status === "refining" ? "Revising this from what you said." : "Reading what you've told us."}</p>
-          ) : (
-            <>
-              <ProfileReveal
-                content={version.content}
-                assembled={version.usedFallback}
-                signals={consistent}
-                territories={intelligence.draftTerritories}
-                renderTerritory={(territory) => (
-                  <TerritoryReaction
-                    territoryId={territory.id}
-                    response={session.territoryFeedback.reactions.find((item) => item.territoryId === territory.id)?.response ?? null}
-                    note={session.territoryFeedback.reactions.find((item) => item.territoryId === territory.id)?.note ?? ""}
-                    onRespond={(response, note) => setTerritoryReaction(territory.id, response, note)}
-                  />
-                )}
-              />
-              <DirectionPick
-                territories={intelligence.draftTerritories}
-                preference={session.territoryFeedback.preference}
-                onPick={setTerritoryPreference}
-              />
-              {revised ? (
-                <div className="profile-feedback">
-                  <p className="profile-summary">
-                    {version.usedFallback
-                      ? "Your correction is saved with the handover. The earlier reading is still the one shown here."
-                      : "Updated from what you said."}
-                  </p>
-                  <button type="button" className="text-button profile-continue" onClick={() => finish(choice === "not_really" ? "not_really" : "mostly", note.trim())}>
+      <QuestionScreen size="hero" kicker="Discovery" title={copy.title} supporting={copy.supporting}>
+          <TerritoryReveal
+            territories={intelligence.draftTerritories}
+            specs={intelligence.draftVisualSpecs}
+            reactions={session.territoryFeedback.reactions}
+            preference={session.territoryFeedback.preference}
+            onReact={setTerritoryReaction}
+            onPrefer={setTerritoryPreference}
+            onBeat={setBeat}
+          />
+          {readyToLeave ? (
+            <button
+              type="button"
+              className="text-button profile-continue"
+              data-testid="continue"
+              onClick={() => finish(choice === "not_really" ? "not_really" : choice === "mostly" ? "mostly" : "yes", note.trim() || null)}
+            >
+              Continue
+            </button>
+          ) : null}
+          <details className="written-reading">
+            <summary>{version ? "A written reading, if you want one" : "A written reading is still forming."}</summary>
+            {version ? (
+              <>
+                <ProfileReveal content={version.content} assembled={version.usedFallback} signals={consistent} />
+                {revised ? (
+                  <button type="button" className="text-button profile-continue" onClick={() => finish(choice === "not_really" ? "not_really" : "mostly", note.trim() || null)}>
                     This is a good place to stop
                   </button>
-                </div>
-              ) : (
-                <Feedback
-                  choice={choice}
-                  note={note}
-                  onChoice={setChoice}
-                  onNote={setNote}
-                  onYes={() => finish("yes", null)}
-                  onRevise={revise}
-                />
-              )}
-            </>
-          )}
-        </QuestionScreen>
-      </TransitionWrapper>
+                ) : (
+                  <Feedback choice={choice} note={note} onChoice={setChoice} onNote={setNote} onYes={() => finish("yes", null)} onRevise={revise} />
+                )}
+              </>
+            ) : (
+              <p className="profile-note">{profile.status === "refining" ? "Revising this from what you said." : "Reading what you've told us."}</p>
+            )}
+          </details>
+      </QuestionScreen>
     </DiscoveryLayout>
   );
 }
 
-function TerritoryReaction({
-  territoryId,
-  response,
-  note,
-  onRespond,
-}: {
-  territoryId: string;
-  response: TerritoryReactionResponse | null;
-  note: string;
-  onRespond: (response: TerritoryReactionResponse, note: string) => void;
-}) {
-  const options: Array<{ id: TerritoryReactionResponse; label: string }> = [
-    { id: "very_close", label: "Very close" },
-    { id: "something_here", label: "There's something here" },
-    { id: "not_for_us", label: "Not for us" },
-  ];
-  return (
-    <div className="territory-reaction">
-      <p>How does this feel?</p>
-      <div className="reaction-row">
-        {options.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            className="reaction-button"
-            aria-pressed={response === option.id}
-            onClick={() => onRespond(option.id, note)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-      <label className="reaction-note">
-        <span>Optional note</span>
-        <input
-          value={note}
-          aria-label={`Note on ${territoryId}`}
-          disabled={!response}
-          placeholder={response ? "Anything we should keep" : "Pick a response first"}
-          onChange={(event) => {
-            if (response) onRespond(response, event.target.value);
-          }}
-        />
-      </label>
-    </div>
-  );
-}
-
-function DirectionPick({
-  territories,
-  preference,
-  onPick,
-}: {
-  territories: Array<{ id: string; name: string }>;
-  preference: string | null;
-  onPick: (preference: string) => void;
-}) {
-  const options = [
-    ...territories.map((territory) => ({ id: territory.id, label: territory.name })),
-    { id: "mix", label: "A mix" },
-    { id: "guidance", label: "I'm not sure — I'd like their guidance" },
-  ];
-  return (
-    <div className="direction-pick">
-      <h2>Which direction would you most like your media manager to explore?</h2>
-      <div className="reaction-row">
-        {options.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            className="reaction-button"
-            aria-pressed={preference === option.id}
-            onClick={() => onPick(option.id)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+function beatCopy(beat: RevealBeat, territories: CreativeTerritory[]): { title: string; supporting?: string } {
+  if (beat.kind === "seeing") {
+    return {
+      title: "We think we're seeing something.",
+      supporting: "Your answers and the things you chose are starting to point somewhere.",
+    };
+  }
+  if (beat.kind === "fork") {
+    const count = COUNT_WORDS[territories.length - 1] ?? String(territories.length);
+    const noun = territories.length === 1 ? "creative territory" : "creative territories";
+    return { title: `Your choices point toward ${count} possible ${noun}.` };
+  }
+  if (beat.kind === "territory") {
+    const territory = territories[beat.index];
+    return {
+      title: `Territory ${String(beat.index + 1).padStart(2, "0")}`,
+      supporting: territory ? `${territory.name}. ${territory.oneLineIdea}` : undefined,
+    };
+  }
+  return { title: "Which would you most like to explore with your media manager?" };
 }
 
 function Feedback({

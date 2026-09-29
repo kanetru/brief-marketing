@@ -1,6 +1,7 @@
 import { buildBrandIntelligence } from "../domain/brandIntelligence";
 import { territoryPlainText } from "../domain/creativeTerritories";
 import { textsContainFiller } from "../domain/languageGuard";
+import { differingAxes } from "../domain/territoryVisual";
 import { syncAdaptiveComparisons } from "../domain/visualDirections";
 import { createSession } from "../state/createSession";
 import type { BrandIntelligence } from "../types/brandIntelligence";
@@ -12,6 +13,7 @@ export interface BrandFixtureReport {
   id: string;
   name: string;
   intelligence: BrandIntelligence;
+  session: DiscoverySession;
 }
 
 function said(raw: string) {
@@ -89,11 +91,15 @@ export function humanVoiceFixture(): DiscoverySession {
 }
 
 export function brandFixtureReports(): BrandFixtureReport[] {
+  const organic = organicFixture();
+  const geometric = geometricFixture();
+  const human = humanVoiceFixture();
+  const formal = formalVoiceFixture();
   return [
-    { id: "organic-raw-warm", name: "Organic, raw, warm, documentary", intelligence: buildBrandIntelligence(organicFixture()) },
-    { id: "geometric-polished", name: "Geometric, polished, restrained, art-directed", intelligence: buildBrandIntelligence(geometricFixture()) },
-    { id: "voice-human", name: "Same look, human voice", intelligence: buildBrandIntelligence(humanVoiceFixture()) },
-    { id: "voice-formal", name: "Same look, formal voice", intelligence: buildBrandIntelligence(formalVoiceFixture()) },
+    { id: "organic-raw-warm", name: "Organic, raw, warm, documentary", session: organic, intelligence: buildBrandIntelligence(organic) },
+    { id: "geometric-polished", name: "Geometric, polished, restrained, art-directed", session: geometric, intelligence: buildBrandIntelligence(geometric) },
+    { id: "voice-human", name: "Same look, human voice", session: human, intelligence: buildBrandIntelligence(human) },
+    { id: "voice-formal", name: "Same look, formal voice", session: formal, intelligence: buildBrandIntelligence(formal) },
   ];
 }
 
@@ -144,20 +150,28 @@ export function formatBrandReport(report: BrandFixtureReport): string {
     ...(model.hardAvoids.length ? model.hardAvoids.map((item) => `- ${item.summary}`) : ["- none"]),
     "",
   ];
+  const specs = report.intelligence.visualSpecs;
+  if (specs[0] && specs[1]) {
+    lines.push(`visual fork: ${differingAxes(specs[0], specs[1]).join(", ") || "too close"}`, "");
+  }
   for (const territory of report.intelligence.territories) {
+    const spec = specs.find((item) => item.territoryId === territory.id);
     lines.push(
       `territory: ${territory.name}`,
       territory.oneLineIdea,
       `why: ${territory.rationale}`,
-      `type: ${territory.typeDirection.candidates.map((candidate) => `${candidate.name} (${candidate.why[0]})`).join("; ") || territory.typeDirection.summary}`,
-      `colour: ${territory.colourDirection.name} — ${territory.colourDirection.rationale}`,
-      `imagery: ${territory.imageryDirection.summary}`,
-      `image notes: ${territory.imageryDirection.notes.join("; ")}`,
+      `composition: ${spec?.compositionStyle ?? "—"} / ${spec?.imageTreatment ?? "—"} / ${spec?.temperature ?? "—"}`,
+      `type shown: ${spec ? `${spec.headingTypeface.name} / ${spec.bodyTypeface.name}` : territory.typeDirection.summary}`,
+      `palette: ${spec?.palette.map((role) => `${role.name} ${role.hex} (${role.possibleRole})`).join("; ") ?? territory.colourDirection.name}`,
+      `motifs: ${spec?.graphicMotifs.join("; ") ?? ""}`,
+      `example: ${spec?.businessName ?? ""} — ${spec?.examplePhrase ?? ""}`,
+      `image prompt: ${territory.generatedImagePrompts[0] ?? ""}`,
       `voice: ${territory.voiceDirection.summary}`,
       `phrases: ${territory.examplePhrases.join(" | ")}`,
       "",
     );
   }
+  lines.push("starting point:", report.intelligence.startingPoint.headline, `feel: ${report.intelligence.startingPoint.feel.join(", ")}`, `type: ${report.intelligence.startingPoint.typeToExplore.join(", ")}`, "");
   const filler = textsContainFiller(report.intelligence.territories.flatMap((territory) => territoryPlainText(territory)));
   if (filler) lines.push(`filler warning: ${filler}`);
   return lines.join("\n");

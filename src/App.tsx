@@ -12,6 +12,7 @@ import { ProfileScreen } from "./screens/ProfileScreen";
 import { InspirationScreen } from "./screens/InspirationScreen";
 import { PersonalityScreen } from "./screens/PersonalityScreen";
 import { SpectrumScreen } from "./screens/SpectrumScreen";
+import { TerritoryGalleryScreen } from "./screens/TerritoryGalleryScreen";
 import { TypeScreen } from "./screens/TypeScreen";
 import { VisualScreen } from "./screens/VisualScreen";
 import { VoiceScreen } from "./screens/VoiceScreen";
@@ -36,6 +37,8 @@ export function App() {
         <Route path="/demo/voice" element={<VoiceScreen />} />
         <Route path="/demo/inspiration" element={<InspirationScreen />} />
         <Route path="/demo/clarify" element={<ClarifyScreen />} />
+        <Route path="/demo/territories" element={<TerritoryGalleryScreen />} />
+        <Route path="/demo/territories/:fixtureId" element={<TerritoryGalleryScreen />} />
         <Route path="/demo/profile" element={<ProfileScreen />} />
         <Route path="/demo/handover" element={<HandoverScreen />} />
         <Route path="/demo/complete" element={<CompleteScreen />} />

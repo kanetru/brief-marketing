@@ -24,14 +24,16 @@ export function ProfileReveal({
   content,
   assembled,
   signals,
-  territories,
+  territories = [],
   renderTerritory,
+  includeTerritories = false,
 }: {
   content: ProfileContent;
   assembled: boolean;
   signals: BrandSignal[];
-  territories: CreativeTerritory[];
+  territories?: CreativeTerritory[];
   renderTerritory?: (territory: CreativeTerritory, index: number) => ReactNode;
+  includeTerritories?: boolean;
 }) {
   const pull = content.businessSummary.summary.split(/(?<=\.)\s/)[0] ?? "";
 
@@ -56,13 +58,15 @@ export function ProfileReveal({
           </ul>
         )}
       </section>
-      <div className="territory-list">
-        {territories.map((territory, index) => (
-          <TerritoryCard key={territory.id} territory={territory} index={index}>
-            {renderTerritory ? renderTerritory(territory, index) : null}
-          </TerritoryCard>
-        ))}
-      </div>
+      {includeTerritories ? (
+        <div className="territory-list">
+          {territories.map((territory, index) => (
+            <TerritoryCard key={territory.id} territory={territory} index={index}>
+              {renderTerritory ? renderTerritory(territory, index) : null}
+            </TerritoryCard>
+          ))}
+        </div>
+      ) : null}
       {CLIENT_SECTIONS.map((section) => {
         const narrative = content[section.key];
         if (!narrative || typeof narrative !== "object" || !("summary" in narrative) || !narrative.summary) return null;

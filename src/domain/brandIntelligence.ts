@@ -2,6 +2,8 @@ import { creativeFork } from "./archetypes";
 import { buildBrandSignalModel } from "./brandSignals";
 import { buildCreativeTerritories } from "./creativeTerritories";
 import { WEIGHTING_NOTES } from "./signalWeights";
+import { buildTerritoryVisualSpec } from "./territoryVisual";
+import { buildStartingPoint } from "./workingDirection";
 import type { DiscoverySession } from "../types/discovery";
 import type { BrandIntelligence, CreativeTerritory, WorkingBrief } from "../types/brandIntelligence";
 
@@ -11,16 +13,22 @@ export function buildBrandIntelligence(session: DiscoverySession): BrandIntellig
   const draftTerritories = buildCreativeTerritories(session, draftModel);
   const territories = buildCreativeTerritories(session, model);
   const fork = creativeFork(draftModel);
+  const draftVisualSpecs = draftTerritories.map((territory) => buildTerritoryVisualSpec(session, territory));
+  const visualSpecs = territories.map((territory) => buildTerritoryVisualSpec(session, territory));
+  const brief = workingBrief(territories, session);
   return {
     draftModel,
     model,
     draftTerritories,
     territories,
+    draftVisualSpecs,
+    visualSpecs,
     forkQuestion: fork
       ? "We're seeing two directions here. Which feels more like somewhere you'd want to go?"
       : null,
     weightingNotes: WEIGHTING_NOTES,
-    workingBrief: workingBrief(territories, session),
+    workingBrief: brief,
+    startingPoint: buildStartingPoint(session, territories, visualSpecs, brief.headline),
     firstConversation: firstConversation(session, model.uncertainty, model.tensions.map((tension) => tension.statement)),
   };
 }
@@ -66,6 +74,7 @@ function reactionScore(response: string): number {
 function headlineFor(lead: CreativeTerritory, session: DiscoverySession): string {
   const preference = session.territoryFeedback.preference;
   if (preference === "mix") return "They asked for a mix of directions, not a single pick.";
+  if (preference === "neither") return "Neither territory felt right. The notes below are a starting point.";
   if (preference === "guidance") return "They asked for guidance on which direction to develop.";
   const reaction = session.territoryFeedback.reactions.find((item) => item.territoryId === lead.id);
   if (reaction?.response === "very_close") return `${lead.name} received the strongest response.`;
