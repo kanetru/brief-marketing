@@ -1,16 +1,23 @@
 import { EvidenceNote } from "./EvidenceNote";
+import { TerritoryCard } from "./TerritoryCard";
+import { strengthLabel } from "../domain/brandSignals";
 import type { DiscoveryEvidence } from "../domain/evidence";
 import { describeEvidence } from "../domain/evidenceLabels";
-import type { NarrativeSection, ProfileClarification, ProfileContent, ProfileStatement } from "../types/discovery";
+import type { BrandIntelligence } from "../types/brandIntelligence";
+import type { NarrativeSection, ProfileClarification, ProfileContent, ProfileStatement, TerritoryFeedback } from "../types/discovery";
 
 export function HandoverDocument({
   content,
   evidence,
   clarifications,
+  intelligence,
+  feedback,
 }: {
   content: ProfileContent;
   evidence: DiscoveryEvidence;
   clarifications: ProfileClarification[];
+  intelligence: BrandIntelligence;
+  feedback: TerritoryFeedback;
 }) {
   return (
     <article className="handover-doc">
@@ -18,9 +25,13 @@ export function HandoverDocument({
         <p className="profile-kicker">Media manager handover</p>
         <h1>What we heard</h1>
         <p className="profile-summary">
-          A reading of the client's evidence. It is not a brand strategy, and it does not decide the creative direction.
+          Evidence, signals, and creative territories to explore. Not a finished identity, and not an instruction to use one direction.
         </p>
       </header>
+
+      <BrandSignalBrief intelligence={intelligence} />
+      <TerritoryBrief intelligence={intelligence} feedback={feedback} />
+      <StartingPoint intelligence={intelligence} />
 
       <div className="handover-grid cols-3">
         <Snapshot title="Business" section={content.businessSummary} evidence={evidence} clarifications={clarifications} />
@@ -180,4 +191,114 @@ function listedPaths(evidence: DiscoveryEvidence): string[] {
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function BrandSignalBrief({ intelligence }: { intelligence: BrandIntelligence }) {
+  const model = intelligence.model;
+  return (
+    <section className="handover-section">
+      <h2>Brand signal</h2>
+      <div className="handover-grid cols-3">
+        <SignalColumn title="Semantic" signals={model.signals.filter((signal) => signal.group === "semantic" && signal.polarity === "positive")} />
+        <SignalColumn title="Visual" signals={model.signals.filter((signal) => signal.group === "visual" && signal.polarity === "positive")} />
+        <SignalColumn title="Verbal" signals={model.signals.filter((signal) => signal.group === "verbal" && signal.polarity === "positive")} />
+      </div>
+      <h3>Hard avoids</h3>
+      {model.hardAvoids.length === 0 ? <p className="profile-summary">No explicit rejection was strong enough to lock out.</p> : (
+        <ul className="avoid-list">
+          {model.hardAvoids.map((item) => (
+            <li key={`${item.source}-${item.label}`}><span>{item.label}</span>{item.summary}</li>
+          ))}
+        </ul>
+      )}
+      <h3>Tensions</h3>
+      {model.tensions.length === 0 ? <p className="profile-summary">No axis was supported on both sides.</p> : (
+        <ul className="open-list">{model.tensions.map((tension) => <li key={`${tension.left}-${tension.right}`}>{tension.statement}</li>)}</ul>
+      )}
+      <h3>Uncertainty</h3>
+      {model.uncertainty.length === 0 ? <p className="profile-summary">Nothing major was left unresolved by the signal model.</p> : (
+        <ul className="open-list">{model.uncertainty.map((line) => <li key={line}>{line}</li>)}</ul>
+      )}
+    </section>
+  );
+}
+
+function SignalColumn({ title, signals }: { title: string; signals: BrandIntelligence["model"]["signals"] }) {
+  return (
+    <div>
+      <h3>{title}</h3>
+      {signals.length === 0 ? <p className="profile-summary">Quiet.</p> : (
+        <ul className="signal-pills">
+          {signals.slice(0, 5).map((signal) => (
+            <li key={signal.dimension}><span>{signal.dimension}</span><small>{strengthLabel(signal.strength)}</small></li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function TerritoryBrief({
+  intelligence,
+  feedback,
+}: {
+  intelligence: BrandIntelligence;
+  feedback: TerritoryFeedback;
+}) {
+  return (
+    <section className="handover-section">
+      <h2>Creative territories</h2>
+      <div className="territory-list">
+        {intelligence.territories.map((territory, index) => {
+          const reaction = feedback.reactions.find((item) => item.territoryId === territory.id);
+          return (
+            <TerritoryCard key={territory.id} territory={territory} index={index}>
+              <p className="territory-why">Why it fits: {territory.supportingEvidence.map((item) => item.summary).join(" · ") || "Exploratory — the evidence is still thin."}</p>
+              <p>Client reaction: {reaction ? reactionLabel(reaction.response) : "No reaction yet."}{reaction?.note ? ` ${reaction.note}` : ""}</p>
+              {territory.typeDirection.candidates.length > 0 ? (
+                <ul className="type-why">
+                  {territory.typeDirection.candidates.map((candidate) => (
+                    <li key={candidate.id}><strong>{candidate.name}</strong> — {candidate.why[0]}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </TerritoryCard>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function StartingPoint({ intelligence }: { intelligence: BrandIntelligence }) {
+  const brief = intelligence.workingBrief;
+  return (
+    <section className="handover-section">
+      <h2>Creative starting point</h2>
+      <p className="profile-summary">{brief.headline}</p>
+      <dl className="territory-meta">
+        <div><dt>Feel</dt><dd>{brief.feel}</dd></div>
+        <div><dt>Colour to explore</dt><dd>{brief.colour}</dd></div>
+        <div><dt>Type to explore</dt><dd>{brief.type}</dd></div>
+        <div><dt>Imagery to explore</dt><dd>{brief.imagery}</dd></div>
+        <div><dt>Voice to explore</dt><dd>{brief.voice}</dd></div>
+        <div><dt>Avoid</dt><dd>{brief.avoid}</dd></div>
+        <div><dt>Still open</dt><dd>{brief.stillOpen}</dd></div>
+      </dl>
+      <h3>First conversation</h3>
+      {intelligence.firstConversation.length === 0 ? (
+        <p className="profile-summary">Nothing further stood out as the first thing to discuss.</p>
+      ) : (
+        <ol className="discuss-list">
+          {intelligence.firstConversation.map((line) => <li key={line}><p>{line}</p></li>)}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+function reactionLabel(response: string): string {
+  if (response === "very_close") return "Very close.";
+  if (response === "something_here") return "There's something here.";
+  return "Not for us.";
 }

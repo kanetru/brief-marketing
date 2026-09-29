@@ -36,7 +36,7 @@ export const SECTIONS = [
   { id: "imagery", label: "Imagery", path: "/demo/imagery", steps: 2 },
   { id: "voice", label: "Voice", path: "/demo/voice", steps: 1 + VOICE_ROUNDS.length + 2 },
   { id: "inspiration", label: "Inspiration", path: "/demo/inspiration", steps: 2 },
-  { id: "clarify", label: "Clarify", path: "/demo/clarify", steps: 1 + MAX_CLARIFICATION_QUESTIONS },
+  { id: "clarify", label: "Clarify", path: "/demo/clarify", steps: 1 + MAX_CLARIFICATION_QUESTIONS + 1 },
   { id: "profile", label: "Profile", path: "/demo/profile", steps: 1 },
   { id: "complete", label: "Done", path: "/demo/complete", steps: 1 },
 ] as const satisfies ReadonlyArray<{

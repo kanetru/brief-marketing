@@ -10,7 +10,8 @@
     "test": "vitest run",
     "fixtures": "node scripts/run-fixtures.mjs",
     "fixtures:live": "node scripts/run-fixtures.mjs --live",
-    "profiles": "node scripts/run-profiles.mjs"
+    "profiles": "node scripts/run-profiles.mjs",
+    "territories": "node scripts/run-brand-fixtures.mjs"
   },
   "repository": {
     "type": "git",

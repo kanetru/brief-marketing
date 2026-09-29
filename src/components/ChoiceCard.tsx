@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 interface ChoiceCardProps {
   label: string;
   pressed?: boolean;
@@ -6,6 +8,7 @@ interface ChoiceCardProps {
   blocked?: boolean;
   dimmed?: boolean;
   variant?: "goal" | "word";
+  board?: ReactNode;
 }
 
 export function ChoiceCard({
@@ -16,6 +19,7 @@ export function ChoiceCard({
   blocked = false,
   dimmed = false,
   variant = "goal",
+  board,
 }: ChoiceCardProps) {
   const classes = [
     "choice-card",
@@ -34,6 +38,7 @@ export function ChoiceCard({
       aria-disabled={blocked || undefined}
       onClick={onClick}
     >
+      {board}
       <span>{label}</span>
       {hint ? <small>{hint}</small> : null}
     </button>

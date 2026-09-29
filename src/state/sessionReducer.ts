@@ -4,7 +4,9 @@ import { normaliseHex } from "../domain/palettes";
 import { customTraitBlock, presetBlock } from "../domain/personality";
 import { MANAGER_HELP_ID } from "../domain/questionSelection";
 import { laterSection, stepCount } from "../domain/sections";
+import { withCreativeFork } from "../domain/creativeFork";
 import { clampSpectrumValue } from "../domain/spectrum";
+import { syncAdaptiveComparisons } from "../domain/visualDirections";
 import type {
   AnalysisFailureCode,
   BusinessTextField,
@@ -12,6 +14,7 @@ import type {
   ProfileFeedback,
   ColourRelationship,
   DiscoverySession,
+  TerritoryReactionResponse,
   ImageryDirectionId,
   MarketingOutcome,
   PersonalityPole,
@@ -66,7 +69,9 @@ export type Action =
   | { type: "record-profile"; sessionId: string; version: DiscoveryProfileVersion; failureCode: AnalysisFailureCode | null }
   | { type: "set-profile-feedback"; feedback: ProfileFeedback }
   | { type: "begin-refinement" }
-  | { type: "record-refinement"; sessionId: string; version: DiscoveryProfileVersion; failureCode: AnalysisFailureCode | null };
+  | { type: "record-refinement"; sessionId: string; version: DiscoveryProfileVersion; failureCode: AnalysisFailureCode | null }
+  | { type: "set-territory-reaction"; territoryId: string; response: TerritoryReactionResponse; note: string }
+  | { type: "set-territory-preference"; preference: string | null };
 
 function withDimension(
   state: DiscoverySession,
@@ -328,20 +333,19 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
     }
     case "choose-visual": {
       const timestamp = new Date().toISOString();
+      const comparisons = state.visualPreferences.comparisons.map((comparison) => {
+        if (comparison.comparisonId !== action.comparisonId) return comparison;
+        const current = comparison.choice.state === "selected" ? comparison.choice.value : null;
+        if (current === action.choice) return { ...comparison, choice: { state: "unanswered" as const } };
+        return {
+          ...comparison,
+          choice: { state: "selected" as const, value: action.choice, capturedAt: timestamp },
+        };
+      });
       return {
         ...state,
         updatedAt: timestamp,
-        visualPreferences: {
-          comparisons: state.visualPreferences.comparisons.map((comparison) => {
-            if (comparison.comparisonId !== action.comparisonId) return comparison;
-            const current = comparison.choice.state === "selected" ? comparison.choice.value : null;
-            if (current === action.choice) return { ...comparison, choice: { state: "unanswered" } };
-            return {
-              ...comparison,
-              choice: { state: "selected", value: action.choice, capturedAt: timestamp },
-            };
-          }),
-        },
+        visualPreferences: { comparisons: syncAdaptiveComparisons(comparisons) },
       };
     }
     case "toggle-preferred-palette": {
@@ -564,7 +568,10 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
         agentQuestions: {
           status: "ready",
           candidates: result.candidates,
-          selected: result.selected.map((question) => ({ ...question, response: { state: "unanswered" } })),
+          selected: withCreativeFork(result.selected, state).map((question) => ({
+            ...question,
+            response: { state: "unanswered" as const },
+          })),
           generatedAt: timestamp,
         },
       };
@@ -703,6 +710,24 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
           avoidedDirectionIds,
           avoidedCapturedAt: avoidedDirectionIds.length > 0 ? timestamp : null,
         },
+      };
+    }
+    case "set-territory-reaction": {
+      const timestamp = new Date().toISOString();
+      const reactions = state.territoryFeedback.reactions.filter((item) => item.territoryId !== action.territoryId);
+      reactions.push({ territoryId: action.territoryId, response: action.response, note: action.note });
+      return {
+        ...state,
+        updatedAt: timestamp,
+        territoryFeedback: { ...state.territoryFeedback, reactions, capturedAt: timestamp },
+      };
+    }
+    case "set-territory-preference": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        territoryFeedback: { ...state.territoryFeedback, preference: action.preference, capturedAt: timestamp },
       };
     }
     default:

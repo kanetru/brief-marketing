@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { AgencyMark } from "../components/AgencyMark";
 import { HandoverDocument } from "../components/HandoverDocument";
+import { buildBrandIntelligence } from "../domain/brandIntelligence";
 import { compileProfile } from "../domain/compileProfile";
 import { activeProfileVersion, profileRequestFromSession } from "../domain/profileRequest";
 import { useSession } from "../state/SessionContext";
@@ -42,7 +43,13 @@ export function HandoverScreen() {
       </header>
       <p className="handover-client">{name}</p>
       {!saved ? <p className="profile-note no-print">This copy was assembled from the answers. The reviewed profile has not been saved yet.</p> : null}
-      <HandoverDocument content={content} evidence={request.evidence} clarifications={request.clarifications} />
+      <HandoverDocument
+        content={content}
+        evidence={request.evidence}
+        clarifications={request.clarifications}
+        intelligence={buildBrandIntelligence(session)}
+        feedback={session.territoryFeedback}
+      />
     </div>
   );
 }

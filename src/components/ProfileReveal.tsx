@@ -1,3 +1,7 @@
+import type { ReactNode } from "react";
+import { TerritoryCard } from "./TerritoryCard";
+import { strengthLabel } from "../domain/brandSignals";
+import type { BrandSignal, CreativeTerritory } from "../types/brandIntelligence";
 import type { NarrativeSection, ProfileContent } from "../types/discovery";
 
 type NarrativeKey = {
@@ -16,7 +20,19 @@ const CLIENT_SECTIONS: Array<{ key: NarrativeKey; label: string }> = [
   { key: "voicePreferences", label: "Voice" },
 ];
 
-export function ProfileReveal({ content, assembled }: { content: ProfileContent; assembled: boolean }) {
+export function ProfileReveal({
+  content,
+  assembled,
+  signals,
+  territories,
+  renderTerritory,
+}: {
+  content: ProfileContent;
+  assembled: boolean;
+  signals: BrandSignal[];
+  territories: CreativeTerritory[];
+  renderTerritory?: (territory: CreativeTerritory, index: number) => ReactNode;
+}) {
   const pull = content.businessSummary.summary.split(/(?<=\.)\s/)[0] ?? "";
 
   return (
@@ -25,6 +41,28 @@ export function ProfileReveal({ content, assembled }: { content: ProfileContent;
       {assembled ? (
         <p className="profile-note">This reading was assembled directly from your answers.</p>
       ) : null}
+      <section className="profile-block">
+        <p className="profile-kicker">What feels consistent</p>
+        {signals.length === 0 ? (
+          <p className="profile-summary">Nothing has repeated enough to call consistent yet.</p>
+        ) : (
+          <ul className="signal-pills">
+            {signals.slice(0, 6).map((signal) => (
+              <li key={signal.dimension}>
+                <span>{signal.dimension}</span>
+                <small>{strengthLabel(signal.strength)}</small>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <div className="territory-list">
+        {territories.map((territory, index) => (
+          <TerritoryCard key={territory.id} territory={territory} index={index}>
+            {renderTerritory ? renderTerritory(territory, index) : null}
+          </TerritoryCard>
+        ))}
+      </div>
       {CLIENT_SECTIONS.map((section) => {
         const narrative = content[section.key];
         if (!narrative || typeof narrative !== "object" || !("summary" in narrative) || !narrative.summary) return null;

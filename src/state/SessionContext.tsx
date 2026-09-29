@@ -16,6 +16,7 @@ import type {
   ProfileFeedback,
   ColourRelationship,
   DiscoverySession,
+  TerritoryReactionResponse,
   ImageryDirectionId,
   MarketingOutcome,
   PersonalityPoleId,
@@ -70,6 +71,8 @@ interface SessionApi {
   setProfileFeedback: (feedback: ProfileFeedback) => void;
   beginRefinement: () => void;
   recordRefinement: (version: DiscoveryProfileVersion, failureCode: AnalysisFailureCode | null) => void;
+  setTerritoryReaction: (territoryId: string, response: TerritoryReactionResponse, note: string) => void;
+  setTerritoryPreference: (preference: string | null) => void;
   reset: () => void;
 }
 
@@ -224,6 +227,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       send({ type: "record-refinement", sessionId: session.id, version, failureCode }),
     [send, session.id],
   );
+  const setTerritoryReaction = useCallback(
+    (territoryId: string, response: TerritoryReactionResponse, note: string) =>
+      send({ type: "set-territory-reaction", territoryId, response, note }),
+    [send],
+  );
+  const setTerritoryPreference = useCallback(
+    (preference: string | null) => send({ type: "set-territory-preference", preference }),
+    [send],
+  );
   const reset = useCallback(() => send({ type: "reset" }), [send]);
 
   const api = useMemo<SessionApi>(
@@ -269,6 +281,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setProfileFeedback,
       beginRefinement,
       recordRefinement,
+      setTerritoryReaction,
+      setTerritoryPreference,
       reset,
     }),
     [
@@ -313,6 +327,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setProfileFeedback,
       beginRefinement,
       recordRefinement,
+      setTerritoryReaction,
+      setTerritoryPreference,
       reset,
     ],
   );
