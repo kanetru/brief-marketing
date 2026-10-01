@@ -35,7 +35,7 @@ export function AudienceScreen() {
           <QuestionScreen
             kicker="Audience"
             title="Who do you most want to matter to?"
-            supporting="Not a demographic. The person you want the work to reach — the one who already pays, if that's who it is."
+            supporting="Not everyone who could buy from you. Who would you be disappointed not to reach?"
           >
             <TextResponse
               labelledBy="question-title"

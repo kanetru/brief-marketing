@@ -1,8 +1,22 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { discoveryProgress } from "../../domain/project/adaptiveQuestions";
+import { DEMO_ACCOUNT } from "../../domain/project/account";
+import { attentionLine, needsAttention } from "../../domain/project/attention";
+import { buildProjectIntelligence } from "../../domain/project/assemble";
 import { organicFixture } from "../../fixtures/brandFixtures";
 import { useProjects } from "../../state/ProjectContext";
+import type { BriefProject, DiscoveryStatus } from "../../types/project";
+
+const STATUS: Record<DiscoveryStatus, string> = {
+  draft: "Not sent",
+  invited: "Waiting for the client",
+  opened: "Client opened discovery",
+  in_progress: "Discovery in progress",
+  submitted: "Discovery complete",
+  follow_up_requested: "Follow-up with the client",
+  follow_up_complete: "Follow-up complete",
+  closed: "Closed",
+};
 
 export function ProjectList() {
   const { projects, create } = useProjects();
@@ -11,6 +25,12 @@ export function ProjectList() {
   const [businessName, setBusinessName] = useState("");
   const [website, setWebsite] = useState("");
   const [category, setCategory] = useState("");
+  const ranked = useMemo(() => {
+    return [...projects].sort((a, b) => Number(needsAttention(b)) - Number(needsAttention(a)));
+  }, [projects]);
+  const attention = projects.filter(needsAttention).length;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   function openNew(event: FormEvent) {
     event.preventDefault();
@@ -27,6 +47,7 @@ export function ProjectList() {
       website: "",
       category: "Furniture",
       discovery,
+      discoveryStatus: "submitted",
     });
     navigate(`/studio/${project.id}`);
   }
@@ -35,15 +56,18 @@ export function ProjectList() {
     <div className="studio">
       <header className="studio-top">
         <div>
-          <p className="studio-kicker">Brief</p>
-          <h1>Clients</h1>
+          <p className="studio-kicker">{DEMO_ACCOUNT.workspaceName}</p>
+          <h1>{greeting}, {DEMO_ACCOUNT.name.split(" ")[0]}.</h1>
+          <p className="studio-lead">
+            {projects.length} {projects.length === 1 ? "client" : "clients"}. {attention} {attention === 1 ? "needs" : "need"} attention.
+          </p>
         </div>
         <Link to="/demo/start">Preview discovery</Link>
       </header>
       <div className="studio-split">
         <form className="studio-create" onSubmit={openNew}>
-          <p className="studio-kicker">New project</p>
-          <h2>Start a client.</h2>
+          <p className="studio-kicker">New client</p>
+          <h2>Start a project.</h2>
           <label>
             Client
             <input value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Who you're working with" />
@@ -62,22 +86,35 @@ export function ProjectList() {
           </label>
           <button type="submit" className="studio-button">Create project</button>
           <button type="button" className="studio-text-button" onClick={openExample}>
-            Open the worked example
+            Open another worked example
           </button>
         </form>
         <ul className="studio-project-list">
-          {projects.length === 0 ? <li className="studio-empty">No clients yet. A project holds the discovery, the reading, and the files you'll give to other tools.</li> : null}
-          {projects.map((project) => (
-            <li key={project.id}>
-              <Link to={`/studio/${project.id}`}>
-                <strong>{project.businessName || "Untitled project"}</strong>
-                <span>{project.clientName || "Client not named"}</span>
-                <em>Discovery {discoveryProgress(project.discovery)}% · {project.status}</em>
-              </Link>
-            </li>
+          {ranked.length === 0 ? <li className="studio-empty">No clients yet. A project is where the understanding accumulates.</li> : null}
+          {ranked.map((project) => (
+            <ClientRow key={project.id} project={project} />
           ))}
         </ul>
       </div>
     </div>
+  );
+}
+
+function ClientRow({ project }: { project: BriefProject }) {
+  const intelligence = useMemo(() => buildProjectIntelligence(project, project.updatedAt), [project]);
+  const line = attentionLine(project, intelligence);
+  return (
+    <li>
+      <Link to={`/studio/${project.id}`}>
+        <strong>{project.businessName || "Untitled project"}</strong>
+        <span>{STATUS[project.discoveryStatus]}</span>
+        <em>
+          {intelligence.opportunities.length} {intelligence.opportunities.length === 1 ? "opportunity" : "opportunities"}
+          {" · "}
+          {intelligence.openQuestions.length} unresolved {intelligence.openQuestions.length === 1 ? "question" : "questions"}
+        </em>
+        <p className="studio-attention">{line}</p>
+      </Link>
+    </li>
   );
 }

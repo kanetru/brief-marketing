@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { Link, Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import { managerWorkspaceAllowed, resolveSurface, sharePath } from "../../domain/project/access";
+import { clientDestination } from "../../domain/project/clientAccess";
 import { projectByToken, readRole, writeRole } from "../../state/projectStore";
 import { RoutePrefix } from "../../state/routeBase";
-import { ClientProjectScope, useProjects } from "../../state/ProjectContext";
+import { ClientProjectScope, useClientProject, useProjects } from "../../state/ProjectContext";
 import { useSession } from "../../state/SessionContext";
 import { loadSession, saveSession } from "../../state/storage";
 
@@ -44,7 +45,7 @@ export function ManagerGate({ children }: { children: ReactNode }) {
 
 export function ClientProjectGate() {
   const { token = "" } = useParams();
-  const { projects, saveDiscovery } = useProjects();
+  const { projects, saveDiscovery, markOpened } = useProjects();
   const { hydrate, setPersister } = useSession();
   const project = projectByToken(projects, token);
 
@@ -58,6 +59,9 @@ export function ClientProjectGate() {
       saveDiscovery(projectId, session);
     });
     hydrate(project.discovery);
+    if (project.discoveryStatus === "draft" || project.discoveryStatus === "invited") {
+      markOpened(project.id);
+    }
     return () => {
       setPersister(saveSession);
       hydrate(loadSession());
@@ -79,12 +83,34 @@ export function ClientProjectGate() {
   return (
     <ClientProjectScope project={project}>
       <RoutePrefix prefix={sharePath(project.shareToken).replace(/\/start$/, "")}>
-        <Outlet />
+        <ClientSurface />
       </RoutePrefix>
     </ClientProjectScope>
   );
 }
 
+function ClientSurface() {
+  const project = useClientProject();
+  const location = useLocation();
+
+  if (!project) return <Outlet />;
+  const section = location.pathname.split("/").filter(Boolean).pop() ?? "";
+  const destination = clientDestination(project.discoveryStatus);
+  if (section === "profile" || section === "handover" || section === "territories") {
+    return <Navigate to={destination === "follow_up" ? "follow-up" : destination === "complete" ? "complete" : "start"} replace />;
+  }
+  if (destination === "complete" && section !== "complete") return <Navigate to="complete" replace />;
+  if (destination === "follow_up" && section !== "follow-up") return <Navigate to="follow-up" replace />;
+  if (destination === "discovery" && (section === "complete" || section === "follow-up" || section === "profile")) {
+    return <Navigate to="start" replace />;
+  }
+  return <Outlet />;
+}
+
 export function ClientIndex() {
+  const project = useClientProject();
+  const destination = project ? clientDestination(project.discoveryStatus) : "discovery";
+  if (destination === "complete") return <Navigate to="complete" replace />;
+  if (destination === "follow_up") return <Navigate to="follow-up" replace />;
   return <Navigate to="start" replace />;
 }

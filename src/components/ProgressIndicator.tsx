@@ -6,6 +6,8 @@ interface ProgressIndicatorProps {
   furthest: SectionId;
   step: number;
   totalSteps?: number;
+  /** Client discovery does not include the manager profile. */
+  hideSections?: SectionId[];
   onSelect: (section: SectionId) => void;
 }
 
@@ -16,15 +18,17 @@ function fillFor(index: number, currentIndex: number, step: number, steps: numbe
   return (step + 1) / steps;
 }
 
-export function ProgressIndicator({ current, furthest, step, totalSteps, onSelect }: ProgressIndicatorProps) {
+export function ProgressIndicator({ current, furthest, step, totalSteps, hideSections = [], onSelect }: ProgressIndicatorProps) {
   const currentIndex = sectionIndex(current);
   const currentLabel = SECTIONS[currentIndex]?.label ?? "";
+  const visible = SECTIONS.filter((section) => !hideSections.includes(section.id));
 
   return (
     <nav className="progress" aria-label="Session progress">
       <p className="progress-current">{currentLabel}</p>
       <ol>
-        {SECTIONS.map((section, index) => {
+        {visible.map((section) => {
+          const index = sectionIndex(section.id);
           const reached = sectionReached(furthest, section.id);
           const isCurrent = section.id === current;
           const steps = isCurrent && totalSteps ? totalSteps : stepCount(section.id);

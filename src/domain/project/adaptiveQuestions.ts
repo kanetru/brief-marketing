@@ -42,7 +42,10 @@ export function findContradictions(session: DiscoverySession): Contradiction[] {
   return found;
 }
 
-/** At most three follow-ups. They are evidence requests, not a chat. */
+/**
+ * Core discovery, then a bounded reasoner.
+ * At most five follow-ups. Nothing is added just to fill the quota.
+ */
 export function adaptiveFollowUps(session: DiscoverySession, existing: FollowUp[]): FollowUp[] {
   const prompts: Array<Omit<FollowUp, "answer">> = [];
   for (const contradiction of findContradictions(session)) {
@@ -63,7 +66,23 @@ export function adaptiveFollowUps(session: DiscoverySession, existing: FollowUp[
   if (!textValue(session.audience.bestCustomers)) {
     prompts.push({ id: "ask-audience", prompt: "Who do you most want this to matter to — the person who already pays, or someone you have not reached?", reason: "Audience is still empty." });
   }
-  const chosen = prompts.slice(0, 3);
+  const specific = `${description} ${textValue(session.business.peopleComeFor)}`.toLowerCase();
+  if (/not manufactured|feel made|made, not/.test(specific)) {
+    prompts.push({
+      id: "ask-strong",
+      prompt: "You said the pieces should feel made, not manufactured. What would someone notice first if that were true?",
+      reason: "That line is unusually specific. It should not be flattened.",
+    });
+  }
+  const making = (specific.match(/made|making|workshop|process|joint|built/g) ?? []).length;
+  if (making >= 2) {
+    prompts.push({
+      id: "ask-making",
+      prompt: "You keep coming back to how the work is made. Is that the thing you'd be disappointed to leave out?",
+      reason: "Making is a repeated theme, stronger than a one-off phrase.",
+    });
+  }
+  const chosen = prompts.slice(0, 5);
   return chosen.map((item) => ({
     ...item,
     answer: existing.find((follow) => follow.id === item.id)?.answer ?? "",

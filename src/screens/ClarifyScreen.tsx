@@ -1,6 +1,8 @@
 import { useEffect } from "react";
+import { flushSync } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ChoiceCard } from "../components/ChoiceCard";
+import { LearningBeat } from "../components/LearningBeat";
 import { VisualBoard } from "../components/VisualBoard";
 import { ChoiceGrid } from "../components/ChoiceGrid";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
@@ -34,6 +36,8 @@ export function ClarifyScreen() {
   } = useSession();
   const { step, goBack, goForward, showBack } = useConversation("clarify");
   const sectionPath = useSectionPath();
+  const project = useClientProject();
+  const { submitDiscovery } = useProjects();
   const questions = session.agentQuestions.selected;
   const status = session.agentObservations.status;
 
@@ -62,6 +66,11 @@ export function ClarifyScreen() {
   }
 
   function finish() {
+    if (project) {
+      flushSync(() => submitDiscovery(project.id));
+      navigate(sectionPath("complete"));
+      return;
+    }
     activate("profile");
     navigate(sectionPath("profile"));
   }
@@ -97,6 +106,7 @@ export function ClarifyScreen() {
       <TransitionWrapper transitionKey={`clarify-${step}-${status}`}>
         {step === 0 ? <Intro status={status} questionCount={questions.length} onRetry={retry} /> : null}
         {step === 0 ? <AdaptiveFollowUps /> : null}
+        {step === 0 ? <LearningBeat /> : null}
         {question ? (
           <QuestionScreen kicker="Clarify" size="conversation" title={question.question}>
             {question.answerMode === "single_choice" ? (

@@ -75,12 +75,16 @@ describe("project intelligence", () => {
     expect(edited.version).toBe(project.version + 1);
     expect(after.understanding.fields.find((item) => item.id === "brand.central_idea")).toMatchObject({
       text: "The joint is the brief.",
-      kind: "fact",
-      confidence: "high",
+      kind: "hypothesis",
+      epistemicStatus: "hypothesis",
+      decisionStatus: "approved",
+      confidence: "medium",
     });
     expect(after.understanding.fields.find((item) => item.id === "brand.central_idea")?.evidenceIds).toContain("manager.override.brand.central_idea");
     expect(before.agentPack.master.markdown).not.toContain("The joint is the brief.");
     expect(after.agentPack.master.markdown).toContain("The joint is the brief.");
+    expect(after.agentPack.master.markdown).toContain("approved direction");
+    expect(after.agentPack.files.find((file) => file.name === "03_positioning.md")?.markdown).not.toMatch(/Central idea\*\* \(fact\)/);
     expect(after.agentPack.master.markdown).toContain("You are working on marketing for North Workshop.");
     expect(after.agentPack.master.markdown).toContain(`Project version ${edited.version}.`);
     const touched = touchProject(edited, "2026-05-01T00:00:00.000Z");
