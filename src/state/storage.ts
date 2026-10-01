@@ -159,8 +159,8 @@ export function migrateSession(value: unknown): DiscoverySession | null {
     personality: record.personality,
     personalitySpectrum: mergeSpectrum(record.personalitySpectrum, fresh.personalitySpectrum),
     visualPreferences: mergeVisual(record.visualPreferences, fresh.visualPreferences),
-    colourPreferences: isColour(record.colourPreferences) ? record.colourPreferences : fresh.colourPreferences,
-    typographyPreferences: isType(record.typographyPreferences) ? record.typographyPreferences : fresh.typographyPreferences,
+    colourPreferences: mergeColour(record.colourPreferences, fresh.colourPreferences),
+    typographyPreferences: mergeType(record.typographyPreferences, fresh.typographyPreferences),
     imageryPreferences: isImagery(record.imageryPreferences) ? record.imageryPreferences : fresh.imageryPreferences,
     voicePreferences: mergeVoice(record.voicePreferences, fresh.voicePreferences),
     inspiration: isInspiration(record.inspiration) ? record.inspiration : fresh.inspiration,
@@ -169,6 +169,48 @@ export function migrateSession(value: unknown): DiscoverySession | null {
     agentQuestions: isQuestionLayer(record.agentQuestions) ? record.agentQuestions : blankQuestions(),
     discoveryProfile: normaliseProfile(record.discoveryProfile, fresh.discoveryProfile),
     territoryFeedback: normaliseTerritoryFeedback(record.territoryFeedback, fresh.territoryFeedback),
+    strategist: normaliseStrategist(record.strategist, fresh.strategist),
+  };
+}
+
+const COLOUR_PUSHES = ["warmer", "darker", "cleaner", "stranger", "brighter", "quieter"];
+
+function mergeColour(value: unknown, fresh: ColourPreferences): ColourPreferences {
+  if (!isColour(value)) return fresh;
+  const push = (value as { colourPush?: unknown }).colourPush;
+  return {
+    ...fresh,
+    ...value,
+    colourPush: typeof push === "string" && COLOUR_PUSHES.includes(push) ? (push as ColourPreferences["colourPush"]) : null,
+  };
+}
+
+function mergeType(value: unknown, fresh: TypographyPreferences): TypographyPreferences {
+  if (!isType(value)) return fresh;
+  const record = value as TypographyPreferences & { worldIds?: unknown; refinementIds?: unknown };
+  return {
+    ...fresh,
+    ...value,
+    worldIds: stringList(record.worldIds),
+    refinementIds: stringList(record.refinementIds),
+  };
+}
+
+function stringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function normaliseStrategist(value: unknown, fresh: DiscoverySession["strategist"]): DiscoverySession["strategist"] {
+  if (!value || typeof value !== "object") return fresh;
+  const record = value as Partial<DiscoverySession["strategist"]>;
+  const status = record.status === "running" || record.status === "ready" || record.status === "failed" || record.status === "idle" ? record.status : "idle";
+  const reading = record.reading && typeof record.reading === "object" && Array.isArray(record.reading.territories) ? record.reading : null;
+  return {
+    status: reading ? status : status === "ready" ? "failed" : status,
+    evidenceHash: typeof record.evidenceHash === "string" ? record.evidenceHash : null,
+    reading,
+    failureCode: typeof record.failureCode === "string" ? record.failureCode : null,
   };
 }
 

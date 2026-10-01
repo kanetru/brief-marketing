@@ -250,4 +250,6 @@ export interface BrandIntelligence {
   workingBrief: WorkingBrief;
   startingPoint: CreativeStartingPoint;
   firstConversation: string[];
+  /** Creative hypothesis. Strategist when one validated; otherwise the practice fallback. */
+  reading: import("./creativeReading").CreativeReading;
 }

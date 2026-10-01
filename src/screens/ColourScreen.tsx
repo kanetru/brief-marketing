@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ChoiceGrid } from "../components/ChoiceGrid";
@@ -7,9 +7,10 @@ import { NavigationControls } from "../components/NavigationControls";
 import { PaletteCard } from "../components/PaletteCard";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { TransitionWrapper } from "../components/TransitionWrapper";
-import { COLOUR_PALETTES, normaliseHex } from "../domain/palettes";
+import { COLOUR_PALETTES, normaliseHex, paletteById } from "../domain/palettes";
 import { pathFor } from "../domain/sections";
 import { LIMITS } from "../domain/options";
+import type { ColourPush } from "../types/creativeReading";
 import type { ColourRelationship } from "../types/discovery";
 import { canAdvance } from "../state/guards";
 import { useSession } from "../state/SessionContext";
@@ -21,16 +22,45 @@ const RELATIONSHIPS: ReadonlyArray<{ id: ColourRelationship; label: string }> = 
   { id: "no", label: "No" },
 ];
 
+const PUSHES: ReadonlyArray<{ id: ColourPush; label: string; ground: string; ink: string }> = [
+  { id: "warmer", label: "Warmer", ground: "#F6D7C4", ink: "#3A241C" },
+  { id: "darker", label: "Darker", ground: "#241C19", ink: "#F3E6D8" },
+  { id: "cleaner", label: "Cleaner", ground: "#F7F4EF", ink: "#1A1C1E" },
+  { id: "stranger", label: "Stranger", ground: "#E7E2D6", ink: "#E4572E" },
+  { id: "brighter", label: "Brighter", ground: "#F7E27A", ink: "#1C1916" },
+  { id: "quieter", label: "Quieter", ground: "#E4E1DA", ink: "#5C584F" },
+];
+
 export function ColourScreen() {
   const navigate = useNavigate();
-  const { session, activate, togglePreferredPalette, toggleAvoidedPalette, setColourRelationship, addExistingColour, removeExistingColour } =
+  const { session, activate, togglePreferredPalette, toggleAvoidedPalette, setColourRelationship, setColourPush, addExistingColour, removeExistingColour } =
     useSession();
   const { step, goBack, goForward, showBack, showForward } = useConversation("colour");
   const colour = session.colourPreferences;
   const relationship = colour.existingColourRelationship.state === "selected" ? colour.existingColourRelationship.value : null;
+  const push = PUSHES.find((item) => item.id === colour.colourPush);
+
+  useEffect(() => {
+    const shell = document.querySelector(".shell");
+    if (!(shell instanceof HTMLElement)) return;
+    if (step === 1 && push) {
+      shell.dataset.colourPush = push.id;
+      shell.style.setProperty("--push-ground", push.ground);
+      shell.style.setProperty("--push-ink", push.ink);
+    } else {
+      delete shell.dataset.colourPush;
+      shell.style.removeProperty("--push-ground");
+      shell.style.removeProperty("--push-ink");
+    }
+    return () => {
+      delete shell.dataset.colourPush;
+      shell.style.removeProperty("--push-ground");
+      shell.style.removeProperty("--push-ink");
+    };
+  }, [push, step]);
 
   function forward() {
-    if (step === 2 && relationship === "no") {
+    if (step === 3 && relationship === "no") {
       activate("type");
       navigate(pathFor("type"));
       return;
@@ -68,6 +98,24 @@ export function ColourScreen() {
           />
         ) : null}
         {step === 1 ? (
+          <QuestionScreen kicker="Colour" title="Push it where?" supporting="Don't name a style. Just say which way the colour should move.">
+            <div className="push-grid">
+              {PUSHES.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="push-card"
+                  aria-pressed={colour.colourPush === item.id}
+                  style={{ background: item.ground, color: item.ink }}
+                  onClick={() => setColourPush(colour.colourPush === item.id ? null : item.id)}
+                >
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </QuestionScreen>
+        ) : null}
+        {step === 2 ? (
           <PaletteStep
             title="Anything you'd rather avoid?"
             supporting="Same worlds. A pull and a refusal stay separate."
@@ -77,7 +125,7 @@ export function ColourScreen() {
             onToggle={toggleAvoidedPalette}
           />
         ) : null}
-        {step === 2 ? (
+        {step === 3 ? (
           <QuestionScreen kicker="Colour" title="Do you already use particular colours?">
             <ChoiceGrid columns={2} labelledBy="question-title">
               {RELATIONSHIPS.map((item) => (
@@ -91,7 +139,7 @@ export function ColourScreen() {
             </ChoiceGrid>
           </QuestionScreen>
         ) : null}
-        {step === 3 ? (
+        {step === 4 ? (
           <ExistingColourStep
             colours={colour.existingBrandColours.map((item) => item.hex)}
             onAdd={addExistingColour}
@@ -123,9 +171,11 @@ function PaletteStep({
   onToggle: (id: string) => void;
 }) {
   const [note, setNote] = useState<string | null>(null);
+  const lead = paletteById(selected[0] ?? "");
 
   return (
     <QuestionScreen kicker="Colour" title={title} prompt={prompt} supporting={supporting}>
+      {lead ? <div className="palette-bleed" aria-hidden="true" style={{ background: `linear-gradient(120deg, ${lead.swatches.join(",")})` }} /> : null}
       <div className="palette-grid">
         {COLOUR_PALETTES.map((palette) => {
           const pressed = selected.includes(palette.id);

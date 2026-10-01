@@ -42,12 +42,16 @@ export function TerritoryGalleryScreen() {
         Regenerate imagery
       </button>
       <div className="territory-compare">
-        {intelligence.visualSpecs.map((spec, index) => (
-          <div key={spec.territoryId}>
-            <TerritoryStage spec={spec} index={index} label={intelligence.territories[index]?.name} mode="immersive" />
-            <p className="territory-why">{intelligence.territories[index]?.rationale}</p>
-          </div>
-        ))}
+        {intelligence.visualSpecs.map((spec, index) => {
+          const chapter = intelligence.reading.territories.find((item) => item.archetypeId === spec.territoryId);
+          return (
+            <div key={spec.territoryId}>
+              <TerritoryStage spec={spec} index={index} label={chapter?.name ?? intelligence.territories[index]?.name} mode="immersive" />
+              {chapter ? <p className="territory-idea">{chapter.idea}</p> : null}
+              {chapter ? <p className="territory-why">{chapter.risk}</p> : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

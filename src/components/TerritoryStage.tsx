@@ -38,8 +38,10 @@ export function TerritoryStage({
   const ink = roleHex(spec, "Primary type") ?? "#1A1614";
   const accent = roleHex(spec, "Accent") ?? ink;
   const support = roleHex(spec, "Supporting") ?? accent;
+  const [expanded, setExpanded] = useState(false);
   const hero = assets.find((asset) => asset.role === "hero") ?? assets[0];
   const detail = assets.find((asset) => asset.role === "detail");
+  const context = assets.find((asset) => asset.role === "context");
   const texture = assets.find((asset) => asset.role === "texture");
   const style = {
     "--stage-bg": background,
@@ -50,7 +52,7 @@ export function TerritoryStage({
 
   return (
     <article
-      className={`territory-stage is-${mode}`}
+      className={`territory-stage is-${mode}${expanded ? " is-expanded" : ""}`}
       data-testid={`territory-stage-${spec.territoryId}`}
       data-composition={spec.compositionStyle}
       data-treatment={spec.imageTreatment}
@@ -67,6 +69,7 @@ export function TerritoryStage({
           {hero ? <Frame asset={hero} business={spec.businessName} large /> : null}
           <div className="stage-secondary">
             {detail ? <Frame asset={detail} business={spec.businessName} /> : null}
+            {context ? <Frame asset={context} business={spec.businessName} /> : null}
             {texture ? <Frame asset={texture} business={spec.businessName} /> : null}
           </div>
         </div>
@@ -86,6 +89,9 @@ export function TerritoryStage({
             {spec.supportingLine}
           </p>
           <p className="stage-example">Example line</p>
+          <button type="button" className="text-button stage-expand" onClick={() => setExpanded((value) => !value)}>
+            {expanded ? "Close" : "Expand"}
+          </button>
         </div>
       </div>
       <footer className="stage-foot">
