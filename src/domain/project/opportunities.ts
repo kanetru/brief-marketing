@@ -80,6 +80,20 @@ export function buildOpportunities(fields: UnderstandingField[], category: Categ
       impactHypothesis: "The gap is only real where the client's own words disagree with those notes.",
     });
   }
+  const making = category?.patterns.find((pattern) => pattern.id === "pattern-making-gap");
+  if (making && making.evidenceIds.length > 0) {
+    drafted.push({
+      id: "opp-making",
+      title: "Show the making",
+      type: "content",
+      why: making.statement,
+      evidenceIds: making.evidenceIds,
+      confidence: "medium",
+      action: "Try a short series, each piece centred on one construction decision. It needs process photography.",
+      effort: "medium",
+      impactHypothesis: "The work becomes visible where the category mostly shows the finished result.",
+    });
+  }
   return drafted.filter(acceptOpportunity);
 }
 
@@ -87,6 +101,7 @@ export function acceptOpportunity(item: Opportunity): boolean {
   const blob = `${item.title} ${item.why} ${item.action} ${item.impactHypothesis}`.toLowerCase();
   if (textsContainFiller([blob])) return false;
   if (BANNED.some((phrase) => blob.includes(phrase))) return false;
+  if (item.evidenceIds.length === 0) return false;
   return item.title.trim().length > 0 && item.why.trim().length > 0 && item.action.trim().length > 0;
 }
 

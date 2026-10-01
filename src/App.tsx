@@ -20,12 +20,13 @@ import { WelcomeScreen } from "./screens/WelcomeScreen";
 import { ClientIndex, ClientProjectGate, ManagerGate } from "./screens/studio/gates";
 import { ProjectList } from "./screens/studio/ProjectList";
 import { ProjectWorkspace } from "./screens/studio/ProjectWorkspace";
+import { FollowUpScreen } from "./screens/FollowUpScreen";
 
 export function App() {
   return (
     <SessionInspector>
       <Routes>
-        <Route path="/" element={<Navigate to="/demo/start" replace />} />
+        <Route path="/" element={<Navigate to="/studio" replace />} />
         <Route path="/demo" element={<Navigate to="/demo/start" replace />} />
         <Route path="/demo/start" element={<WelcomeScreen />} />
         <Route path="/demo/business" element={<BusinessScreen />} />
@@ -62,7 +63,7 @@ export function App() {
           <Route path="voice" element={<VoiceScreen />} />
           <Route path="inspiration" element={<InspirationScreen />} />
           <Route path="clarify" element={<ClarifyScreen />} />
-          <Route path="profile" element={<ProfileScreen />} />
+          <Route path="follow-up" element={<FollowUpScreen />} />
           <Route path="complete" element={<CompleteScreen />} />
         </Route>
         <Route path="*" element={<Navigate to="/demo/start" replace />} />

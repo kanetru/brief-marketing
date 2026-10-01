@@ -1,19 +1,29 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { AssetStatus, BriefProject, CompetitorInput, FollowUp, StatementOverride } from "../types/project";
+import { SEED_KEY, seedDemoWorkspace } from "../domain/project/demoWorkspace";
+import type { AssetStatus, BriefProject, CompetitorInput, FollowUp, LearningResponse, LibraryAsset, StatementOverride, StoredResearch } from "../types/project";
 import type { DiscoverySession } from "../types/discovery";
 import {
+  completeFollowUp,
   createProject,
+  inviteDiscovery,
   loadProjects,
+  markDiscoveryOpened,
   replaceProject,
+  requestFollowUp,
   saveProjects,
+  submitDiscovery,
   touchProject,
   withAssetState,
   withCompetitor,
+  withCompetitorResearch,
   withDiscovery,
   withFollowUp,
+  withLearning,
+  withLibraryAsset,
   withManagerNotes,
   withOverride,
   withProjectDetails,
+  withWebsiteResearch,
   withoutCompetitor,
 } from "./projectStore";
 
@@ -29,16 +39,32 @@ interface ProjectApi {
   setNotes: (projectId: string, notes: string) => void;
   setDetails: (projectId: string, details: Partial<Pick<BriefProject, "clientName" | "businessName" | "website" | "category">>) => void;
   regenerate: (projectId: string) => void;
+  sendDiscovery: (projectId: string) => void;
+  markOpened: (projectId: string) => void;
+  submitDiscovery: (projectId: string) => void;
+  requestFollowUp: (projectId: string, prompts: Array<{ id: string; prompt: string }>) => void;
+  completeFollowUp: (projectId: string, answers: Record<string, string>) => void;
+  setWebsiteResearch: (projectId: string, research: StoredResearch) => void;
+  setCompetitorResearch: (projectId: string, competitorId: string, research: StoredResearch) => void;
+  addLibraryAsset: (projectId: string, asset: LibraryAsset) => void;
+  setLearning: (projectId: string, response: LearningResponse) => void;
 }
 
 const ProjectContext = createContext<ProjectApi | null>(null);
 const ClientProjectContext = createContext<BriefProject | null>(null);
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
-  const [projects, setProjects] = useState<BriefProject[]>(() => loadProjects());
+  const [projects, setProjects] = useState<BriefProject[]>(() => {
+    const loaded = loadProjects();
+    if (loaded.length > 0) return loaded;
+    if (typeof localStorage !== "undefined" && localStorage.getItem(SEED_KEY)) return loaded;
+    return seedDemoWorkspace();
+  });
 
   useEffect(() => {
     saveProjects(projects);
+    if (typeof localStorage === "undefined" || projects.length === 0) return;
+    if (!localStorage.getItem(SEED_KEY)) localStorage.setItem(SEED_KEY, "1");
   }, [projects]);
 
   const mutate = useCallback((projectId: string, change: (project: BriefProject) => BriefProject) => {
@@ -67,6 +93,15 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setNotes: (projectId, notes) => mutate(projectId, (project) => withManagerNotes(project, notes)),
     setDetails: (projectId, details) => mutate(projectId, (project) => withProjectDetails(project, details)),
     regenerate: (projectId) => mutate(projectId, (project) => touchProject(project)),
+    sendDiscovery: (projectId) => mutate(projectId, (project) => inviteDiscovery(project)),
+    markOpened: (projectId) => mutate(projectId, (project) => markDiscoveryOpened(project)),
+    submitDiscovery: (projectId) => mutate(projectId, (project) => submitDiscovery(project)),
+    requestFollowUp: (projectId, prompts) => mutate(projectId, (project) => requestFollowUp(project, prompts)),
+    completeFollowUp: (projectId, answers) => mutate(projectId, (project) => completeFollowUp(project, answers)),
+    setWebsiteResearch: (projectId, research) => mutate(projectId, (project) => withWebsiteResearch(project, research)),
+    setCompetitorResearch: (projectId, competitorId, research) => mutate(projectId, (project) => withCompetitorResearch(project, competitorId, research)),
+    addLibraryAsset: (projectId, asset) => mutate(projectId, (project) => withLibraryAsset(project, asset)),
+    setLearning: (projectId, response) => mutate(projectId, (project) => withLearning(project, response)),
   }), [mutate, projects]);
 
   return <ProjectContext.Provider value={api}>{children}</ProjectContext.Provider>;

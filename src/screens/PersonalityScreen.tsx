@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
+import { LearningBeat } from "../components/LearningBeat";
 import { NavigationControls } from "../components/NavigationControls";
 import { PersonalityPicker } from "../components/PersonalityPicker";
 import { QuestionScreen } from "../components/QuestionScreen";
@@ -139,6 +140,7 @@ export function PersonalityScreen() {
             />
           </QuestionScreen>
         ) : null}
+        <LearningBeat />
       </TransitionWrapper>
     </DiscoveryLayout>
   );

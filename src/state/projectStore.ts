@@ -1,7 +1,18 @@
 import { createSession } from "./createSession";
-import { DEMO_MANAGER_ID } from "../domain/project/access";
+import { DEMO_ACCOUNT } from "../domain/project/account";
 import { projectStatus } from "../domain/project/assemble";
-import type { AssetStatus, BriefProject, CompetitorInput, FollowUp, StatementOverride } from "../types/project";
+import type {
+  AssetStatus,
+  BriefProject,
+  CompetitorInput,
+  DiscoveryStatus,
+  FollowUp,
+  HistoryKind,
+  LearningResponse,
+  LibraryAsset,
+  StatementOverride,
+  StoredResearch,
+} from "../types/project";
 import type { DiscoverySession } from "../types/discovery";
 
 export const PROJECTS_KEY = "lover-lover.projects.v1";
@@ -14,7 +25,7 @@ export function loadProjects(): BriefProject[] {
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isProject).map(normaliseProject);
+    return parsed.map(coerceProject).filter((project): project is BriefProject => project !== null);
   } catch {
     return [];
   }
@@ -25,35 +36,48 @@ export function saveProjects(projects: BriefProject[]): void {
   localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
 }
 
+export function coerceProject(value: unknown): BriefProject | null {
+  if (!isProject(value)) return null;
+  return normaliseProject(value);
+}
+
 export function createProject(input: {
   clientName?: string;
   businessName?: string;
   website?: string;
   category?: string;
   discovery?: DiscoverySession;
+  discoveryStatus?: DiscoveryStatus;
   now?: string;
 }): BriefProject {
   const now = input.now ?? new Date().toISOString();
   const discovery = input.discovery ?? createSession(now);
   const project: BriefProject = {
     id: crypto.randomUUID(),
-    managerId: DEMO_MANAGER_ID,
+    managerId: DEMO_ACCOUNT.id,
+    workspaceId: DEMO_ACCOUNT.workspaceId,
     clientName: input.clientName?.trim() ?? "",
     businessName: input.businessName?.trim() || businessNameFrom(discovery),
     website: input.website?.trim() ?? "",
     category: input.category?.trim() ?? "",
     status: "draft",
+    discoveryStatus: input.discoveryStatus ?? "draft",
     createdAt: now,
     updatedAt: now,
     version: 1,
-    history: [{ at: now, version: 1, note: "Created" }],
+    history: [{ at: now, version: 1, kind: "project_created", note: "Project created" }],
     shareToken: crypto.randomUUID().replace(/-/g, ""),
     discovery,
     managerNotes: "",
     competitors: [],
     followUps: [],
+    followUpRequest: null,
     overrides: [],
     assetStates: {},
+    library: [],
+    websiteResearch: null,
+    competitorResearch: {},
+    learning: [],
   };
   return { ...project, status: projectStatus(project) };
 }
@@ -67,24 +91,76 @@ export function replaceProject(projects: readonly BriefProject[], next: BriefPro
 }
 
 export function withDiscovery(project: BriefProject, discovery: DiscoverySession, now = new Date().toISOString()): BriefProject {
-  const next = bump(project, now, "Discovery updated", {
+  const discoveryStatus = project.discoveryStatus === "draft" || project.discoveryStatus === "invited" || project.discoveryStatus === "opened"
+    ? "in_progress"
+    : project.discoveryStatus;
+  const next = bump(project, now, "", {
     discovery,
+    discoveryStatus,
     businessName: project.businessName || businessNameFrom(discovery),
-  });
+  }, null);
   return { ...next, status: projectStatus(next) };
+}
+
+export function inviteDiscovery(project: BriefProject, now = new Date().toISOString()): BriefProject {
+  if (project.discoveryStatus !== "draft") return project;
+  return bump(project, now, "Discovery sent", { discoveryStatus: "invited" }, "discovery_sent");
+}
+
+export function markDiscoveryOpened(project: BriefProject, now = new Date().toISOString()): BriefProject {
+  if (project.discoveryStatus !== "draft" && project.discoveryStatus !== "invited") return project;
+  return bump(project, now, "Client opened discovery", { discoveryStatus: "opened" }, "discovery_opened");
+}
+
+export function submitDiscovery(project: BriefProject, now = new Date().toISOString()): BriefProject {
+  if (project.discoveryStatus === "submitted" || project.discoveryStatus === "follow_up_complete" || project.discoveryStatus === "closed") return project;
+  return bump(project, now, "Discovery submitted", { discoveryStatus: "submitted" }, "discovery_submitted");
+}
+
+export function requestFollowUp(
+  project: BriefProject,
+  prompts: Array<{ id: string; prompt: string }>,
+  now = new Date().toISOString(),
+): BriefProject {
+  const usable = prompts.filter((item) => item.prompt.trim()).slice(0, 5);
+  if (usable.length === 0) return project;
+  return bump(project, now, "Follow-up requested", {
+    discoveryStatus: "follow_up_requested",
+    followUpRequest: { prompts: usable, answers: {} },
+  }, "follow_up_requested");
+}
+
+export function completeFollowUp(
+  project: BriefProject,
+  answers: Record<string, string>,
+  now = new Date().toISOString(),
+): BriefProject {
+  return bump(project, now, "Follow-up completed", {
+    discoveryStatus: "follow_up_complete",
+    followUpRequest: {
+      prompts: project.followUpRequest?.prompts ?? [],
+      answers,
+    },
+  }, "follow_up_completed");
 }
 
 export function withOverride(project: BriefProject, override: StatementOverride, now = new Date().toISOString()): BriefProject {
   const overrides = project.overrides.filter((item) => item.fieldId !== override.fieldId);
   overrides.push(override);
-  const note = override.status === "rejected" ? "Derived statement restored" : "Derived statement updated";
-  return bump(project, now, note, { overrides });
+  const rejected = override.status === "rejected" || override.decisionStatus === "rejected";
+  return bump(
+    project,
+    now,
+    rejected ? "Direction set aside" : "Approved a direction",
+    { overrides },
+    rejected ? "note" : "direction_approved",
+  );
 }
 
 export function withFollowUp(project: BriefProject, follow: FollowUp, now = new Date().toISOString()): BriefProject {
   const followUps = project.followUps.filter((item) => item.id !== follow.id);
   followUps.push(follow);
-  return bump(project, now, "Follow-up answered", { followUps });
+  return bump(project, now, "", { followUps }, null);
 }
 
 export function withCompetitor(project: BriefProject, competitor: CompetitorInput, now = new Date().toISOString()): BriefProject {
@@ -92,11 +168,33 @@ export function withCompetitor(project: BriefProject, competitor: CompetitorInpu
   const competitors = existing
     ? project.competitors.map((item) => (item.id === competitor.id ? competitor : item))
     : [...project.competitors, competitor];
-  return bump(project, now, "Competitor set updated", { competitors: competitors.slice(0, 10) });
+  return bump(project, now, "", { competitors: competitors.slice(0, 10) }, null);
 }
 
 export function withoutCompetitor(project: BriefProject, id: string, now = new Date().toISOString()): BriefProject {
-  return bump(project, now, "Competitor removed", { competitors: project.competitors.filter((item) => item.id !== id) });
+  const competitorResearch = { ...project.competitorResearch };
+  delete competitorResearch[id];
+  return bump(project, now, "", { competitors: project.competitors.filter((item) => item.id !== id), competitorResearch }, null);
+}
+
+export function withWebsiteResearch(project: BriefProject, websiteResearch: StoredResearch, now = new Date().toISOString()): BriefProject {
+  return bump(project, now, "Website researched", { websiteResearch }, "website_researched");
+}
+
+export function withCompetitorResearch(project: BriefProject, competitorId: string, research: StoredResearch, now = new Date().toISOString()): BriefProject {
+  return bump(project, now, "Competitor researched", {
+    competitorResearch: { ...project.competitorResearch, [competitorId]: research },
+  }, "competitor_researched");
+}
+
+export function withLibraryAsset(project: BriefProject, asset: LibraryAsset, now = new Date().toISOString()): BriefProject {
+  const library = [...project.library.filter((item) => item.id !== asset.id), asset];
+  return bump(project, now, "Asset added", { library }, "asset_added");
+}
+
+export function withLearning(project: BriefProject, response: LearningResponse, now = new Date().toISOString()): BriefProject {
+  const learning = [...project.learning.filter((item) => item.id !== response.id), response];
+  return bump(project, now, "", { learning }, null);
 }
 
 export function withAssetState(
@@ -105,11 +203,12 @@ export function withAssetState(
   state: { status: AssetStatus; owner: string; notes: string },
   now = new Date().toISOString(),
 ): BriefProject {
-  return bump(project, now, "Asset register updated", { assetStates: { ...project.assetStates, [assetId]: state } });
+  const kind: HistoryKind | null = state.status === "complete" ? "asset_completed" : null;
+  return bump(project, now, kind ? "Asset completed" : "", { assetStates: { ...project.assetStates, [assetId]: state } }, kind);
 }
 
 export function withManagerNotes(project: BriefProject, managerNotes: string, now = new Date().toISOString()): BriefProject {
-  return bump(project, now, "Manager notes updated", { managerNotes });
+  return bump(project, now, "", { managerNotes }, null);
 }
 
 export function withProjectDetails(
@@ -117,11 +216,11 @@ export function withProjectDetails(
   details: Partial<Pick<BriefProject, "clientName" | "businessName" | "website" | "category">>,
   now = new Date().toISOString(),
 ): BriefProject {
-  return bump(project, now, "Project details updated", details);
+  return bump(project, now, "", details, null);
 }
 
 export function touchProject(project: BriefProject, now = new Date().toISOString()): BriefProject {
-  return bump(project, now, "Agent pack regenerated", {});
+  return bump(project, now, "Agent pack regenerated", {}, "pack_regenerated");
 }
 
 export function readRole(): "manager" | "client" | null {
@@ -140,21 +239,37 @@ function bump(
   now: string,
   note: string,
   patch: Partial<BriefProject>,
+  kind: HistoryKind | null,
 ): BriefProject {
   const version = project.version + 1;
-  const history = [...(project.history ?? []), { at: now, version, note }].slice(-12);
+  const history = kind
+    ? [...(project.history ?? []), { at: now, version, kind, note }].slice(-24)
+    : project.history ?? [];
   return { ...project, ...patch, updatedAt: now, version, history };
 }
 
 function normaliseProject(project: BriefProject): BriefProject {
   return {
     ...project,
-    history: project.history ?? [],
+    managerId: project.managerId || DEMO_ACCOUNT.id,
+    workspaceId: project.workspaceId || DEMO_ACCOUNT.workspaceId,
+    discoveryStatus: project.discoveryStatus ?? "draft",
+    history: (project.history ?? []).map((event) => ({
+      at: event.at,
+      version: event.version,
+      kind: event.kind ?? "note",
+      note: event.note ?? "",
+    })),
     managerNotes: project.managerNotes ?? "",
     competitors: project.competitors ?? [],
     followUps: project.followUps ?? [],
+    followUpRequest: project.followUpRequest ?? null,
     overrides: project.overrides ?? [],
     assetStates: project.assetStates ?? {},
+    library: project.library ?? [],
+    websiteResearch: project.websiteResearch ?? null,
+    competitorResearch: project.competitorResearch ?? {},
+    learning: project.learning ?? [],
   };
 }
 

@@ -1,4 +1,4 @@
-import type { AgentFile, AgentPack, ProjectIntelligence } from "../../types/project";
+import type { AgentFile, AgentPack, EvidenceRecord, ProjectIntelligence, UnderstandingField } from "../../types/project";
 import type { BriefProject } from "../../types/project";
 
 export function buildAgentPack(project: BriefProject, intelligence: Omit<ProjectIntelligence, "agentPack">): AgentPack {
@@ -43,7 +43,9 @@ function masterFile(project: BriefProject, intelligence: Omit<ProjectIntelligenc
     `You are working on marketing for ${name}. Treat the following as canonical project context unless the user explicitly overrides it.`,
     "",
     `Project version ${project.version}. Generated ${intelligence.generatedAt}.`,
-    "Facts are things the client or manager said. Inferences and hypotheses come from Brief and can be wrong.",
+    "Facts are things the client said. Inferences and hypotheses come from Brief and can be wrong.",
+    "An approved direction is a decision the manager made. It is not a fact.",
+    "Published copy is what a website currently says. It is not a fact about the business.",
     "",
     sections,
   ].join("\n");
@@ -54,7 +56,9 @@ function readme(project: BriefProject, generatedAt: string): string {
 }
 
 function companyFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
-  return sectionFields(intelligence, "company");
+  const parts = [sectionFields(intelligence, "business"), sectionFields(intelligence, "company")]
+    .filter((part) => part !== "Nothing in this section yet.");
+  return parts.join("\n\n") || "Nothing in this section yet.";
 }
 
 function audienceFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
@@ -94,7 +98,11 @@ function contentFile(intelligence: Omit<ProjectIntelligence, "agentPack">): stri
 }
 
 function assetFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
-  return intelligence.assets.map((asset) => `- ${asset.priority.toUpperCase()} · ${asset.name} (${asset.status}). ${asset.reason}`).join("\n");
+  const register = intelligence.assets.map((asset) => `- SHOULD EXIST · ${asset.priority.toUpperCase()} · ${asset.name} (${asset.status}). ${asset.reason}`).join("\n");
+  const library = intelligence.library.length === 0
+    ? "Nothing is on file yet."
+    : intelligence.library.map((asset) => `- ON HAND · ${asset.name}${asset.fileRef ? ` · ${asset.fileRef}` : ""}`).join("\n");
+  return `What should exist\n\n${register}\n\nWhat is on hand\n\n${library}`;
 }
 
 function guardrailFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
@@ -111,14 +119,25 @@ function questionFile(intelligence: Omit<ProjectIntelligence, "agentPack">): str
 function evidenceFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
   return intelligence.evidence
     .slice(0, 24)
-    .map((item) => `- ${item.kind.toUpperCase()} · ${item.sourceType} · ${item.sourceReference}: ${item.text}`)
+    .map((item) => `- ${evidenceMark(item)} · ${item.sourceType} · ${item.sourceReference}: ${item.text}`)
     .join("\n");
 }
 
 function sectionFields(intelligence: Omit<ProjectIntelligence, "agentPack">, section: string): string {
   const fields = intelligence.understanding.fields.filter((field) => field.section === section);
   if (fields.length === 0) return "Nothing in this section yet.";
-  return fields.map((field) => `**${field.label}** (${field.kind})\n${field.text}`).join("\n\n");
+  return fields.map((field) => `**${field.label}** (${fieldMark(field)})\n${field.text}`).join("\n\n");
+}
+
+function fieldMark(field: UnderstandingField): string {
+  if (field.decisionStatus === "approved" && field.epistemicStatus !== "fact") return "approved direction";
+  return field.epistemicStatus;
+}
+
+function evidenceMark(item: EvidenceRecord): string {
+  if (item.claimScope === "published_copy") return "PUBLISHED COPY";
+  if (item.decisionStatus === "approved" && item.epistemicStatus !== "fact") return "APPROVED DIRECTION";
+  return item.epistemicStatus.toUpperCase();
 }
 
 function file(name: string, title: string, markdown: string): AgentFile {
