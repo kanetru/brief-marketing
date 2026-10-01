@@ -2,13 +2,16 @@ import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { canAdvance } from "../state/guards";
+import { useClientProject } from "../state/ProjectContext";
 import { useSession } from "../state/SessionContext";
 import { useConversation } from "../state/useConversation";
 
 export function WelcomeScreen() {
   const { session } = useSession();
+  const project = useClientProject();
   const { step, goBack, goForward, showBack, showForward } = useConversation("welcome");
   const resume = session.progress.furthest !== "welcome";
+  const business = project?.businessName.trim();
 
   return (
     <DiscoveryLayout
@@ -29,11 +32,17 @@ export function WelcomeScreen() {
       <QuestionScreen
         size="hero"
         title={
-          <>
-            Help us understand <span className="title-break">your business.</span>
-          </>
+          business ? (
+            <>
+              Let's get a clear picture of <span className="title-break">{business}.</span>
+            </>
+          ) : (
+            <>
+              Help us understand <span className="title-break">your business.</span>
+            </>
+          )
         }
-        supporting="This guided session helps your media manager understand your business, your audience, what you're drawn to, and how you'd like to be represented."
+        supporting="A conversation, not a form. Your answers become a picture your manager can use in the work, and in the tools they already use."
       >
         <aside className="statement">
           <p className="statement-lead">This isn't here to define your brand for you.</p>

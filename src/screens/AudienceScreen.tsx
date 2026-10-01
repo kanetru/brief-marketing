@@ -34,12 +34,11 @@ export function AudienceScreen() {
         {step === 0 ? (
           <QuestionScreen
             kicker="Audience"
-            title="Let's talk about your people."
-            prompt="Who are your best customers?"
-            supporting="Tell us about the people you most want to work with. They don't need to fit neatly into an age bracket."
+            title="Who do you most want to matter to?"
+            supporting="Not a demographic. The person you want the work to reach — the one who already pays, if that's who it is."
           >
             <TextResponse
-              labelledBy="question-prompt"
+              labelledBy="question-title"
               length="long"
               placeholder="Write it the way you'd say it"
               value={textValue(session.audience.bestCustomers)}
@@ -76,8 +75,8 @@ function DesiredStep({
   return (
     <QuestionScreen
       kicker="Audience"
-      title="Are there customers you'd particularly like more of?"
-      supporting="If it's the same people, say so. If you're not sure, that's useful too."
+      title="What are they already buying, following, reading or trusting?"
+      supporting="If it's the same people you just described, say so. If you're not sure, that's useful too."
     >
       {writing ? (
         <TextResponse

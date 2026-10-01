@@ -8,7 +8,7 @@ import { PaletteCard } from "../components/PaletteCard";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { TransitionWrapper } from "../components/TransitionWrapper";
 import { COLOUR_PALETTES, normaliseHex, paletteById } from "../domain/palettes";
-import { pathFor } from "../domain/sections";
+import { useSectionPath } from "../state/routeBase";
 import { LIMITS } from "../domain/options";
 import type { ColourPush } from "../types/creativeReading";
 import type { ColourRelationship } from "../types/discovery";
@@ -36,6 +36,7 @@ export function ColourScreen() {
   const { session, activate, togglePreferredPalette, toggleAvoidedPalette, setColourRelationship, setColourPush, addExistingColour, removeExistingColour } =
     useSession();
   const { step, goBack, goForward, showBack, showForward } = useConversation("colour");
+  const sectionPath = useSectionPath();
   const colour = session.colourPreferences;
   const relationship = colour.existingColourRelationship.state === "selected" ? colour.existingColourRelationship.value : null;
   const push = PUSHES.find((item) => item.id === colour.colourPush);
@@ -62,7 +63,7 @@ export function ColourScreen() {
   function forward() {
     if (step === 3 && relationship === "no") {
       activate("type");
-      navigate(pathFor("type"));
+      navigate(sectionPath("type"));
       return;
     }
     goForward();

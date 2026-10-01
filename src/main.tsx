@@ -21,10 +21,12 @@ import "@fontsource/ibm-plex-sans/500.css";
 import "@fontsource/newsreader/400.css";
 import "@fontsource/newsreader/500.css";
 import { App } from "./App";
+import { ProjectProvider } from "./state/ProjectContext";
 import { SessionProvider } from "./state/SessionContext";
 import "./styles/global.css";
 import "./styles/territories.css";
 import "./styles/experience.css";
+import "./styles/studio.css";
 
 const root = document.getElementById("root");
 if (!root) {
@@ -34,9 +36,11 @@ if (!root) {
 createRoot(root).render(
   <StrictMode>
     <SessionProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <ProjectProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ProjectProvider>
     </SessionProvider>
   </StrictMode>,
 );

@@ -17,6 +17,9 @@ import { TypeScreen } from "./screens/TypeScreen";
 import { VisualScreen } from "./screens/VisualScreen";
 import { VoiceScreen } from "./screens/VoiceScreen";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
+import { ClientIndex, ClientProjectGate, ManagerGate } from "./screens/studio/gates";
+import { ProjectList } from "./screens/studio/ProjectList";
+import { ProjectWorkspace } from "./screens/studio/ProjectWorkspace";
 
 export function App() {
   return (
@@ -42,6 +45,26 @@ export function App() {
         <Route path="/demo/profile" element={<ProfileScreen />} />
         <Route path="/demo/handover" element={<HandoverScreen />} />
         <Route path="/demo/complete" element={<CompleteScreen />} />
+        <Route path="/studio" element={<ManagerGate><ProjectList /></ManagerGate>} />
+        <Route path="/studio/:projectId" element={<ManagerGate><ProjectWorkspace /></ManagerGate>} />
+        <Route path="/c/:token" element={<ClientProjectGate />}>
+          <Route index element={<ClientIndex />} />
+          <Route path="start" element={<WelcomeScreen />} />
+          <Route path="business" element={<BusinessScreen />} />
+          <Route path="audience" element={<AudienceScreen />} />
+          <Route path="goals" element={<GoalsScreen />} />
+          <Route path="personality" element={<PersonalityScreen />} />
+          <Route path="spectrum" element={<SpectrumScreen />} />
+          <Route path="visual" element={<VisualScreen />} />
+          <Route path="colour" element={<ColourScreen />} />
+          <Route path="type" element={<TypeScreen />} />
+          <Route path="imagery" element={<ImageryScreen />} />
+          <Route path="voice" element={<VoiceScreen />} />
+          <Route path="inspiration" element={<InspirationScreen />} />
+          <Route path="clarify" element={<ClarifyScreen />} />
+          <Route path="profile" element={<ProfileScreen />} />
+          <Route path="complete" element={<CompleteScreen />} />
+        </Route>
         <Route path="*" element={<Navigate to="/demo/start" replace />} />
       </Routes>
     </SessionInspector>

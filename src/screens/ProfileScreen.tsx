@@ -11,7 +11,7 @@ import { TextResponse } from "../components/TextResponse";
 import { buildBrandIntelligence } from "../domain/brandIntelligence";
 import { strategistEvidenceHash } from "../domain/creativeReading";
 import { activeProfileVersion, hashEvidence, profileRequestFromSession } from "../domain/profileRequest";
-import { pathFor } from "../domain/sections";
+import { useSectionPath } from "../state/routeBase";
 import { requestProfile } from "../services/ai/profileClient";
 import { requestStrategist } from "../services/ai/strategistClient";
 import { useSession } from "../state/SessionContext";
@@ -26,6 +26,7 @@ export function ProfileScreen() {
   const navigate = useNavigate();
   const { session, beginProfile, recordProfile, setProfileFeedback, beginRefinement, recordRefinement, setTerritoryReaction, setTerritoryPreference, beginStrategist, recordStrategist, failStrategist } = useSession();
   const { step, goBack, showBack } = useConversation("profile");
+  const sectionPath = useSectionPath();
   const profile = session.discoveryProfile;
   const intelligence = useMemo(() => buildBrandIntelligence(session), [session]);
   const consistent = intelligence.draftModel.signals.filter(
@@ -69,7 +70,7 @@ export function ProfileScreen() {
 
   function finish(response: ProfileFeedbackResponse, written: string | null) {
     setProfileFeedback({ response, note: written, capturedAt: new Date().toISOString() });
-    navigate(pathFor("complete"));
+    navigate(sectionPath("complete"));
   }
 
   function revise() {

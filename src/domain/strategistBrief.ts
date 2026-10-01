@@ -1,3 +1,4 @@
+import { buildUnderstanding } from "./project/companyUnderstanding";
 import { TYPEFACE_CATALOGUE } from "./typefaceCatalogue";
 import { textValue } from "../state/textEvidence";
 import type { StrategistContext } from "./strategistValidate";
@@ -36,6 +37,8 @@ export function strategistRequest(session: DiscoverySession, intelligence: Brand
     `Signal notes: ${signals}`,
     `Hard avoids: ${avoids || "none recorded"}`,
     `Tensions: ${intelligence.draftModel.tensions.map((item) => item.statement).join(" | ") || "none"}`,
+    "Company understanding so far. Treat fact as said. Treat hypothesis and inference as Brief's reading, which you may disagree with:",
+    ...buildUnderstanding(session, []).map((field) => `- ${field.id} (${field.kind}): ${field.text}`),
     `Archetype ids to align, in order: ${context.archetypeIds.join(", ")}`,
     `Allowed typeface ids (use only these): ${catalogue}`,
     "Write two territories. Each archetypeId must be one of the ids above. Pairing headingId and bodyId must be catalogue ids.",
