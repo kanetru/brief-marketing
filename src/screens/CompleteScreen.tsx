@@ -2,11 +2,13 @@ import { Link } from "react-router-dom";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
 import { QuestionScreen } from "../components/QuestionScreen";
+import { useClientProject } from "../state/ProjectContext";
 import { useSession } from "../state/SessionContext";
 import { useConversation } from "../state/useConversation";
 
 export function CompleteScreen() {
   const { activate } = useSession();
+  const project = useClientProject();
   const { step, goBack, showBack } = useConversation("complete");
 
   return (
@@ -34,9 +36,13 @@ export function CompleteScreen() {
           <p className="statement-lead">We haven't defined your brand here.</p>
           <p>We've given them a much better place to start.</p>
         </aside>
-        <p className="handover-link">
-          <Link to="/demo/handover">Open the media manager handover</Link>
-        </p>
+        {project ? (
+          <p className="meta">You can close this. The same link brings you back.</p>
+        ) : (
+          <p className="handover-link">
+            <Link to="/demo/handover">Open the media manager handover</Link>
+          </p>
+        )}
       </QuestionScreen>
     </DiscoveryLayout>
   );

@@ -1,8 +1,9 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { adjacentSection, pathFor, stepCount } from "../domain/sections";
+import { adjacentSection, stepCount } from "../domain/sections";
 import type { SectionId } from "../types/discovery";
 import { useSession } from "./SessionContext";
+import { useSectionPath } from "./routeBase";
 
 /**
  * Move inside a section by step. Crossing into another section keeps the
@@ -11,6 +12,7 @@ import { useSession } from "./SessionContext";
 export function useConversation(section: SectionId) {
   const navigate = useNavigate();
   const { session, activate, enterAt } = useSession();
+  const sectionPath = useSectionPath();
   const steps = stepCount(section);
   const step = Math.max(0, Math.min(session.progress.steps[section] ?? 0, steps - 1));
 
@@ -22,8 +24,8 @@ export function useConversation(section: SectionId) {
     const next = adjacentSection(section, 1);
     if (!next) return;
     activate(next);
-    navigate(pathFor(next));
-  }, [activate, enterAt, navigate, section, step, steps]);
+    navigate(sectionPath(next));
+  }, [activate, enterAt, navigate, section, sectionPath, step, steps]);
 
   const goBack = useCallback(() => {
     if (step > 0) {
@@ -33,8 +35,8 @@ export function useConversation(section: SectionId) {
     const previous = adjacentSection(section, -1);
     if (!previous) return;
     activate(previous);
-    navigate(pathFor(previous));
-  }, [activate, enterAt, navigate, section, step]);
+    navigate(sectionPath(previous));
+  }, [activate, enterAt, navigate, section, sectionPath, step]);
 
   const showBack = step > 0 || adjacentSection(section, -1) !== null;
   const showForward = step < steps - 1 || adjacentSection(section, 1) !== null;

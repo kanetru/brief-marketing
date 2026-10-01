@@ -46,8 +46,8 @@ export function BusinessScreen() {
         {step === 1 ? (
           <QuestionScreen
             kicker="Business"
-            title="In your own words, what does your business do?"
-            supporting="Don't worry about making this sound polished. We'd rather hear it in your words."
+            title="What do you actually do?"
+            supporting="Say it the way you would to someone across a table. Polish can wait."
           >
             <TextResponse
               labelledBy="question-title"

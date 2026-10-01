@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   type ReactNode,
 } from "react";
 import type { AnalysisSuccess } from "../domain/analysis";
@@ -80,15 +81,18 @@ interface SessionApi {
   recordStrategist: (evidenceHash: string, reading: import("../types/creativeReading").CreativeReading) => void;
   failStrategist: (evidenceHash: string, failureCode: string) => void;
   reset: () => void;
+  hydrate: (session: DiscoverySession) => void;
+  setPersister: (persist: (session: DiscoverySession) => void) => void;
 }
 
 const SessionContext = createContext<SessionApi | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, dispatch] = useReducer(sessionReducer, undefined, loadSession);
+  const persistRef = useRef<(next: DiscoverySession) => void>(saveSession);
 
   useEffect(() => {
-    saveSession(session);
+    persistRef.current(session);
   }, [session]);
 
   const send = useCallback((action: Action) => {
@@ -262,6 +266,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [send],
   );
   const reset = useCallback(() => send({ type: "reset" }), [send]);
+  const hydrate = useCallback((next: DiscoverySession) => send({ type: "hydrate", session: next }), [send]);
+  const setPersister = useCallback((persist: (next: DiscoverySession) => void) => {
+    persistRef.current = persist;
+  }, []);
 
   const api = useMemo<SessionApi>(
     () => ({
@@ -315,6 +323,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       recordStrategist,
       failStrategist,
       reset,
+      hydrate,
+      setPersister,
     }),
     [
       session,
@@ -367,6 +377,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       recordStrategist,
       failStrategist,
       reset,
+      hydrate,
+      setPersister,
     ],
   );
 

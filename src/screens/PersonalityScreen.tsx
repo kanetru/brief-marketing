@@ -100,8 +100,8 @@ export function PersonalityScreen() {
         {step === 0 ? (
           <QuestionScreen
             kicker="Personality"
-            title="How should people experience you?"
-            supporting="Pick up to five. Don't overthink it."
+            title="How should it feel to encounter you?"
+            supporting="Pick up to five. These are clues, not the brand. A strategist is allowed to disagree."
           >
             <PersonalityPicker
               pole={pole}

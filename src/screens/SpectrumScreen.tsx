@@ -31,8 +31,8 @@ export function SpectrumScreen() {
         {step === 0 ? (
           <QuestionScreen
             kicker="Spectrum"
-            title="Let's narrow that down."
-            supporting="There's usually a little tension in a good identity. Tell us where you naturally sit between these."
+            title="Where do you actually sit?"
+            supporting="Restrained or expressive. Practical or poetic. Polished or raw. Familiar or strange. The place you choose is evidence, not a personality type."
           />
         ) : null}
         {dimension ? (

@@ -31,6 +31,7 @@ import { applyText, unanswered } from "./textEvidence";
 
 export type Action =
   | { type: "reset" }
+  | { type: "hydrate"; session: DiscoverySession }
   | { type: "activate"; section: SectionId }
   | { type: "enter"; section: SectionId; step: number }
   | { type: "business-text"; field: BusinessTextField; value: string }
@@ -119,6 +120,8 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
   switch (action.type) {
     case "reset":
       return createSession();
+    case "hydrate":
+      return action.session;
     case "activate": {
       if (state.progress.section === action.section) return state;
       return {

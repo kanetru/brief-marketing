@@ -10,8 +10,10 @@ import { QuietChoice } from "../components/QuietChoice";
 import { TextResponse } from "../components/TextResponse";
 import { TransitionWrapper } from "../components/TransitionWrapper";
 import { buildDiscoveryEvidence } from "../domain/evidence";
+import { adaptiveFollowUps } from "../domain/project/adaptiveQuestions";
 import { MANAGER_HELP_ID, MANAGER_HELP_LABEL } from "../domain/questionSelection";
-import { pathFor } from "../domain/sections";
+import { useClientProject, useProjects } from "../state/ProjectContext";
+import { useSectionPath } from "../state/routeBase";
 import { requestAnalysis } from "../services/ai/client";
 import { canAdvance } from "../state/guards";
 import { useSession } from "../state/SessionContext";
@@ -31,6 +33,7 @@ export function ClarifyScreen() {
     clarifyUncertain,
   } = useSession();
   const { step, goBack, goForward, showBack } = useConversation("clarify");
+  const sectionPath = useSectionPath();
   const questions = session.agentQuestions.selected;
   const status = session.agentObservations.status;
 
@@ -60,7 +63,7 @@ export function ClarifyScreen() {
 
   function finish() {
     activate("profile");
-    navigate(pathFor("profile"));
+    navigate(sectionPath("profile"));
   }
 
   function forward() {
@@ -93,6 +96,7 @@ export function ClarifyScreen() {
     >
       <TransitionWrapper transitionKey={`clarify-${step}-${status}`}>
         {step === 0 ? <Intro status={status} questionCount={questions.length} onRetry={retry} /> : null}
+        {step === 0 ? <AdaptiveFollowUps /> : null}
         {question ? (
           <QuestionScreen kicker="Clarify" size="conversation" title={question.question}>
             {question.answerMode === "single_choice" ? (
@@ -133,6 +137,32 @@ export function ClarifyScreen() {
         ) : null}
       </TransitionWrapper>
     </DiscoveryLayout>
+  );
+}
+
+function AdaptiveFollowUps() {
+  const project = useClientProject();
+  const { session } = useSession();
+  const { setFollowUp } = useProjects();
+  if (!project) return null;
+  const prompts = adaptiveFollowUps(session, project.followUps);
+  if (prompts.length === 0) return null;
+  return (
+    <div className="follow-ups">
+      <p className="meta">A few things only this business raised.</p>
+      {prompts.map((follow) => (
+        <label key={follow.id} className="follow-up">
+          <span id={`follow-${follow.id}`}>{follow.prompt}</span>
+          <TextResponse
+            labelledBy={`follow-${follow.id}`}
+            length="long"
+            value={follow.answer}
+            placeholder="Optional"
+            onChange={(value) => setFollowUp(project.id, { ...follow, answer: value })}
+          />
+        </label>
+      ))}
+    </div>
   );
 }
 

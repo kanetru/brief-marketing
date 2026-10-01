@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
-import { pathFor, sectionById } from "../domain/sections";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { sectionById } from "../domain/sections";
+import { useSectionPath } from "../state/routeBase";
 import type { SectionId } from "../types/discovery";
 import { useSession } from "../state/SessionContext";
 import { AgencyMark } from "./AgencyMark";
@@ -26,7 +27,9 @@ export function DiscoveryLayout({
   footer,
 }: DiscoveryLayoutProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { session, activate } = useSession();
+  const sectionPath = useSectionPath();
 
   useEffect(() => {
     if (session.progress.section !== section) {
@@ -48,6 +51,7 @@ export function DiscoveryLayout({
       <header className="top">
         <div className="brand">
           <AgencyMark />
+          {location.pathname.startsWith("/demo") ? <Link className="session-link" to="/studio">Manager</Link> : null}
           <SessionToggle />
         </div>
         <ProgressIndicator
@@ -57,7 +61,7 @@ export function DiscoveryLayout({
           totalSteps={totalSteps}
           onSelect={(next) => {
             activate(next);
-            navigate(pathFor(next));
+            navigate(sectionPath(next));
           }}
         />
       </header>
