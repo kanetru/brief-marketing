@@ -59,6 +59,11 @@ export function seedDemoWorkspace(now = new Date().toISOString()): BriefProject[
   }, now);
 
   const midway = organicFixture();
+  midway.id = "kiln-discovery";
+  midway.business.name = { state: "evidence", evidence: { raw: "Kiln & Co", capturedAt: now } };
+  midway.business.description = { state: "evidence", evidence: { raw: "A small workshop making tableware for kitchens.", capturedAt: now } };
+  midway.business.peopleComeFor = { state: "evidence", evidence: { raw: "People come for pieces that feel made, not manufactured.", capturedAt: now } };
+  midway.audience.bestCustomers = { state: "evidence", evidence: { raw: "Cooks setting one careful table.", capturedAt: now } };
   midway.progress = { ...midway.progress, section: "voice", furthest: "voice" };
   let kiln = createProject({
     clientName: "Kiln & Co",

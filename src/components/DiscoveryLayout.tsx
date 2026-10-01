@@ -59,6 +59,7 @@ export function DiscoveryLayout({
           furthest={session.progress.furthest}
           step={step}
           totalSteps={totalSteps}
+          hideSections={location.pathname.startsWith("/c/") ? ["profile"] : []}
           onSelect={(next) => {
             activate(next);
             navigate(sectionPath(next));

@@ -492,7 +492,7 @@ function Opportunities({ items, evidence }: { items: ProjectIntelligence["opport
             <ul className="studio-evidence">
               {item.evidenceIds.map((id) => {
                 const record = evidence.find((entry) => entry.id === id);
-                return record ? <li key={id}><span>{record.claimScope === "published_copy" ? "published copy" : record.epistemicStatus}</span>{record.text}</li> : null;
+                return record ? <li key={id}><span>{record.claimScope === "published_copy" ? "published copy" : record.epistemicStatus}</span><p>{record.text}</p></li> : null;
               })}
             </ul>
           </article>
@@ -525,7 +525,7 @@ function Assets({
           items.filter((asset) => asset.priority === priority).map((asset) => (
             <li key={asset.id}>
               <div>
-                <p className="studio-kicker">{priority} · {asset.category}</p>
+                <p className="studio-kicker">{priority} · {asset.category === "photo_video" ? "photo" : asset.category}</p>
                 <h3>{asset.name}</h3>
                 <p>{asset.reason}</p>
                 <p className="studio-meta">Needs · {asset.sourceMaterial}</p>
@@ -541,8 +541,8 @@ function Assets({
         <ul className="studio-files">
           {library.map((asset) => (
             <li key={asset.id}>
-              <span>{asset.name}{asset.fileRef ? ` · ${asset.fileRef}` : ""}</span>
-              <em>{asset.category}</em>
+              <span>{asset.fileRef && asset.fileRef !== asset.name ? `${asset.name} · ${asset.fileRef}` : asset.name}</span>
+              <em>{asset.category === "photo_video" ? "Photo" : asset.category}</em>
             </li>
           ))}
         </ul>

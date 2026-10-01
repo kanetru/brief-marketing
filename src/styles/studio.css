@@ -242,6 +242,15 @@
   font-size: 0.85rem;
 }
 
+.studio-evidence li {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.studio-evidence p {
+  margin: 0;
+}
+
 .studio-link {
   word-break: break-all;
   font-family: var(--serif);
@@ -263,6 +272,7 @@
   display: grid;
   gap: 0.8rem;
   margin-top: 2.2rem;
+  margin-bottom: 5rem;
   padding-top: 1.2rem;
   border-top: 1px solid var(--line);
 }

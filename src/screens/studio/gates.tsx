@@ -101,6 +101,9 @@ function ClientSurface() {
   }
   if (destination === "complete" && section !== "complete") return <Navigate to="complete" replace />;
   if (destination === "follow_up" && section !== "follow-up") return <Navigate to="follow-up" replace />;
+  if (destination === "discovery" && (section === "complete" || section === "follow-up" || section === "profile")) {
+    return <Navigate to="start" replace />;
+  }
   return <Outlet />;
 }
 

@@ -24,7 +24,7 @@ export function FollowUpScreen() {
 
   return (
     <DiscoveryLayout
-      section="complete"
+      section="clarify"
       step={0}
       width="hero"
       footer={<NavigationControls showBack={false} showForward={prompts.length > 0} onBack={() => undefined} onForward={send} forwardLabel="Send this" />}
