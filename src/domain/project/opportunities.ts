@@ -80,9 +80,13 @@ export function buildOpportunities(
       why: category.observation,
       evidenceIds: category.evidenceIds,
       confidence: "low",
-      action: "List what the notes repeat, then write the client's version only where the evidence differs.",
+      action: category.basis === "research"
+        ? "List what the pages repeat, then write the client's version only where the evidence differs."
+        : "List what the notes repeat, then write the client's version only where the evidence differs.",
       effort: "medium",
-      impactHypothesis: "The gap is only real where the client's own words disagree with those notes.",
+      impactHypothesis: category.basis === "research"
+        ? "The gap is only real where the client's own words disagree with the pages that were read."
+        : "The gap is only real where the client's own words disagree with those notes.",
     });
   }
   const making = category?.patterns.find((pattern) => pattern.id === "pattern-process-invisible")
@@ -104,8 +108,8 @@ export function buildOpportunities(
       evidenceIds: making.evidenceIds,
       confidence: "medium",
       action: fromResearch
-        ? "Try Bench Notes: a short series, each piece centred on one construction decision. It needs process photography."
-        : "Try a short series, each piece centred on one construction decision. It needs process photography.",
+        ? "Create Bench Notes: a short series, each piece centred on one construction decision. It needs process photography."
+        : "A short series, each piece centred on one construction decision. It needs process photography.",
       effort: "medium",
       impactHypothesis: "The work becomes visible where the category mostly shows the finished result.",
     });

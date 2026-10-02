@@ -20,7 +20,7 @@ export interface MarketComparison {
 }
 
 const CRAFT = /craftsmanship|hand-?crafted|artisan|artisanal|\bcrafted\b/i;
-const PROCESS = /\b(process|workshop|joinery|joints?|construction|making)\b/i;
+const PROCESS = /\b(process|joinery|joints?|construction|making)\b/i;
 const DURABILITY = /durab|generations|lifetime|made to last|repairab/i;
 const PROOF = /award|certified|since\s+\d{4}|\d+\s+years?|testimonial|reviewed by|repair/i;
 const HOMEOWNERS = /\bhomeowners?\b/i;
@@ -84,7 +84,7 @@ function categoryPatterns(
       implication: cliche
         ? "Hypothesis: this may be necessary category language, but it is unlikely to differentiate the business on its own."
         : "Hypothesis: the repetition is real, and it is not yet common enough to treat as wallpaper.",
-      evidenceIds: craft.flatMap((item) => [`competitor.${item.id}`]),
+      evidenceIds: craft.map((item) => pageEvidence(item.id)),
       competitorsSupporting: craft.map((item) => item.name),
       quotes: craft.flatMap((item) => quotesFrom(item.site, item.name, CRAFT, 1)),
     }));
@@ -105,7 +105,7 @@ function categoryPatterns(
       total,
       statement: `Across the ${total} competitor sites researched, ${scope} ${businessName}'s discovery keeps returning to making.`,
       implication: "Hypothesis: making the construction process visible could become a distinctive proof and content system.",
-      evidenceIds: ["business.description", ...competitors.map((item) => `competitor.${item.id}`)],
+      evidenceIds: ["business.description", ...competitors.map((item) => pageEvidence(item.id))],
       competitorsSupporting: names,
       quotes: [
         ...making.flatMap((item) => quotesFrom(item.site, item.name, PROCESS, 1)),
@@ -124,7 +124,7 @@ function categoryPatterns(
       total,
       statement: `Homeowners are named by ${prevalence(homeowners.length, total)}.`,
       implication: "This describes who the pages address. It does not prove who pays.",
-      evidenceIds: homeowners.map((item) => `competitor.${item.id}`),
+      evidenceIds: homeowners.map((item) => pageEvidence(item.id)),
       competitorsSupporting: homeowners.map((item) => item.name),
       quotes: homeowners.flatMap((item) => quotesFrom(item.site, item.name, HOMEOWNERS, 1)),
     }));
@@ -140,7 +140,7 @@ function categoryPatterns(
       total,
       statement: `${prevalence(withProof.length, total)} publish a concrete proof line, such as an award, a year, or a testimonial. The others do not, on the pages read.`,
       implication: "Where proof is missing, a claim is being asked to stand alone.",
-      evidenceIds: withProof.map((item) => `competitor.${item.id}`),
+      evidenceIds: withProof.map((item) => pageEvidence(item.id)),
       competitorsSupporting: withProof.map((item) => item.name),
       quotes: withProof.flatMap((item) => {
         const line = item.site.proof[0];
@@ -156,7 +156,7 @@ function categoryPatterns(
       total,
       statement: `Across the ${total} competitor sites researched, we found little concrete proof: no award, year count, or testimonial on the pages read.`,
       implication: "Hypothesis: proof is scarce in this set, so a specific one could be distinctive. This is not a claim about the whole market.",
-      evidenceIds: competitors.map((item) => `competitor.${item.id}`),
+      evidenceIds: competitors.map((item) => pageEvidence(item.id)),
       competitorsSupporting: [],
       quotes: competitors.slice(0, 3).flatMap((item) => leadQuote(item)),
     }));
@@ -172,7 +172,7 @@ function categoryPatterns(
       total,
       statement: `${item.name} does not use the craftsmanship language on the pages read. The homepage leads with “${item.site.positioning}”.`,
       implication: "This is a difference inside the set that was read, not a verdict on the category.",
-      evidenceIds: [`competitor.${item.id}`],
+      evidenceIds: [pageEvidence(item.id)],
       competitorsSupporting: [item.name],
       quotes: leadQuote(item),
     }));
@@ -187,7 +187,7 @@ function categoryPatterns(
       total,
       statement: `Across the ${total} competitor sites researched, we found little emphasis on construction. ${businessName}'s own pages do explain it.`,
       implication: "Hypothesis: the client already has material the category set is not using.",
-      evidenceIds: ["website.headline", ...competitors.map((item) => `competitor.${item.id}`)],
+      evidenceIds: ["website.headline", ...competitors.map((item) => pageEvidence(item.id))],
       competitorsSupporting: [],
       quotes: quotesFrom(clientSite, businessName, PROCESS, 2),
     }));
@@ -254,7 +254,7 @@ function findTensions(
       kind: "discovery_category",
       title: "Discovery cares about making. The category set mostly shows the finished work",
       statement: `Discovery keeps returning to how the work is made. Across the ${competitors.length} competitor sites researched, we found little emphasis on construction. There may be an unclaimed chance to make construction part of the buying story. This is a hypothesis.`,
-      evidenceIds: ["business.description", ...competitors.map((item) => `competitor.${item.id}`)],
+      evidenceIds: ["business.description", ...competitors.map((item) => pageEvidence(item.id))],
       quotes: [discoveryQuote(businessName, discovery.description), ...competitors.slice(0, 2).flatMap((item) => leadQuote(item))],
     }));
   }
@@ -333,6 +333,10 @@ function discoveryQuote(who: string, text: string): SourceQuote {
 function countMatches(text: string, test: RegExp): number {
   const flags = test.flags.includes("g") ? test.flags : `${test.flags}g`;
   return text.match(new RegExp(test.source, flags))?.length ?? 0;
+}
+
+function pageEvidence(id: string): string {
+  return `competitor.${id}.page.headline`;
 }
 
 function pattern(input: {

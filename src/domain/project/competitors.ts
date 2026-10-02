@@ -58,7 +58,9 @@ export function profileCompetitor(input: CompetitorInput, researched: boolean | 
       ...base,
       basis: "research",
       headline: site.positioning,
-      apparentPositioning: [site.positioning, home?.description].filter(Boolean).join(" "),
+      apparentPositioning: site.positioning && site.positioning === home?.description
+        ? site.positioning
+        : [site.positioning, home?.description].filter(Boolean).join(" "),
       audience: site.audienceSignals.join(", "),
       offer: site.offers.join("; "),
       tone: site.verbalCharacter,
