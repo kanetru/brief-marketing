@@ -10,6 +10,9 @@ import { compareMarket } from "./research/compare";
 import { unavailablePlatformIntelligence } from "./strategy/platform";
 import { deriveStrategy } from "./strategy/plan";
 import { strategySource } from "./strategy/read";
+import { resolveClientBrain } from "./strategist/brain";
+import { buildStrategistPacket } from "./strategist/packet";
+import { CHANNEL_LABEL } from "./strategy/channels";
 import type { BriefProject, CategorySynthesis, ProjectIntelligence } from "../../types/project";
 
 export function buildProjectIntelligence(project: BriefProject, generatedAt = new Date().toISOString()): ProjectIntelligence {
@@ -61,6 +64,19 @@ export function buildProjectIntelligence(project: BriefProject, generatedAt = ne
     unavailablePlatformIntelligence,
     project.overrides,
   );
+  const candidateNote = [
+    ...strategy.channels.map((item) => `${CHANNEL_LABEL[item.channel]} ${item.priority}: ${item.role}`),
+    ...strategy.territories.map((item) => `Territory candidate: ${item.name}. ${item.idea}`),
+    ...strategy.roadmap.map((item) => `Roadmap candidate ${item.horizon}: ${item.objective}`),
+  ].join("\n");
+  const packet = buildStrategistPacket(project, {
+    evidence,
+    categoryNote: category?.observation,
+    competitorLines: competitors.map((item) => `${item.name}: ${item.apparentPositioning || item.unavailableReason || "no read"}`),
+    candidateNote,
+    contradictions: contradictions.map((item) => item.statement),
+  });
+  const clientBrain = resolveClientBrain(project.clientReading, packet.hash, project.overrides);
   const partial = {
     projectId: project.id,
     version: project.version,
@@ -76,6 +92,7 @@ export function buildProjectIntelligence(project: BriefProject, generatedAt = ne
     openQuestions,
     contradictions,
     strategy,
+    clientBrain,
     discoveryProgress: discoveryProgress(project.discovery),
   };
   return { ...partial, agentPack: buildAgentPack(project, partial) };

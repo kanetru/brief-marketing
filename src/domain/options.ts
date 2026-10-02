@@ -5,7 +5,7 @@ export const LIMITS = {
   traits: 5,
   palettes: 3,
   typePreferred: 2,
-  imageryPreferred: 2,
+  imageryPreferred: 4,
   inspirationPositive: 5,
   inspirationNegative: 3,
 } as const;

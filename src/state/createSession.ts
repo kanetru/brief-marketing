@@ -116,6 +116,8 @@ function blankColour(): ColourPreferences {
   return {
     preferredPaletteIds: [],
     avoidedPaletteIds: [],
+    closerBoardIds: [],
+    nuanceIds: [],
     preferredCapturedAt: null,
     avoidedCapturedAt: null,
     colourPush: null,
@@ -142,7 +144,11 @@ function blankStrategist(): DiscoverySession["strategist"] {
 function blankImagery(): ImageryPreferences {
   return {
     preferredDirectionIds: [],
+    interestIds: [],
     avoidedDirectionIds: [],
+    closerStillIds: [],
+    closerInterestIds: [],
+    closerRejectedIds: [],
     preferredCapturedAt: null,
     avoidedCapturedAt: null,
   };

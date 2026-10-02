@@ -1,3 +1,5 @@
+import { modelFor } from "../src/config/aiModels";
+
 export interface TerritoryImageRequest {
   versionKey?: string;
   prompts?: Array<{ role?: string; prompt?: string; treatment?: string }>;
@@ -42,7 +44,7 @@ export async function resolveTerritoryImages(request: TerritoryImageRequest): Pr
     const result: TerritoryImageResult = {
       status: "fallback",
       provider: providerName,
-      model: process.env.TERRITORY_IMAGE_MODEL?.trim() || null,
+      model: modelFor("territoryImages"),
       assets: fallbackAssets,
     };
     if (process.env.NODE_ENV !== "production") result.failureReason = "provider_not_implemented";
@@ -50,7 +52,7 @@ export async function resolveTerritoryImages(request: TerritoryImageRequest): Pr
   }
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const model = process.env.TERRITORY_IMAGE_MODEL?.trim() || "dall-e-3";
+  const model = modelFor("territoryImages");
   if (!apiKey) {
     const result: TerritoryImageResult = { status: "fallback", provider: "openai", model, assets: fallbackAssets };
     if (process.env.NODE_ENV !== "production") result.failureReason = "not_configured";

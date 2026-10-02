@@ -2,8 +2,7 @@ import { STRATEGIST_PROMPT_VERSION, STRATEGIST_SYSTEM_PROMPT, buildStrategistPro
 import { STRATEGIST_RESPONSE_SCHEMA } from "../src/domain/strategistSchema";
 import { validateStrategistPayload, type StrategistContext } from "../src/domain/strategistValidate";
 import type { CreativeReading } from "../src/types/creativeReading";
-
-const DEFAULT_MODEL = "gpt-4o-mini";
+import { modelFor } from "../src/config/aiModels";
 
 export interface StrategistRequest {
   brief?: string;
@@ -30,7 +29,7 @@ export async function generateCreativeReading(body: StrategistRequest): Promise<
     console.error("Creative strategist skipped: OPENAI_API_KEY is not set.");
     return empty("not_configured");
   }
-  const modelName = process.env.OPENAI_MODEL?.trim() || DEFAULT_MODEL;
+  const modelName = modelFor("creativeStrategist");
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",

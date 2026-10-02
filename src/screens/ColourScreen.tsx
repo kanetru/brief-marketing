@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ChoiceGrid } from "../components/ChoiceGrid";
@@ -7,10 +7,9 @@ import { NavigationControls } from "../components/NavigationControls";
 import { PaletteCard } from "../components/PaletteCard";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { TransitionWrapper } from "../components/TransitionWrapper";
-import { COLOUR_PALETTES, normaliseHex, paletteById } from "../domain/palettes";
+import { COLOUR_NUANCE, COLOUR_PALETTES, closerBoardsFor, normaliseHex, paletteById, type PaletteDefinition } from "../domain/palettes";
 import { useSectionPath } from "../state/routeBase";
 import { LIMITS } from "../domain/options";
-import type { ColourPush } from "../types/creativeReading";
 import type { ColourRelationship } from "../types/discovery";
 import { canAdvance } from "../state/guards";
 import { useSession } from "../state/SessionContext";
@@ -22,46 +21,18 @@ const RELATIONSHIPS: ReadonlyArray<{ id: ColourRelationship; label: string }> = 
   { id: "no", label: "No" },
 ];
 
-const PUSHES: ReadonlyArray<{ id: ColourPush; label: string; ground: string; ink: string }> = [
-  { id: "warmer", label: "Warmer", ground: "#F6D7C4", ink: "#3A241C" },
-  { id: "darker", label: "Darker", ground: "#241C19", ink: "#F3E6D8" },
-  { id: "cleaner", label: "Cleaner", ground: "#F7F4EF", ink: "#1A1C1E" },
-  { id: "stranger", label: "Stranger", ground: "#E7E2D6", ink: "#E4572E" },
-  { id: "brighter", label: "Brighter", ground: "#F7E27A", ink: "#1C1916" },
-  { id: "quieter", label: "Quieter", ground: "#E4E1DA", ink: "#5C584F" },
-];
-
 export function ColourScreen() {
   const navigate = useNavigate();
-  const { session, activate, togglePreferredPalette, toggleAvoidedPalette, setColourRelationship, setColourPush, addExistingColour, removeExistingColour } =
+  const { session, activate, togglePreferredPalette, toggleCloserBoard, toggleColourNuance, toggleAvoidedPalette, setColourRelationship, addExistingColour, removeExistingColour } =
     useSession();
   const { step, goBack, goForward, showBack, showForward } = useConversation("colour");
   const sectionPath = useSectionPath();
   const colour = session.colourPreferences;
   const relationship = colour.existingColourRelationship.state === "selected" ? colour.existingColourRelationship.value : null;
-  const push = PUSHES.find((item) => item.id === colour.colourPush);
-
-  useEffect(() => {
-    const shell = document.querySelector(".shell");
-    if (!(shell instanceof HTMLElement)) return;
-    if (step === 1 && push) {
-      shell.dataset.colourPush = push.id;
-      shell.style.setProperty("--push-ground", push.ground);
-      shell.style.setProperty("--push-ink", push.ink);
-    } else {
-      delete shell.dataset.colourPush;
-      shell.style.removeProperty("--push-ground");
-      shell.style.removeProperty("--push-ink");
-    }
-    return () => {
-      delete shell.dataset.colourPush;
-      shell.style.removeProperty("--push-ground");
-      shell.style.removeProperty("--push-ink");
-    };
-  }, [push, step]);
+  const closer = closerBoardsFor(colour.preferredPaletteIds);
 
   function forward() {
-    if (step === 3 && relationship === "no") {
+    if (step === 4 && relationship === "no") {
       activate("type");
       navigate(sectionPath("type"));
       return;
@@ -91,6 +62,7 @@ export function ColourScreen() {
             title="Where does your eye go?"
             prompt="Choose the colour worlds you're naturally drawn toward."
             supporting="These aren't recommendations — we're looking for patterns. Up to three."
+            palettes={COLOUR_PALETTES}
             selected={colour.preferredPaletteIds}
             blocked={colour.avoidedPaletteIds}
             atMax={colour.preferredPaletteIds.length >= LIMITS.palettes}
@@ -99,34 +71,41 @@ export function ColourScreen() {
           />
         ) : null}
         {step === 1 ? (
-          <QuestionScreen kicker="Colour" title="Push it where?" supporting="Don't name a style. Just say which way the colour should move.">
-            <div className="push-grid">
-              {PUSHES.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="push-card"
-                  aria-pressed={colour.colourPush === item.id}
-                  style={{ background: item.ground, color: item.ink }}
-                  onClick={() => setColourPush(colour.colourPush === item.id ? null : item.id)}
-                >
-                  <span>{item.label}</span>
+          <PaletteStep
+            title="Somewhere around here?"
+            prompt="A closer look inside what you already chose."
+            supporting="Still not a brand palette. Pick the distinctions that feel nearer."
+            palettes={closer}
+            selected={colour.closerBoardIds}
+            blocked={[]}
+            atMax={colour.closerBoardIds.length >= 4}
+            limitNote="Four is enough of a closer look."
+            onToggle={toggleCloserBoard}
+          />
+        ) : null}
+        {step === 2 ? (
+          <QuestionScreen kicker="Colour" title="How should it feel?" supporting="Choose as many as are true. This is taste, not a finished palette.">
+            <div className="nuance-grid">
+              {COLOUR_NUANCE.map(([id, label]) => (
+                <button key={id} type="button" className="nuance-card" aria-pressed={colour.nuanceIds.includes(id)} onClick={() => toggleColourNuance(id)}>
+                  {label}
                 </button>
               ))}
             </div>
           </QuestionScreen>
         ) : null}
-        {step === 2 ? (
+        {step === 3 ? (
           <PaletteStep
             title="Anything you'd rather avoid?"
-            supporting="Same worlds. A pull and a refusal stay separate."
+            supporting="The first worlds again. A pull and a refusal stay separate."
+            palettes={COLOUR_PALETTES}
             selected={colour.avoidedPaletteIds}
             blocked={colour.preferredPaletteIds}
             atMax={false}
             onToggle={toggleAvoidedPalette}
           />
         ) : null}
-        {step === 3 ? (
+        {step === 4 ? (
           <QuestionScreen kicker="Colour" title="Do you already use particular colours?">
             <ChoiceGrid columns={2} labelledBy="question-title">
               {RELATIONSHIPS.map((item) => (
@@ -140,7 +119,7 @@ export function ColourScreen() {
             </ChoiceGrid>
           </QuestionScreen>
         ) : null}
-        {step === 4 ? (
+        {step === 5 ? (
           <ExistingColourStep
             colours={colour.existingBrandColours.map((item) => item.hex)}
             onAdd={addExistingColour}
@@ -156,6 +135,7 @@ function PaletteStep({
   title,
   prompt,
   supporting,
+  palettes,
   selected,
   blocked,
   atMax,
@@ -165,6 +145,7 @@ function PaletteStep({
   title: string;
   prompt?: string;
   supporting: string;
+  palettes: readonly PaletteDefinition[];
   selected: string[];
   blocked: string[];
   atMax: boolean;
@@ -178,7 +159,7 @@ function PaletteStep({
     <QuestionScreen kicker="Colour" title={title} prompt={prompt} supporting={supporting}>
       {lead ? <div className="palette-bleed" aria-hidden="true" style={{ background: `linear-gradient(120deg, ${lead.swatches.join(",")})` }} /> : null}
       <div className="palette-grid">
-        {COLOUR_PALETTES.map((palette) => {
+        {palettes.map((palette) => {
           const pressed = selected.includes(palette.id);
           const isBlocked = blocked.includes(palette.id);
           return (

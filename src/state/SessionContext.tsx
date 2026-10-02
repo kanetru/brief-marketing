@@ -57,6 +57,8 @@ interface SessionApi {
   neutralSpectrum: (dimensionId: SpectrumDimensionId) => void;
   chooseVisual: (comparisonId: string, choice: VisualChoice) => void;
   togglePreferredPalette: (paletteId: string) => void;
+  toggleCloserBoard: (paletteId: string) => void;
+  toggleColourNuance: (nuanceId: string) => void;
   toggleAvoidedPalette: (paletteId: string) => void;
   setColourPush: (push: import("../types/creativeReading").ColourPush | null) => void;
   setColourRelationship: (value: ColourRelationship) => void;
@@ -67,6 +69,8 @@ interface SessionApi {
   toggleTypeRefinement: (faceId: string) => void;
   toggleAvoidedType: (directionId: TypographyDirectionId) => void;
   togglePreferredImagery: (directionId: ImageryDirectionId) => void;
+  setImageryReaction: (directionId: ImageryDirectionId, reaction: "love" | "interesting" | "not_me") => void;
+  setCloserStill: (stillId: string, reaction: "love" | "interesting" | "not_me") => void;
   toggleAvoidedImagery: (directionId: ImageryDirectionId) => void;
   chooseVoice: (roundId: string, optionId: string) => void;
   setVoiceLanguage: (field: "preferred" | "avoided", value: string) => void;
@@ -181,6 +185,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (paletteId: string) => send({ type: "toggle-preferred-palette", paletteId }),
     [send],
   );
+  const toggleCloserBoard = useCallback(
+    (paletteId: string) => send({ type: "toggle-closer-board", paletteId }),
+    [send],
+  );
+  const toggleColourNuance = useCallback(
+    (nuanceId: string) => send({ type: "toggle-colour-nuance", nuanceId }),
+    [send],
+  );
   const toggleAvoidedPalette = useCallback(
     (paletteId: string) => send({ type: "toggle-avoided-palette", paletteId }),
     [send],
@@ -210,6 +222,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
   const togglePreferredImagery = useCallback(
     (directionId: ImageryDirectionId) => send({ type: "toggle-preferred-imagery", directionId }),
+    [send],
+  );
+  const setImageryReaction = useCallback(
+    (directionId: ImageryDirectionId, reaction: "love" | "interesting" | "not_me") =>
+      send({ type: "set-imagery-reaction", directionId, reaction }),
+    [send],
+  );
+  const setCloserStill = useCallback(
+    (stillId: string, reaction: "love" | "interesting" | "not_me") =>
+      send({ type: "set-closer-still", stillId, reaction }),
     [send],
   );
   const toggleAvoidedImagery = useCallback(
@@ -320,6 +342,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       neutralSpectrum,
       chooseVisual,
       togglePreferredPalette,
+      toggleCloserBoard,
+      toggleColourNuance,
       toggleAvoidedPalette,
       setColourPush,
       setColourRelationship,
@@ -330,6 +354,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toggleTypeRefinement,
       toggleAvoidedType,
       togglePreferredImagery,
+      setImageryReaction,
+      setCloserStill,
       toggleAvoidedImagery,
       chooseVoice,
       setVoiceLanguage,
@@ -380,6 +406,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       neutralSpectrum,
       chooseVisual,
       togglePreferredPalette,
+      toggleCloserBoard,
+      toggleColourNuance,
       toggleAvoidedPalette,
       setColourPush,
       setColourRelationship,
@@ -390,6 +418,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toggleTypeRefinement,
       toggleAvoidedType,
       togglePreferredImagery,
+      setImageryReaction,
+      setCloserStill,
       toggleAvoidedImagery,
       chooseVoice,
       setVoiceLanguage,

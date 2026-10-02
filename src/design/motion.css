@@ -65,6 +65,8 @@
   .palette-card,
   .type-card,
   .imagery-card,
+  .nuance-card,
+  .mood-reactions button,
   .voice-option {
     animation: ll-fade 120ms linear both;
     transition: none;

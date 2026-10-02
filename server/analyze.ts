@@ -3,8 +3,7 @@ import type { AnalysisResult } from "../src/domain/analysis";
 import { AGENT_RESPONSE_SCHEMA, parseAgentResponse } from "../src/domain/agentSchema";
 import type { DiscoveryEvidence } from "../src/domain/evidence";
 import { selectClarificationQuestions, supportedObservations } from "../src/domain/questionSelection";
-
-const DEFAULT_MODEL = "gpt-4o-mini";
+import { modelFor } from "../src/config/aiModels";
 
 export async function analyzeDiscovery(evidence: DiscoveryEvidence): Promise<AnalysisResult> {
   if (!isEvidence(evidence)) return { ok: false, error: "invalid_response" };
@@ -15,7 +14,7 @@ export async function analyzeDiscovery(evidence: DiscoveryEvidence): Promise<Ana
     return { ok: false, error: "not_configured" };
   }
 
-  const model = process.env.OPENAI_MODEL?.trim() || DEFAULT_MODEL;
+  const model = modelFor("discoveryAnalysis");
 
   let response: Response;
   try {

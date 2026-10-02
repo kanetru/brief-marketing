@@ -12,14 +12,14 @@ export function buildAgentPack(project: BriefProject, intelligence: Omit<Project
     file("04_voice.md", "Voice", voiceFile(intelligence)),
     file("05_visual_direction.md", "Visual direction", visualFile(intelligence)),
     file("06_competitors.md", "Competitors", competitorFile(intelligence)),
-    file("07_content_strategy.md", "Content strategy", contentFile(intelligence)),
+    file("07_content_strategy.md", "What to talk about", contentFile(intelligence)),
     file("08_asset_register.md", "Asset register", assetFile(intelligence)),
     file("09_guardrails.md", "Guardrails", guardrailFile(intelligence)),
     file("10_open_questions.md", "Open questions", questionFile(intelligence)),
     file("11_evidence.md", "Evidence", evidenceFile(intelligence)),
-    file("12_channel_strategy.md", "Channel strategy", channelFile(intelligence.strategy)),
-    file("13_customer_journey.md", "Customer journey", journeyFile(intelligence.strategy)),
-    file("14_marketing_roadmap.md", "Marketing roadmap", roadmapFile(intelligence.strategy)),
+    file("12_channel_strategy.md", "Where to show up", channelFile(intelligence)),
+    file("13_customer_journey.md", "How people decide", journeyFile(intelligence.strategy)),
+    file("14_marketing_roadmap.md", "The plan", roadmapFile(intelligence)),
   ];
   const master = file("BRIEF_CONTEXT.md", "Complete context", masterFile(project, intelligence, files));
   return { generatedAt: intelligence.generatedAt, projectVersion: project.version, files, master };
@@ -50,9 +50,13 @@ function masterFile(project: BriefProject, intelligence: Omit<ProjectIntelligenc
     `Project version ${project.version}. Generated ${intelligence.generatedAt}.`,
     "Facts are things the client said. Inferences and hypotheses come from Brief and can be wrong.",
     "An approved direction is a decision the manager made. It is not a fact.",
+    intelligence.clientBrain.source === "live_model"
+      ? "The client read below is a model reading. Hypotheses stay hypotheses until a person checks them. Approval does not make them facts."
+      : "There is no model reading yet. Rule candidates in the strategy files are not a strategist's understanding.",
     "Published copy is what a website currently says. It is not a fact about the business.",
     "",
-    strategyPreface(intelligence.strategy),
+    intelligence.clientBrain.source === "live_model" ? `The read\n\n${intelligence.clientBrain.output.clientRead}` : "The read\n\nNo model reading is stored. Do not treat the rule candidates as that reading.",
+    strategyPreface(intelligence),
     "",
     sections,
   ].join("\n");
@@ -111,7 +115,17 @@ function competitorFile(intelligence: Omit<ProjectIntelligence, "agentPack">): s
 
 function contentFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
   const plan = intelligence.strategy;
-  const territories = plan.territories.map((item) => [
+  const reasoned = intelligence.clientBrain.source === "live_model" ? intelligence.clientBrain.output.territories : [];
+  const territories = reasoned.length > 0
+    ? reasoned.map((item) => [
+      `### ${item.name}`,
+      item.idea,
+      `For: ${item.audienceNeed}`,
+      `Toward: ${item.purpose}`,
+      `Risk: ${item.risk}`,
+      "Source: model reading. A hypothesis until the manager decides.",
+    ].join("\n")).join("\n\n")
+    : plan.territories.map((item) => [
     `### ${item.name}`,
     item.idea,
     `For: ${item.audienceNeed}`,
@@ -158,7 +172,26 @@ function languageBlock(plan: StrategicPlan): string {
   return ["## Language", ...filled.map(([label, values]) => `**${label}**\n${values.join("; ")}`)].join("\n\n");
 }
 
-function channelFile(plan: StrategicPlan): string {
+function channelFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
+  const reasoned = intelligence.clientBrain.source === "live_model" ? intelligence.clientBrain.output.channels : [];
+  if (reasoned.length > 0) {
+    const groups = ["primary", "secondary", "test", "maintain", "deprioritise", "not_now"] as const;
+    return groups.map((priority) => {
+      const items = reasoned.filter((item) => item.priority === priority);
+      if (items.length === 0) return "";
+      const body = items.map((item) => [
+        `### ${CHANNEL_LABEL[item.channel]}`,
+        `Role: ${item.role}`,
+        `Why: ${item.why}`,
+        "Source: model reading. The rule ranking did not decide this.",
+      ].join("\n")).join("\n\n");
+      return `## ${priority.replace("_", " ")}\n\n${body}`;
+    }).filter(Boolean).join("\n\n");
+  }
+  return channelCandidates(intelligence.strategy);
+}
+
+function channelCandidates(plan: StrategicPlan): string {
   const groups = ["primary", "secondary", "test", "maintain", "deprioritise", "not_now"] as const;
   return groups.map((priority) => {
     const items = plan.channels.filter((item) => item.priority === priority);
@@ -189,7 +222,22 @@ function journeyFile(plan: StrategicPlan): string {
   ].join("\n")).join("\n\n");
 }
 
-function roadmapFile(plan: StrategicPlan): string {
+function roadmapFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
+  const reasoned = intelligence.clientBrain.source === "live_model" ? intelligence.clientBrain.output.roadmap : [];
+  if (reasoned.length > 0) {
+    return reasoned.map((stage) => [
+      `### ${stage.horizon}`,
+      stage.objective,
+      `Why: ${stage.why}`,
+      `Do: ${stage.actions.join("; ")}`,
+      `Signal: ${stage.success}`,
+      "Source: model reading. The sequence follows this client, not a fixed year formula.",
+    ].join("\n")).join("\n\n");
+  }
+  return roadmapCandidates(intelligence.strategy);
+}
+
+function roadmapCandidates(plan: StrategicPlan): string {
   return plan.roadmap.map((stage) => [
     `### ${stage.marker} · ${stage.horizon} · ${stage.phase}`,
     stage.objective,
@@ -201,21 +249,30 @@ function roadmapFile(plan: StrategicPlan): string {
   ].join("\n")).join("\n\n");
 }
 
-function strategyPreface(plan: StrategicPlan): string {
-  const roles = plan.channels
+function strategyPreface(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
+  const plan = intelligence.strategy;
+  const live = intelligence.clientBrain.source === "live_model";
+  const reasonedChannels = live ? intelligence.clientBrain.output.channels : [];
+  const roles = (reasonedChannels.length > 0 ? reasonedChannels : plan.channels)
     .filter((item) => item.priority === "primary" || item.priority === "secondary")
     .map((item) => `${CHANNEL_LABEL[item.channel]} (${item.priority}): ${item.role}`)
     .join("\n");
+  const reasonedPosition = live ? intelligence.clientBrain.output.positioning.statement : "";
   const position = plan.positioning.decisionStatus === "approved"
     ? plan.positioning.statement
-    : `${plan.positioning.statement} (${plan.positioning.epistemicStatus}, not yet approved)`;
+    : reasonedPosition
+      ? `${reasonedPosition} (hypothesis, not yet approved)`
+      : `${plan.positioning.statement} (${plan.positioning.epistemicStatus}, not yet approved)`;
+  const territoryNames = live && intelligence.clientBrain.output.territories.length > 0
+    ? intelligence.clientBrain.output.territories.map((item) => item.name)
+    : plan.territories.map((item) => item.name);
   return [
     "Strategy in force",
     `Primary goal: ${plan.objective}`,
     `Audience: ${plan.audience.identitySignals || "Not yet named."}`,
     `Positioning: ${position}`,
     roles ? `Channel roles:\n${roles}` : "Channel roles: none derived.",
-    `Content territories: ${plan.territories.map((item) => item.name).join("; ") || "None yet."}`,
+    `Content territories: ${territoryNames.join("; ") || "None yet."}`,
     `Constraint: ${plan.constraint || "None named."}`,
     `Roadmap priority: ${plan.nextPriority || "Not yet set."}`,
   ].join("\n\n");

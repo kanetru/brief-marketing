@@ -4,7 +4,6 @@ import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { buildBrandIntelligence } from "../../domain/brandIntelligence";
 import { STARTER_WORKFLOWS, starterPrompt } from "../../domain/project/agentPack";
 import { adaptiveFollowUps } from "../../domain/project/adaptiveQuestions";
-import { attentionLine } from "../../domain/project/attention";
 import { buildProjectIntelligence } from "../../domain/project/assemble";
 import { nextAssetStatus } from "../../domain/project/assetRegister";
 import { sharePath } from "../../domain/project/access";
@@ -13,16 +12,22 @@ import { requestSiteResearch } from "../../services/researchClient";
 import { useProjects } from "../../state/ProjectContext";
 import type { AgentFile, AssetCategory, AssetItem, BriefProject, CategoryPattern, DiscoveryStatus, ProjectIntelligence, ResearchTension, SourceQuote, UnderstandingField } from "../../types/project";
 import { StrategyView } from "./StrategyView";
+import { buildStrategistPacket } from "../../domain/project/strategist/packet";
+import { requestClientReading } from "../../services/ai/clientStrategistClient";
+import { CHANNEL_LABEL } from "../../domain/project/strategy/channels";
 
 const PANELS = [
-  ["overview", "Overview"],
-  ["strategy", "Strategy"],
-  ["understanding", "Understanding"],
-  ["market", "Market"],
-  ["creative", "Creative"],
-  ["opportunities", "Opportunities"],
-  ["assets", "Assets"],
-  ["discovery", "Discovery"],
+  ["read", "The read"],
+  ["matters", "What matters"],
+  ["customer", "The customer"],
+  ["market", "The market"],
+  ["brand", "The brand"],
+  ["channels", "Where to show up"],
+  ["content", "What to talk about"],
+  ["needs", "What we need"],
+  ["plan", "The plan"],
+  ["unknown", "What we don't know"],
+  ["discovery", "What they told us"],
   ["pack", "Use in AI"],
 ] as const;
 
@@ -63,7 +68,7 @@ export function ProjectWorkspace() {
   const { projectId = "" } = useParams();
   const api = useProjects();
   const project = api.projects.find((item) => item.id === projectId) ?? null;
-  const [panel, setPanel] = useState<Panel>("overview");
+  const [panel, setPanel] = useState<Panel>("read");
   const [notice, setNotice] = useState("");
   const [researchRun, setResearchRun] = useState<ResearchRun | null>(null);
   const intelligence = useMemo(
@@ -85,12 +90,6 @@ export function ProjectWorkspace() {
   }
 
   const link = `${window.location.origin}${sharePath(project.shareToken)}`;
-  const idea = intelligence.understanding.fields.find((field) => field.id === "brand.central_idea");
-  const worth = [
-    attentionLine(project, intelligence),
-    intelligence.contradictions[0]?.statement,
-    intelligence.openQuestions[0]?.prompt,
-  ].filter((line): line is string => Boolean(line)).slice(0, 3);
 
   async function copy(text: string, label: string) {
     try {
@@ -120,33 +119,47 @@ export function ProjectWorkspace() {
         ))}
       </nav>
       {notice ? <p className="studio-notice">{notice}</p> : null}
-      {panel === "overview" ? (
-        <Overview
-          project={project}
-          intelligence={intelligence}
-          idea={idea?.text ?? ""}
-          worth={worth}
-          onOpen={setPanel}
-        />
-      ) : null}
-      {panel === "strategy" ? (
+      {panel === "read" || panel === "matters" || panel === "customer" || panel === "channels" || panel === "content" || panel === "plan" || panel === "unknown" ? (
         <StrategyView
+          area={panel}
           plan={intelligence.strategy}
+          brain={intelligence.clientBrain}
           insight={intelligence.category?.observation || intelligence.tensions[0]?.statement || ""}
+          openQuestions={intelligence.openQuestions.map((item) => item.prompt)}
+          onReread={async () => {
+            const packet = buildStrategistPacket(project, {
+              evidence: intelligence.evidence,
+              categoryNote: intelligence.category?.observation,
+              competitorLines: intelligence.competitors.map((item) => `${item.name}: ${item.apparentPositioning || item.unavailableReason || ""}`),
+              contradictions: intelligence.contradictions.map((item) => item.statement),
+              candidateNote: intelligence.strategy.channels.map((item) => `${CHANNEL_LABEL[item.channel]} ${item.priority}: ${item.role}`).join("\n"),
+            });
+            const result = await requestClientReading(packet.text, packet.evidenceIds);
+            if (!result.output) {
+              setNotice(result.failureCode === "not_configured"
+                ? "No model is configured. This stays a local assembly, not a reading."
+                : "The model didn't return a usable reading.");
+              return;
+            }
+            api.setClientReading(project.id, {
+              evidenceHash: packet.hash,
+              source: "live_model",
+              provider: result.provider,
+              model: result.model,
+              generatedAt: new Date().toISOString(),
+              output: result.output,
+              challenges: [],
+            });
+            setNotice("A model reading is now the understanding. Approved lines were kept.");
+          }}
           onSave={(fieldId, text, status) => api.setOverride(project.id, {
             fieldId,
             text,
             status,
-            decisionStatus: "approved",
+            decisionStatus: status === "approved" ? "approved" : "unreviewed",
+            epistemicStatus: "hypothesis",
             updatedAt: new Date().toISOString(),
           })}
-        />
-      ) : null}
-      {panel === "understanding" ? (
-        <Understanding
-          fields={intelligence.understanding.fields}
-          evidence={intelligence.evidence}
-          onSave={(fieldId, text, status) => api.setOverride(project.id, { fieldId, text, status, updatedAt: new Date().toISOString() })}
         />
       ) : null}
       {panel === "market" ? (
@@ -184,11 +197,17 @@ export function ProjectWorkspace() {
           }}
         />
       ) : null}
-      {panel === "creative" ? (
-        <Creative reading={reading} reactions={project.discovery.territoryFeedback} />
+      {panel === "brand" ? (
+        <>
+          <Creative reading={reading} reactions={project.discovery.territoryFeedback} />
+          <Understanding
+            fields={intelligence.understanding.fields}
+            evidence={intelligence.evidence}
+            onSave={(fieldId, text, status) => api.setOverride(project.id, { fieldId, text, status, updatedAt: new Date().toISOString() })}
+          />
+        </>
       ) : null}
-      {panel === "opportunities" ? <Opportunities items={intelligence.opportunities} evidence={intelligence.evidence} /> : null}
-      {panel === "assets" ? (
+      {panel === "needs" ? (
         <Assets
           items={intelligence.assets}
           library={intelligence.library}
@@ -230,94 +249,15 @@ export function ProjectWorkspace() {
   );
 }
 
-function Overview({
-  project,
-  intelligence,
-  idea,
-  worth,
-  onOpen,
-}: {
-  project: BriefProject;
-  intelligence: ProjectIntelligence;
-  idea: string;
-  worth: string[];
-  onOpen: (panel: Panel) => void;
-}) {
-  const interesting = intelligence.category?.patterns.slice(0, 3) ?? [];
-  const facts = intelligence.understanding.fields.filter((field) => field.epistemicStatus === "fact").slice(0, 2);
-  const unknown = intelligence.openQuestions.slice(0, 3);
-  const moves = intelligence.opportunities.slice(0, 3);
-  const strength = intelligence.discoveryProgress >= 80 ? "a strong working understanding" : intelligence.discoveryProgress >= 40 ? "a working understanding, with gaps still open" : "a thin picture so far";
-  return (
-    <section className="studio-panel">
-      <p className="studio-kicker">The read</p>
-      <h2>{idea || "The picture is still thin."}</h2>
-      <p>Brief has {strength} of {project.businessName || "this business"}.</p>
-      <dl className="strategy-read">
-        <div><dt>Commercial objective</dt><dd>{intelligence.strategy.objective}</dd></div>
-        <div><dt>Primary audience</dt><dd>{intelligence.strategy.audience.identitySignals || "Not yet named."}</dd></div>
-        <div><dt>Current positioning</dt><dd>{intelligence.strategy.positioning.statement}</dd></div>
-        <div><dt>Key market insight</dt><dd>{intelligence.category?.observation || intelligence.tensions[0]?.statement || "No market read yet."}</dd></div>
-        <div><dt>Current opportunity</dt><dd>{intelligence.opportunities[0]?.title || "Nothing strong enough yet."}</dd></div>
-        <div><dt>Major constraint</dt><dd>{intelligence.strategy.constraint || "None named."}</dd></div>
-        <div><dt>Next priority</dt><dd>{intelligence.strategy.nextPriority || "Not set."}</dd></div>
-      </dl>
-      <button type="button" className="studio-text-button" onClick={() => onOpen("strategy")}>Open the strategy</button>
-      {worth.length > 0 ? (
-        <div>
-          <p className="studio-kicker">{worth.length} {worth.length === 1 ? "thing" : "things"} worth your attention</p>
-          <ul className="studio-questions">
-            {worth.map((line) => <li key={line}>{line}</li>)}
-          </ul>
-        </div>
-      ) : null}
-      <div>
-        <p className="studio-kicker">What's interesting</p>
-        <div className="studio-cards">
-          {interesting.map((pattern) => (
-            <article key={pattern.id} className="studio-card">
-              <p className="studio-kicker">{pattern.title} · hypothesis</p>
-              <p>{pattern.statement}</p>
-            </article>
-          ))}
-          {facts.map((field) => (
-            <article key={field.id} className="studio-card">
-              <p className="studio-kicker">{field.label} · fact</p>
-              <p>{field.text}</p>
-            </article>
-          ))}
-          {interesting.length === 0 && facts.length === 0 ? <p>Nothing strong enough to surface yet.</p> : null}
-        </div>
-      </div>
-      <div>
-        <p className="studio-kicker">Opportunities</p>
-        <div className="studio-cards">
-          {moves.map((item) => (
-            <article key={item.id} className="studio-card">
-              <h3>{item.title}</h3>
-              <p>{item.why}</p>
-            </article>
-          ))}
-        </div>
-        <button type="button" className="studio-text-button" onClick={() => onOpen("opportunities")}>All opportunities</button>
-      </div>
-      <div>
-        <p className="studio-kicker">What we don't know</p>
-        {unknown.length === 0 ? <p>Nothing unresolved is strong enough to list.</p> : (
-          <ul className="studio-questions">
-            {unknown.map((item) => <li key={item.id}>{item.prompt}</li>)}
-          </ul>
-        )}
-      </div>
-      {project.websiteResearch?.observation ? (
-        <article className="studio-card">
-          <p className="studio-kicker">What the site says · published copy</p>
-          <p>{project.websiteResearch.observation.headline}</p>
-        </article>
-      ) : null}
-    </section>
-  );
-}
+const SECTION_TITLE: Record<string, string> = {
+  business: "What the business is",
+  audience: "Who they serve",
+  market: "How they say they differ",
+  brand: "How it should feel",
+  marketing: "What the work is for",
+  creative: "A direction worth trying",
+  company: "What the business is",
+};
 
 function Understanding({
   fields,
@@ -336,7 +276,7 @@ function Understanding({
         if (group.length === 0) return null;
         return (
           <div key={section} className="studio-group">
-            <h2>{section}</h2>
+            <h2>{SECTION_TITLE[section] ?? section}</h2>
             {group.map((field) => (
               <FieldCard key={`${field.id}:${field.kind}`} field={field} evidence={evidence.filter((item) => field.evidenceIds.includes(item.id))} onSave={onSave} />
             ))}
@@ -427,7 +367,7 @@ function Market({
   const researchOpportunities = opportunities.filter((item) => item.id === "opp-making" || item.id === "opp-longevity" || (item.marketEvidence?.length ?? 0) > 0).length;
   return (
     <section className="studio-panel">
-      <h2>Market</h2>
+      <h2>The market</h2>
       <p>Brief compares the client's discovery, the client's site, and the competitor pages it actually read.</p>
       {category ? (
         <div className="studio-cards">
@@ -634,7 +574,7 @@ function Creative({
 }) {
   return (
     <section className="studio-panel">
-      <p className="studio-kicker">{reading.source === "fallback" ? "Fallback reading" : "Strategist reading"}</p>
+      <p className="studio-kicker">{reading.source === "fallback" ? "A local creative note" : "How it might look and sound"}</p>
       <h2>{reading.hypothesis.centralIdea}</h2>
       <p>{reading.hypothesis.strategicOpportunity}</p>
       <div className="studio-cards">
@@ -656,34 +596,6 @@ function Creative({
   );
 }
 
-function Opportunities({ items, evidence }: { items: ProjectIntelligence["opportunities"]; evidence: ProjectIntelligence["evidence"] }) {
-  return (
-    <section className="studio-panel">
-      <h2>What you could do</h2>
-      <div className="studio-cards">
-        {items.map((item) => (
-          <article key={item.id} className="studio-card">
-            <p className="studio-kicker">{item.type} · {item.effort} effort · {item.confidence}</p>
-            <h3>{item.title}</h3>
-            <p>{item.observation || item.why}</p>
-            {item.hypothesis ? <p><strong>Hypothesis. </strong>{item.hypothesis}</p> : null}
-            {item.observation && item.why !== item.observation ? <p>{item.why}</p> : null}
-            <p><strong>Try. </strong>{item.action}</p>
-            {item.requiredAssets && item.requiredAssets.length > 0 ? <p className="studio-meta">Requires · {item.requiredAssets.join(", ")}</p> : null}
-            {item.impactHypothesis ? <p className="studio-meta">{item.impactHypothesis}</p> : null}
-            <ul className="studio-evidence">
-              {item.evidenceIds.map((id) => {
-                const record = evidence.find((entry) => entry.id === id);
-                return record ? <li key={id}><span>{record.claimScope === "published_copy" ? "published copy" : record.epistemicStatus}</span><p>{record.text}</p></li> : null;
-              })}
-            </ul>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function Assets({
   items,
   library,
@@ -700,7 +612,7 @@ function Assets({
   const [category, setCategory] = useState<AssetCategory>("photo_video");
   return (
     <section className="studio-panel">
-      <h2>What should exist</h2>
+      <h2>What we need</h2>
       <p>The register is the work that still needs making. It is not a list of files.</p>
       <ol className="studio-assets">
         {(["now", "soon", "later"] as const).map((priority) => (
@@ -889,13 +801,13 @@ function AgentPackPanel({
         <button type="button" className="studio-text-button" onClick={onRegenerate}>Regenerate from latest</button>
       </div>
       <div className="studio-row">
-        <CopyChip label="Brand voice" file={named("04_voice.md")} onCopy={onCopy} />
-        <CopyChip label="Content strategy" file={named("07_content_strategy.md")} onCopy={onCopy} />
-        <CopyChip label="Visual direction" file={named("05_visual_direction.md")} onCopy={onCopy} />
-        <CopyChip label="Competitor context" file={named("06_competitors.md")} onCopy={onCopy} />
-        <CopyChip label="Channel strategy" file={named("12_channel_strategy.md")} onCopy={onCopy} />
-        <CopyChip label="Customer journey" file={named("13_customer_journey.md")} onCopy={onCopy} />
-        <CopyChip label="Roadmap" file={named("14_marketing_roadmap.md")} onCopy={onCopy} />
+        <CopyChip label="How they should sound" file={named("04_voice.md")} onCopy={onCopy} />
+        <CopyChip label="What to talk about" file={named("07_content_strategy.md")} onCopy={onCopy} />
+        <CopyChip label="How it should look" file={named("05_visual_direction.md")} onCopy={onCopy} />
+        <CopyChip label="The market" file={named("06_competitors.md")} onCopy={onCopy} />
+        <CopyChip label="Where to show up" file={named("12_channel_strategy.md")} onCopy={onCopy} />
+        <CopyChip label="How people decide" file={named("13_customer_journey.md")} onCopy={onCopy} />
+        <CopyChip label="The plan" file={named("14_marketing_roadmap.md")} onCopy={onCopy} />
       </div>
       <h3>Start a task</h3>
       <div className="studio-row">

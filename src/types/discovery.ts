@@ -256,6 +256,10 @@ export interface ExistingBrandColour {
 export interface ColourPreferences {
   preferredPaletteIds: string[];
   avoidedPaletteIds: string[];
+  /** Closer boards chosen after the first worlds. Still taste, not brand colours. */
+  closerBoardIds: string[];
+  /** Several nuance choices. Not a finished palette. */
+  nuanceIds: string[];
   preferredCapturedAt: IsoDateTime | null;
   avoidedCapturedAt: IsoDateTime | null;
   /** A visual nudge after the first palette lean. Null until they touch it. */
@@ -300,7 +304,15 @@ export type ImageryDirectionId =
 /** Preference evidence. Not a recommendation of what to publish. */
 export interface ImageryPreferences {
   preferredDirectionIds: ImageryDirectionId[];
+  /** Interesting, but not a love. */
+  interestIds: ImageryDirectionId[];
   avoidedDirectionIds: ImageryDirectionId[];
+  /** Closer stills they loved. */
+  closerStillIds: string[];
+  /** Closer stills that were interesting, not a love. */
+  closerInterestIds: string[];
+  /** Closer stills they refused. */
+  closerRejectedIds: string[];
   preferredCapturedAt: IsoDateTime | null;
   avoidedCapturedAt: IsoDateTime | null;
 }

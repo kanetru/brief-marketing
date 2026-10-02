@@ -70,6 +70,19 @@ function isImagery(value: unknown): value is ImageryPreferences {
   return Array.isArray((value as ImageryPreferences).preferredDirectionIds);
 }
 
+function mergeImagery(value: unknown, fresh: ImageryPreferences): ImageryPreferences {
+  if (!isImagery(value)) return fresh;
+  const record = value as ImageryPreferences;
+  return {
+    ...fresh,
+    ...record,
+    interestIds: Array.isArray(record.interestIds) ? record.interestIds : [],
+    closerStillIds: Array.isArray(record.closerStillIds) ? record.closerStillIds : [],
+    closerInterestIds: Array.isArray(record.closerInterestIds) ? record.closerInterestIds : [],
+    closerRejectedIds: Array.isArray(record.closerRejectedIds) ? record.closerRejectedIds : [],
+  };
+}
+
 function isVoice(value: unknown): value is VoicePreferences {
   if (!value || typeof value !== "object") return false;
   const record = value as Partial<VoicePreferences>;
@@ -169,7 +182,7 @@ export function migrateSession(value: unknown): DiscoverySession | null {
     visualPreferences: mergeVisual(record.visualPreferences, fresh.visualPreferences),
     colourPreferences: mergeColour(record.colourPreferences, fresh.colourPreferences),
     typographyPreferences: mergeType(record.typographyPreferences, fresh.typographyPreferences),
-    imageryPreferences: isImagery(record.imageryPreferences) ? record.imageryPreferences : fresh.imageryPreferences,
+    imageryPreferences: mergeImagery(record.imageryPreferences, fresh.imageryPreferences),
     voicePreferences: mergeVoice(record.voicePreferences, fresh.voicePreferences),
     inspiration: isInspiration(record.inspiration) ? record.inspiration : fresh.inspiration,
     existingAssets: record.existingAssets ?? fresh.existingAssets,
@@ -186,9 +199,12 @@ const COLOUR_PUSHES = ["warmer", "darker", "cleaner", "stranger", "brighter", "q
 function mergeColour(value: unknown, fresh: ColourPreferences): ColourPreferences {
   if (!isColour(value)) return fresh;
   const push = (value as { colourPush?: unknown }).colourPush;
+  const record = value as ColourPreferences;
   return {
     ...fresh,
-    ...value,
+    ...record,
+    closerBoardIds: Array.isArray(record.closerBoardIds) ? record.closerBoardIds : [],
+    nuanceIds: Array.isArray(record.nuanceIds) ? record.nuanceIds : [],
     colourPush: typeof push === "string" && COLOUR_PUSHES.includes(push) ? (push as ColourPreferences["colourPush"]) : null,
   };
 }

@@ -4,6 +4,7 @@ import type { ProfileGenerationRequest, ProfileRefinementRequest } from "../src/
 import { analyzeDiscovery } from "./analyze";
 import { generateDiscoveryProfile, refineDiscoveryProfile } from "./profile";
 import { generateCreativeReading, type StrategistRequest } from "./strategist";
+import { generateClientReading, type ClientStrategistRequest } from "./clientStrategist";
 import { resolveTerritoryImages, type TerritoryImageRequest } from "./territoryImages";
 import { researchPage, researchSiteUrl } from "./research";
 
@@ -15,6 +16,7 @@ export function discoveryApiPlugin(): Plugin {
       url !== "/api/discovery/profile" &&
       url !== "/api/discovery/profile/refine" &&
       url !== "/api/discovery/strategist" &&
+      url !== "/api/client-strategist" &&
       url !== "/api/territory-images" &&
       url !== "/api/research/page" &&
       url !== "/api/research/site"
@@ -45,6 +47,10 @@ export function discoveryApiPlugin(): Plugin {
         }
         if (url === "/api/discovery/strategist") {
           send(res, 200, await generateCreativeReading(body as StrategistRequest));
+          return;
+        }
+        if (url === "/api/client-strategist") {
+          send(res, 200, await generateClientReading(body as ClientStrategistRequest));
           return;
         }
         if (url === "/api/discovery/analyze") {
