@@ -15,9 +15,9 @@ import { VOICE_ROUNDS } from "./voice";
  * personality:  0 attract, 1 avoid
  * spectrum:     0 intro, then one step per dimension
  * visual:       0 intro, then one step per comparison pair
- * colour:       0 preferred, 1 push, 2 avoided, 3 existing relationship, 4 existing colours
+ * colour:       0 worlds, 1 closer, 2 nuance, 3 avoided, 4 existing relationship, 5 existing colours
  * type:         0 worlds, 1 refinement, 2 avoided
- * imagery:      0 preferred, 1 avoided
+ * imagery:      0 photographic worlds, 1 closer stills
  * voice:        0 intro, then one step per round, then preferred language, then avoided language
  * inspiration:  0 admired, 1 avoid
  * clarify:      0 transition, then one step per selected question (unused slots stay empty)
@@ -33,7 +33,7 @@ export const SECTIONS = [
   { id: "personality", label: "Personality", path: "/demo/personality", steps: 2 },
   { id: "spectrum", label: "Spectrum", path: "/demo/spectrum", steps: 1 + SPECTRUM_DIMENSIONS.length },
   { id: "visual", label: "Visual", path: "/demo/visual", steps: 1 + VISUAL_COMPARISON_PAIRS.length },
-  { id: "colour", label: "Colour", path: "/demo/colour", steps: 5 },
+  { id: "colour", label: "Colour", path: "/demo/colour", steps: 6 },
   { id: "type", label: "Type", path: "/demo/type", steps: 3 },
   { id: "imagery", label: "Imagery", path: "/demo/imagery", steps: 2 },
   { id: "voice", label: "Voice", path: "/demo/voice", steps: 1 + VOICE_ROUNDS.length + 2 },

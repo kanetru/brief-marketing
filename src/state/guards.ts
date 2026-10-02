@@ -56,19 +56,22 @@ export function canAdvance(session: DiscoverySession, section: SectionId, step: 
     case "colour:0":
     case "colour:1":
     case "colour:2":
+    case "colour:3":
     case "type:1":
     case "imagery:1":
       return true;
-    case "colour:3":
-      return session.colourPreferences.existingColourRelationship.state === "selected";
     case "colour:4":
+      return session.colourPreferences.existingColourRelationship.state === "selected";
+    case "colour:5":
       return session.colourPreferences.existingBrandColours.length > 0;
     case "type:0":
       return session.typographyPreferences.preferredDirectionIds.length > 0 || session.typographyPreferences.worldIds.length > 0;
     case "type:2":
       return session.typographyPreferences.avoidedDirectionIds.length > 0;
     case "imagery:0":
-      return session.imageryPreferences.preferredDirectionIds.length > 0;
+      return session.imageryPreferences.preferredDirectionIds.length > 0
+        || session.imageryPreferences.interestIds.length > 0
+        || session.imageryPreferences.avoidedDirectionIds.length > 0;
     default: {
       if (section === "visual" && step > 0) {
         const comparison = session.visualPreferences.comparisons[step - 1];

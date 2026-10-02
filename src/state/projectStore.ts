@@ -2,6 +2,7 @@ import { migrateSession } from "./storage";
 import { createSession } from "./createSession";
 import { DEMO_ACCOUNT } from "../domain/project/account";
 import { projectStatus } from "../domain/project/assemble";
+import type { StoredClientReading } from "../types/clientRead";
 import type {
   AssetStatus,
   BriefProject,
@@ -79,6 +80,7 @@ export function createProject(input: {
     websiteResearch: null,
     competitorResearch: {},
     learning: [],
+    clientReading: null,
   };
   return { ...project, status: projectStatus(project) };
 }
@@ -178,6 +180,10 @@ export function withoutCompetitor(project: BriefProject, id: string, now = new D
   return bump(project, now, "", { competitors: project.competitors.filter((item) => item.id !== id), competitorResearch }, null);
 }
 
+export function withClientReading(project: BriefProject, clientReading: StoredClientReading, now = new Date().toISOString()): BriefProject {
+  return bump(project, now, "The client was read again", { clientReading }, "client_reread");
+}
+
 export function withWebsiteResearch(project: BriefProject, websiteResearch: StoredResearch, now = new Date().toISOString()): BriefProject {
   return bump(project, now, "Website researched", { websiteResearch }, "website_researched");
 }
@@ -272,6 +278,7 @@ function normaliseProject(project: BriefProject): BriefProject {
     websiteResearch: project.websiteResearch ?? null,
     competitorResearch: project.competitorResearch ?? {},
     learning: project.learning ?? [],
+    clientReading: project.clientReading ?? null,
   };
 }
 

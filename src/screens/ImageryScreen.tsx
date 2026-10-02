@@ -4,17 +4,19 @@ import { ImageryBoard } from "../components/ImageryBoard";
 import { NavigationControls } from "../components/NavigationControls";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { TransitionWrapper } from "../components/TransitionWrapper";
-import { IMAGERY_DIRECTIONS } from "../domain/imagery";
-import { LIMITS } from "../domain/options";
+import { IMAGERY_DIRECTIONS, closerStillsFor, type ImageryDirectionDefinition } from "../domain/imagery";
 import type { ImageryDirectionId } from "../types/discovery";
 import { canAdvance } from "../state/guards";
 import { useSession } from "../state/SessionContext";
 import { useConversation } from "../state/useConversation";
 
+type Reaction = "love" | "interesting" | "not_me";
+
 export function ImageryScreen() {
-  const { session, togglePreferredImagery, toggleAvoidedImagery } = useSession();
+  const { session, setImageryReaction, setCloserStill } = useSession();
   const { step, goBack, goForward, showBack, showForward } = useConversation("imagery");
   const imagery = session.imageryPreferences;
+  const closer = closerStillsFor(imagery.preferredDirectionIds, imagery.interestIds);
 
   return (
     <DiscoveryLayout
@@ -34,24 +36,20 @@ export function ImageryScreen() {
     >
       <TransitionWrapper transitionKey={`imagery-${step}`}>
         {step === 0 ? (
-          <ImageryStep
-            title="What kind of imagery feels right?"
-            prompt="Which two feel closest?"
-            supporting="Think about the feeling, not the exact subject matter. Up to two."
-            selected={imagery.preferredDirectionIds}
-            blocked={imagery.avoidedDirectionIds}
-            atMax={imagery.preferredDirectionIds.length >= LIMITS.imageryPreferred}
-            limitNote="Two is the brief. Let one go if this feels closer."
-            onToggle={togglePreferredImagery}
+          <MoodStep
+            title="Which of these worlds feels like you?"
+            supporting="Look at the photograph. Love it, find it interesting, or set it aside. You can choose several."
+            stills={IMAGERY_DIRECTIONS}
+            reactionFor={(id) => worldReaction(imagery.preferredDirectionIds, imagery.interestIds, imagery.avoidedDirectionIds, id)}
+            onReact={(id, reaction) => setImageryReaction(id as ImageryDirectionId, reaction)}
           />
         ) : (
-          <ImageryStep
-            title="Anything you'd rather avoid?"
-            supporting="Leave it open if nothing here bothers you. This still isn't a recommendation."
-            selected={imagery.avoidedDirectionIds}
-            blocked={imagery.preferredDirectionIds}
-            atMax={false}
-            onToggle={toggleAvoidedImagery}
+          <MoodStep
+            title="Closer to that?"
+            supporting="A narrower set, from the worlds you kept. Still a feeling, not a shot list."
+            stills={closer}
+            reactionFor={(id) => worldReaction(imagery.closerStillIds, imagery.closerInterestIds, imagery.closerRejectedIds, id)}
+            onReact={(id, reaction) => setCloserStill(id, reaction)}
           />
         )}
       </TransitionWrapper>
@@ -59,59 +57,49 @@ export function ImageryScreen() {
   );
 }
 
-function ImageryStep({
+function worldReaction(loved: readonly string[], interesting: readonly string[], rejected: readonly string[], id: string): Reaction | null {
+  if (loved.includes(id)) return "love";
+  if (interesting.includes(id)) return "interesting";
+  if (rejected.includes(id)) return "not_me";
+  return null;
+}
+
+function MoodStep({
   title,
-  prompt,
   supporting,
-  selected,
-  blocked,
-  atMax,
-  limitNote,
-  onToggle,
+  stills,
+  reactionFor,
+  onReact,
 }: {
   title: string;
-  prompt?: string;
   supporting: string;
-  selected: ImageryDirectionId[];
-  blocked: ImageryDirectionId[];
-  atMax: boolean;
-  limitNote?: string;
-  onToggle: (id: ImageryDirectionId) => void;
+  stills: readonly ImageryDirectionDefinition[];
+  reactionFor: (id: string) => Reaction | null;
+  onReact: (id: string, reaction: Reaction) => void;
 }) {
   const [note, setNote] = useState<string | null>(null);
-
   return (
-    <QuestionScreen kicker="Imagery" title={title} prompt={prompt} supporting={supporting}>
-      <div className="imagery-grid">
-        {IMAGERY_DIRECTIONS.map((direction) => {
-          const pressed = selected.includes(direction.id);
-          const isBlocked = blocked.includes(direction.id);
-          return (
-            <ImageryBoard
-              key={direction.id}
-              id={direction.id}
-              pressed={pressed}
-              blocked={isBlocked}
-              dimmed={atMax && !pressed}
-              onClick={() => {
-                if (isBlocked) {
-                  setNote("That's already on the side that feels closest. Go back if you want to move it.");
-                  return;
-                }
-                if (atMax && !pressed) {
-                  setNote(limitNote ?? "That's enough.");
-                  return;
-                }
-                setNote(null);
-                onToggle(direction.id);
-              }}
-            />
-          );
-        })}
+    <QuestionScreen kicker="Imagery" title={title} supporting={supporting}>
+      <div className="mood-grid">
+        {stills.map((still) => (
+          <ImageryBoard
+            key={still.id}
+            label={still.label}
+            src={still.src}
+            reaction={reactionFor(still.id)}
+            onReact={(reaction) => {
+              const blocked = reaction === "love" && reactionFor(still.id) !== "love" && stills.filter((item) => reactionFor(item.id) === "love").length >= 4;
+              if (blocked) {
+                setNote("Four loves is enough. Let one go if this feels closer.");
+                return;
+              }
+              setNote(null);
+              onReact(still.id, reaction);
+            }}
+          />
+        ))}
       </div>
-      <p className="gentle" role="status">
-        {note ?? ""}
-      </p>
+      <p className="gentle" role="status">{note ?? ""}</p>
     </QuestionScreen>
   );
 }

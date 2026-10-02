@@ -57,6 +57,8 @@ export type Action =
   | { type: "neutral-spectrum"; dimensionId: SpectrumDimensionId }
   | { type: "choose-visual"; comparisonId: string; choice: VisualChoice }
   | { type: "toggle-preferred-palette"; paletteId: string }
+  | { type: "toggle-closer-board"; paletteId: string }
+  | { type: "toggle-colour-nuance"; nuanceId: string }
   | { type: "toggle-avoided-palette"; paletteId: string }
   | { type: "set-colour-push"; push: import("../types/creativeReading").ColourPush | null }
   | { type: "set-colour-relationship"; value: ColourRelationship }
@@ -67,6 +69,8 @@ export type Action =
   | { type: "toggle-type-refinement"; faceId: string }
   | { type: "toggle-avoided-type"; directionId: TypographyDirectionId }
   | { type: "toggle-preferred-imagery"; directionId: ImageryDirectionId }
+  | { type: "set-imagery-reaction"; directionId: ImageryDirectionId; reaction: "love" | "interesting" | "not_me" }
+  | { type: "set-closer-still"; stillId: string; reaction: "love" | "interesting" | "not_me" }
   | { type: "toggle-avoided-imagery"; directionId: ImageryDirectionId }
   | { type: "choose-voice"; roundId: string; optionId: string }
   | { type: "voice-language"; field: "preferred" | "avoided"; value: string }
@@ -435,6 +439,22 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
         },
       };
     }
+    case "toggle-closer-board": {
+      const timestamp = new Date().toISOString();
+      const current = state.colourPreferences.closerBoardIds;
+      const has = current.includes(action.paletteId);
+      if (!has && current.length >= 4) return state;
+      const closerBoardIds = has ? current.filter((id) => id !== action.paletteId) : [...current, action.paletteId];
+      return { ...state, updatedAt: timestamp, colourPreferences: { ...state.colourPreferences, closerBoardIds } };
+    }
+    case "toggle-colour-nuance": {
+      const timestamp = new Date().toISOString();
+      const current = state.colourPreferences.nuanceIds;
+      const nuanceIds = current.includes(action.nuanceId)
+        ? current.filter((id) => id !== action.nuanceId)
+        : [...current, action.nuanceId];
+      return { ...state, updatedAt: timestamp, colourPreferences: { ...state.colourPreferences, nuanceIds } };
+    }
     case "toggle-avoided-palette": {
       const timestamp = new Date().toISOString();
       if (state.colourPreferences.preferredPaletteIds.includes(action.paletteId)) return state;
@@ -579,6 +599,7 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
         imageryPreferences: {
           ...state.imageryPreferences,
           preferredDirectionIds,
+          interestIds: state.imageryPreferences.interestIds.filter((id) => id !== action.directionId),
           avoidedDirectionIds: state.imageryPreferences.avoidedDirectionIds.filter((id) => id !== action.directionId),
           preferredCapturedAt: preferredDirectionIds.length > 0 ? timestamp : null,
         },
@@ -808,9 +829,64 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
         },
       };
     }
+    case "set-imagery-reaction": {
+      const timestamp = new Date().toISOString();
+      const imagery = state.imageryPreferences;
+      const current = imagery.preferredDirectionIds.includes(action.directionId)
+        ? "love"
+        : imagery.interestIds.includes(action.directionId)
+          ? "interesting"
+          : imagery.avoidedDirectionIds.includes(action.directionId)
+            ? "not_me"
+            : null;
+      const next = current === action.reaction ? null : action.reaction;
+      if (next === "love" && !imagery.preferredDirectionIds.includes(action.directionId) && imagery.preferredDirectionIds.length >= LIMITS.imageryPreferred) {
+        return state;
+      }
+      const drop = (ids: ImageryDirectionId[]) => ids.filter((id) => id !== action.directionId);
+      const preferredDirectionIds = next === "love" ? [...drop(imagery.preferredDirectionIds), action.directionId] : drop(imagery.preferredDirectionIds);
+      const interestIds = next === "interesting" ? [...drop(imagery.interestIds), action.directionId] : drop(imagery.interestIds);
+      const avoidedDirectionIds = next === "not_me" ? [...drop(imagery.avoidedDirectionIds), action.directionId] : drop(imagery.avoidedDirectionIds);
+      return {
+        ...state,
+        updatedAt: timestamp,
+        imageryPreferences: {
+          ...imagery,
+          preferredDirectionIds,
+          interestIds,
+          avoidedDirectionIds,
+          preferredCapturedAt: preferredDirectionIds.length > 0 ? timestamp : null,
+          avoidedCapturedAt: avoidedDirectionIds.length > 0 ? timestamp : null,
+        },
+      };
+    }
+    case "set-closer-still": {
+      const timestamp = new Date().toISOString();
+      const imagery = state.imageryPreferences;
+      const current = imagery.closerStillIds.includes(action.stillId)
+        ? "love"
+        : imagery.closerInterestIds.includes(action.stillId)
+          ? "interesting"
+          : imagery.closerRejectedIds.includes(action.stillId)
+            ? "not_me"
+            : null;
+      const next = current === action.reaction ? null : action.reaction;
+      if (next === "love" && !imagery.closerStillIds.includes(action.stillId) && imagery.closerStillIds.length >= 3) return state;
+      const drop = (ids: string[]) => ids.filter((id) => id !== action.stillId);
+      return {
+        ...state,
+        updatedAt: timestamp,
+        imageryPreferences: {
+          ...imagery,
+          closerStillIds: next === "love" ? [...drop(imagery.closerStillIds), action.stillId] : drop(imagery.closerStillIds),
+          closerInterestIds: next === "interesting" ? [...drop(imagery.closerInterestIds), action.stillId] : drop(imagery.closerInterestIds),
+          closerRejectedIds: next === "not_me" ? [...drop(imagery.closerRejectedIds), action.stillId] : drop(imagery.closerRejectedIds),
+        },
+      };
+    }
     case "toggle-avoided-imagery": {
       const timestamp = new Date().toISOString();
-      if (state.imageryPreferences.preferredDirectionIds.includes(action.directionId)) return state;
+      if (state.imageryPreferences.preferredDirectionIds.includes(action.directionId) || state.imageryPreferences.interestIds.includes(action.directionId)) return state;
       const current = state.imageryPreferences.avoidedDirectionIds;
       const avoidedDirectionIds = current.includes(action.directionId)
         ? current.filter((id) => id !== action.directionId)

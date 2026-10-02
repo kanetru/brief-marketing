@@ -1,116 +1,120 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { CHANNEL_LABEL } from "../../domain/project/strategy/channels";
-import type { ChannelPriority, StrategicPlan } from "../../types/strategy";
+import type { ClientBrain } from "../../types/clientRead";
+import type { StrategicPlan } from "../../types/strategy";
 
-const AREAS = [
-  ["goals", "Goals"],
-  ["audience", "Audience"],
-  ["journey", "Journey"],
-  ["channels", "Channels"],
-  ["content", "Content"],
-  ["roadmap", "Roadmap"],
-] as const;
-
-const CHANNEL_GROUPS: Array<[ChannelPriority, string]> = [
-  ["primary", "Primary"],
-  ["secondary", "Secondary"],
-  ["test", "Test"],
-  ["maintain", "Maintain"],
-  ["deprioritise", "Deprioritise"],
-  ["not_now", "Not now"],
-];
-
-type Area = (typeof AREAS)[number][0];
+type Area = "read" | "matters" | "customer" | "channels" | "content" | "plan" | "unknown";
 
 export function StrategyView({
+  area,
   plan,
+  brain,
   insight,
+  openQuestions,
+  onReread,
   onSave,
 }: {
+  area: Area;
   plan: StrategicPlan;
+  brain: ClientBrain;
   insight: string;
-  onSave: (fieldId: string, text: string, status: "approved" | "edited") => void;
+  openQuestions: string[];
+  onReread: () => Promise<void>;
+  onSave: (fieldId: string, text: string, status: "approved" | "edited" | "rejected") => void;
 }) {
-  const [area, setArea] = useState<Area>("goals");
+  const live = brain.source === "live_model";
+  const output = brain.output;
   return (
     <section className="studio-panel">
-      <p className="studio-kicker">Derived from the discovery. Not a second copy.</p>
-      <h2>Where this should go.</h2>
-      <nav className="strategy-subnav" aria-label="Strategy">
-        {AREAS.map(([id, label]) => (
-          <button key={id} type="button" aria-current={area === id ? "page" : undefined} onClick={() => setArea(id)}>
-            {label}
-          </button>
-        ))}
-      </nav>
-      {area === "goals" ? <Goals plan={plan} insight={insight} onSave={onSave} /> : null}
-      {area === "audience" ? <Audience plan={plan} /> : null}
-      {area === "journey" ? <Journey plan={plan} /> : null}
-      {area === "channels" ? <Channels plan={plan} /> : null}
-      {area === "content" ? <Content plan={plan} /> : null}
-      {area === "roadmap" ? <Roadmap plan={plan} onSave={onSave} /> : null}
+      {import.meta.env.DEV ? (
+        <p className="studio-kicker" data-strategist={brain.source}>
+          Strategist: {live ? `live model${brain.model ? ` · ${brain.model}` : ""}` : "local fallback"}
+          {brain.stale ? " · new evidence since this reading" : ""}
+        </p>
+      ) : null}
+      {area === "read" ? (
+        <>
+          <h2>The read</h2>
+          <p className="read-prose">{output.clientRead}</p>
+          {live && output.clientReadEvidenceIds.length > 0 ? <p className="studio-meta">Tied to {output.clientReadEvidenceIds.join(", ")}</p> : null}
+          {brain.challenges.map((line) => <p key={line} className="studio-meta">{line}</p>)}
+          <button type="button" className="studio-button" onClick={() => void onReread()}>Read this client</button>
+          {insight ? <p className="studio-meta">From the market: {insight}</p> : null}
+        </>
+      ) : null}
+      {area === "matters" ? (
+        <>
+          <h2>What matters</h2>
+          {output.observations.length === 0 ? <p>Nothing here until a model has read the client. The rules are not standing in for that.</p> : null}
+          {output.observations.map((item) => (
+            <article key={item.id} className="studio-card">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+              <p className="studio-meta">{item.evidenceIds.join(", ")}</p>
+              <button type="button" className="studio-text-button" onClick={() => onSave(`client.observation.${item.id}`, item.body, "rejected")}>Set aside</button>
+            </article>
+          ))}
+          {output.tensions.length > 0 ? <h3>Things that don't quite line up</h3> : null}
+          {output.tensions.filter((item) => item.managerDecision !== "rejected").map((item) => (
+            <article key={item.id} className="studio-card">
+              <p>{item.observation}</p>
+              <p>{item.sideA}</p>
+              <p>{item.sideB}</p>
+              <p className="studio-meta">{item.whyItMatters}</p>
+              <p className="studio-meta">Hypothesis · {item.managerDecision}</p>
+              <div className="studio-row">
+                <button type="button" className="studio-button" onClick={() => onSave(`client.tension.${item.id}`, item.observation, "approved")}>Approve</button>
+                <button type="button" className="studio-text-button" onClick={() => onSave(`client.tension.${item.id}`, item.observation, "rejected")}>Reject</button>
+                <button type="button" className="studio-text-button" onClick={() => onSave(`client.tension.${item.id}`, `${item.observation}\n\nInvestigate.`, "edited")}>Investigate</button>
+              </div>
+            </article>
+          ))}
+          {output.hypotheses.filter((item) => item.managerDecision !== "rejected").map((item) => (
+            <article key={item.id} className="studio-card">
+              <p className="studio-kicker">Hypothesis · approving this does not make it a fact</p>
+              <p>{item.statement}</p>
+              <div className="studio-row">
+                <button type="button" className="studio-button" onClick={() => onSave(`client.hypothesis.${item.id}`, item.statement, "approved")}>Approve direction</button>
+                <button type="button" className="studio-text-button" onClick={() => onSave(`client.hypothesis.${item.id}`, item.statement, "rejected")}>Reject</button>
+              </div>
+            </article>
+          ))}
+        </>
+      ) : null}
+      {area === "customer" ? <Customer plan={plan} /> : null}
+      {area === "channels" ? <Channels live={live} brain={brain} plan={plan} /> : null}
+      {area === "content" ? <Content live={live} brain={brain} plan={plan} /> : null}
+      {area === "plan" ? <Plan live={live} brain={brain} plan={plan} onSave={onSave} /> : null}
+      {area === "unknown" ? (
+        <>
+          <h2>What we don't know</h2>
+          {output.unknowns.length === 0 && openQuestions.length === 0 ? <p>Nothing unresolved is strong enough to list.</p> : null}
+          <ul className="studio-questions">
+            {output.unknowns.map((item) => <li key={item.id}>{item.question} <span>{item.whyItMatters}</span></li>)}
+            {output.unknowns.length === 0 ? openQuestions.map((item) => <li key={item}>{item}</li>) : null}
+          </ul>
+        </>
+      ) : null}
     </section>
   );
 }
 
-function Goals({
-  plan,
-  insight,
-  onSave,
-}: {
-  plan: StrategicPlan;
-  insight: string;
-  onSave: (fieldId: string, text: string, status: "approved" | "edited") => void;
-}) {
-  const goal = plan.goals[0];
-  return (
-    <div className="studio-group">
-      {goal ? (
-        <Editable
-          kicker={`${goal.outcomeType} · ${goal.targetDate} · ${goal.managerApproved ? "approved" : "unreviewed"}`}
-          original={goal.desiredOutcome}
-          onSave={(text, status) => onSave(goal.id, text, status)}
-        >
-          {goal.baseline && goal.target ? <p className="studio-meta">{goal.baseline} → {goal.target}. Only the numbers they gave.</p> : null}
-          <p>{goal.commercialImportance}</p>
-          {goal.constraints.length > 0 ? <p className="studio-meta">{goal.constraints.join(" ")}</p> : null}
-        </Editable>
-      ) : <p>No year has been named.</p>}
-      <article className="studio-card">
-        <p className="studio-kicker">Positioning · {plan.positioning.epistemicStatus} · {plan.positioning.decisionStatus}</p>
-        <Editable
-          kicker="Social position"
-          original={plan.positioning.statement}
-          onSave={(text, status) => onSave("strategy.positioning", text, status)}
-        />
-      </article>
-      {insight ? <p className="studio-meta">Market: {insight}</p> : null}
-      {plan.openQuestions.length > 0 ? (
-        <ul className="studio-questions">
-          {plan.openQuestions.map((item) => <li key={item}>{item}</li>)}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
-
-function Audience({ plan }: { plan: StrategicPlan }) {
+function Customer({ plan }: { plan: StrategicPlan }) {
   const audience = plan.audience;
   const rows: Array<[string, string]> = [
-    ["Situation", audience.situation],
-    ["Afterwards", audience.desiredOutcome],
-    ["Hesitation", audience.anxieties],
+    ["When they start looking", audience.situation],
+    ["What they want afterwards", audience.desiredOutcome],
+    ["What makes them hesitate", audience.anxieties],
     ["What they dislike", audience.frustrations],
-    ["What stops them", audience.objections],
-    ["What they must believe", audience.trustSignals],
-    ["Awareness", audience.awarenessState === "unknown" ? "" : audience.awarenessState.replaceAll("_", " ")],
-    ["They lean toward", audience.attractionSignals.join(", ")],
-  ];
-  const filled = rows.filter(([, value]) => value.trim());
+    ["What they need to believe", audience.trustSignals],
+    ["Where they are when they find you", audience.awarenessState === "unknown" ? "" : audience.awarenessState.replaceAll("_", " ")],
+    ["What they lean toward", audience.attractionSignals.join(", ")],
+  ].filter((row): row is [string, string] => Boolean(row[1].trim()));
   return (
-    <div className="studio-group">
-      <p>No demographic persona. Demographics appear only when the client or the research actually supplied them.</p>
-      {filled.length === 0 ? <p>The customer's situation is still unknown.</p> : filled.map(([label, value]) => (
+    <div>
+      <h2>The customer</h2>
+      <p>{audience.identitySignals || "Who this should matter to has not been said."}</p>
+      {rows.length === 0 ? <p>How they decide is still unknown. No demographic profile has been invented.</p> : rows.map(([label, value]) => (
         <article key={label} className="studio-card">
           <p className="studio-kicker">{label}</p>
           <p>{value}</p>
@@ -120,41 +124,43 @@ function Audience({ plan }: { plan: StrategicPlan }) {
   );
 }
 
-function Journey({ plan }: { plan: StrategicPlan }) {
+function Channels({ live, brain, plan }: { live: boolean; brain: ClientBrain; plan: StrategicPlan }) {
+  const groups = ["primary", "secondary", "test", "maintain", "deprioritise", "not_now"] as const;
+  const reasoned = live ? brain.output.channels : [];
   return (
-    <ol className="journey">
-      {plan.journey.map((stage) => (
-        <li key={stage.id}>
-          <p className="studio-kicker">{stage.stage}</p>
-          <p>{stage.customerState}</p>
-          <p className="studio-meta">Tension: {stage.tension}</p>
-          <p className="studio-meta">Proof: {stage.proof}</p>
-          <p className="studio-meta">Useful: {stage.content}</p>
-          <p className="studio-meta">Where: {stage.channel}</p>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function Channels({ plan }: { plan: StrategicPlan }) {
-  return (
-    <div className="studio-group">
-      <h3>Where should we show up?</h3>
-      {CHANNEL_GROUPS.map(([priority, label]) => {
-        const items = plan.channels.filter((item) => item.priority === priority);
+    <div>
+      <h2>Where to show up</h2>
+      {reasoned.length === 0 ? (
+        <>
+          <p>These are rule candidates. A model reading can accept, revise, or reject them. The ranking is not the decision.</p>
+          {groups.map((priority) => {
+            const items = plan.channels.filter((item) => item.priority === priority);
+            if (items.length === 0) return null;
+            return (
+              <section key={priority}>
+                <h3>{priority.replace("_", " ")}</h3>
+                {items.map((item) => (
+                  <article key={item.channel} className="studio-card">
+                    <p className="studio-kicker">{CHANNEL_LABEL[item.channel]} · candidate</p>
+                    <p>{item.role}</p>
+                    <p className="studio-meta">{item.why}</p>
+                  </article>
+                ))}
+              </section>
+            );
+          })}
+        </>
+      ) : groups.map((priority) => {
+        const items = reasoned.filter((item) => item.priority === priority);
         if (items.length === 0) return null;
         return (
-          <section key={priority} className="channel-group" data-priority={priority}>
-            <h3>{label}</h3>
+          <section key={priority}>
+            <h3>{priority.replace("_", " ")}</h3>
             {items.map((item) => (
               <article key={item.channel} className="studio-card">
                 <p className="studio-kicker">{CHANNEL_LABEL[item.channel]}</p>
                 <p>{item.role}</p>
                 <p>{item.why}</p>
-                <p className="studio-meta">For {item.forWhom}. Toward: {item.goal}</p>
-                <p className="studio-meta">Limit: {item.limitation}</p>
-                {item.needs.length > 0 ? <p className="studio-meta">Needs: {item.needs.join("; ")}</p> : null}
               </article>
             ))}
           </section>
@@ -164,82 +170,94 @@ function Channels({ plan }: { plan: StrategicPlan }) {
   );
 }
 
-function Content({ plan }: { plan: StrategicPlan }) {
-  const language: Array<[string, string[]]> = [
-    ["Owned", plan.language.owned],
-    ["Customer", plan.language.customer],
-    ["Category", plan.language.category],
-    ["Search", plan.language.search],
-    ["Clichés", plan.language.cliches],
-    ["Avoid", plan.language.avoid],
-  ];
+function Content({ live, brain, plan }: { live: boolean; brain: ClientBrain; plan: StrategicPlan }) {
+  const territories = live && brain.output.territories.length > 0 ? brain.output.territories : [];
   return (
-    <div className="studio-group">
-      {plan.territories.map((item) => (
+    <div>
+      <h2>What to talk about</h2>
+      {territories.length === 0 ? (
+        <>
+          <p>Rule candidates only. They are not the content strategy until a reading adopts or replaces them.</p>
+          {plan.territories.map((item) => (
+            <article key={item.id} className="studio-card">
+              <h3>{item.name}</h3>
+              <p>{item.idea}</p>
+              <p className="studio-meta">Candidate. Avoid: {item.risk}</p>
+            </article>
+          ))}
+        </>
+      ) : territories.map((item) => (
         <article key={item.id} className="studio-card">
           <h3>{item.name}</h3>
           <p>{item.idea}</p>
-          <p className="studio-meta">Need: {item.audienceNeed}</p>
-          <p className="studio-meta">Purpose: {item.purpose}</p>
-          <p className="studio-meta">Formats: {item.formats.join(", ")}</p>
-          <p className="studio-meta">Needs: {item.assets.join(", ")}</p>
+          <p className="studio-meta">{item.audienceNeed}</p>
+          <p className="studio-meta">{item.purpose}</p>
           <p className="studio-meta">Avoid: {item.risk}</p>
         </article>
       ))}
-      {plan.proof.gaps.length > 0 ? (
-        <article className="studio-card">
-          <p className="studio-kicker">Proof still missing</p>
-          {plan.proof.gaps.map((gap) => <p key={gap}>{gap}</p>)}
-        </article>
-      ) : null}
-      {plan.collaborations.fits ? (
-        <article className="studio-card">
-          <p className="studio-kicker">Who belongs beside them</p>
-          <p>{plan.collaborations.fits}</p>
-          {plan.collaborations.wrong ? <p className="studio-meta">Wrong company: {plan.collaborations.wrong}</p> : null}
-        </article>
-      ) : null}
-      <div className="studio-cards">
-        {language.filter(([, values]) => values.length > 0).map(([label, values]) => (
-          <article key={label} className="studio-card">
-            <p className="studio-kicker">{label}</p>
-            <p>{values.join(" · ")}</p>
-          </article>
-        ))}
-      </div>
     </div>
   );
 }
 
-function Roadmap({
+function Plan({
+  live,
+  brain,
   plan,
   onSave,
 }: {
+  live: boolean;
+  brain: ClientBrain;
   plan: StrategicPlan;
-  onSave: (fieldId: string, text: string, status: "approved" | "edited") => void;
+  onSave: (fieldId: string, text: string, status: "approved" | "edited" | "rejected") => void;
 }) {
+  const goal = plan.goals[0];
+  const reasoned = live ? brain.output.roadmap : [];
   return (
     <div>
-      <p className="roadmap-rail">Now → Build → Prove → Outcome</p>
-      <ol className="roadmap">
-        {plan.roadmap.map((stage) => (
-          <li key={stage.id} data-marker={stage.marker}>
-            <p className="studio-kicker">{stage.marker} · {stage.horizon} · {stage.phase}</p>
-            <Editable
-              kicker={stage.status}
-              original={stage.objective}
-              onSave={(text, status) => onSave(`roadmap.${stage.id}`, text, status)}
-            >
-              <p className="studio-meta">{stage.why}</p>
-              <ul className="studio-questions">
-                {stage.actions.map((action) => <li key={action}>{action}</li>)}
-              </ul>
-              <p className="studio-meta">Depends on: {stage.dependencies.join("; ")}</p>
-              <p className="studio-meta">Signal: {stage.success}</p>
-            </Editable>
-          </li>
-        ))}
-      </ol>
+      <h2>The plan</h2>
+      {goal ? (
+        <article className="studio-card">
+          <p className="studio-kicker">What a good year would be · {goal.outcomeType}</p>
+          <p>{goal.desiredOutcome || "Not said yet."}</p>
+          <p>{goal.commercialImportance}</p>
+        </article>
+      ) : null}
+      {live && brain.output.positioning.statement ? (
+        <Editable
+          kicker={`Position · hypothesis · ${brain.output.positioning.decisionStatus}. Approving does not make this a fact.`}
+          original={brain.output.positioning.statement}
+          onSave={(text, status) => onSave("client.positioning", text, status)}
+        />
+      ) : (
+        <article className="studio-card">
+          <p className="studio-kicker">A rule candidate for position, not the reading</p>
+          <p>{plan.positioning.statement}</p>
+        </article>
+      )}
+      {reasoned.length > 0 ? (
+        <ol className="roadmap">
+          {reasoned.map((stage) => (
+            <li key={stage.id}>
+              <p className="studio-kicker">{stage.horizon}</p>
+              <h3>{stage.objective}</h3>
+              <p>{stage.why}</p>
+              <p className="studio-meta">{stage.success}</p>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <>
+          <p className="roadmap-rail">A possible sequence from the rules. The reading can replace it.</p>
+          <ol className="roadmap">
+            {plan.roadmap.map((stage) => (
+              <li key={stage.id}>
+                <p className="studio-kicker">{stage.marker} · {stage.horizon}</p>
+                <p>{stage.objective}</p>
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
     </div>
   );
 }
@@ -256,20 +274,16 @@ function Editable({
   children?: ReactNode;
 }) {
   const [text, setText] = useState(original);
-  useEffect(() => {
-    setText(original);
-  }, [original]);
+  useEffect(() => setText(original), [original]);
   const same = text.trim() === original.trim();
   return (
     <article className="studio-card">
       <p className="studio-kicker">{kicker}</p>
-      <textarea value={text} onChange={(event) => setText(event.target.value)} rows={3} />
+      <textarea value={text} onChange={(event) => setText(event.target.value)} rows={4} />
       {children}
-      <div className="studio-row">
-        <button type="button" className="studio-button" onClick={() => onSave(text, same ? "approved" : "edited")}>
-          {same ? "Approve" : "Save edit"}
-        </button>
-      </div>
+      <button type="button" className="studio-button" onClick={() => onSave(text, same ? "approved" : "edited")}>
+        {same ? "Approve direction" : "Save edit"}
+      </button>
     </article>
   );
 }

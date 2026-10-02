@@ -1,5 +1,6 @@
 import type { DiscoverySession } from "./discovery";
 import type { StrategicPlan } from "./strategy";
+import type { ClientBrain, StoredClientReading } from "./clientRead";
 
 export type EvidenceSourceType =
   | "client_statement"
@@ -44,6 +45,7 @@ export type HistoryKind =
   | "asset_added"
   | "asset_completed"
   | "pack_regenerated"
+  | "client_reread"
   | "note";
 
 export type Confidence = "low" | "medium" | "high";
@@ -438,6 +440,8 @@ export interface BriefProject {
   websiteResearch: StoredResearch | null;
   competitorResearch: Record<string, StoredResearch>;
   learning: LearningResponse[];
+  /** A model reading, when one has been asked for. Absent means local fallback. */
+  clientReading: StoredClientReading | null;
 }
 
 export interface ProjectIntelligence {
@@ -456,6 +460,8 @@ export interface ProjectIntelligence {
   contradictions: Contradiction[];
   /** Derived on read. Not stored on the project, so it cannot drift from the evidence. */
   strategy: StrategicPlan;
+  /** The understanding. Local fallback until a model reading is stored. */
+  clientBrain: ClientBrain;
   agentPack: AgentPack;
   discoveryProgress: number;
 }
