@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { DEMO_ACCOUNT } from "../../domain/project/account";
 import { attentionLine, needsAttention } from "../../domain/project/attention";
 import { buildProjectIntelligence } from "../../domain/project/assemble";
@@ -56,6 +57,7 @@ export function ProjectList() {
     <div className="studio">
       <header className="studio-top">
         <div>
+          <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
           <p className="studio-kicker">{DEMO_ACCOUNT.workspaceName}</p>
           <h1>{greeting}, {DEMO_ACCOUNT.name.split(" ")[0]}.</h1>
           <p className="studio-lead">

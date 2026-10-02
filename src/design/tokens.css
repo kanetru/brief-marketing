@@ -1,23 +1,38 @@
-/* Lover Lover tokens. Replace fonts here when the licensed files arrive. */
+/* Confirmed in LOVER LOVER BRAND GUIDELINES.pdf, page 15. */
 :root {
-  --chocolate: #3e180f;
-  --cream: #faf6f2;
-  --ember: #c6310a;
-  --dust: #857571;
-  --line: rgba(62, 24, 15, 0.18);
-  --cream-ink: rgba(250, 246, 242, 0.78);
+  --pearl: #efeeec;
+  --choc: #422424;
+  --orange: #f04a24;
+  --cherry: #74040f;
+  --baby-blue: #c5e0fa;
+  --black: #000000;
+  --white: #ffffff;
 
-  --paper: var(--cream);
-  --paper-deep: #f0e8e1;
-  --ink: var(--chocolate);
-  --ink-soft: #5c3328;
-  --muted: var(--dust);
-  --accent: var(--ember);
-  --shadow: 0 18px 40px rgba(62, 24, 15, 0.12);
+  --color-bg: var(--pearl);
+  --color-surface: var(--pearl);
+  --color-text: var(--choc);
+  --color-muted: #6b4545;
+  --color-accent: var(--orange);
+  --color-accent-secondary: var(--cherry);
+  --color-border: rgba(66, 36, 36, 0.2);
+  --color-focus: var(--orange);
 
-  --font-display: "Inter Tight", "Avenir Next", "Segoe UI", sans-serif;
-  --font-body: "Inter Tight", "Avenir Next", "Segoe UI", sans-serif;
-  --font-script: "Great Vibes", cursive;
+  /* Names the rest of the CSS already uses. */
+  --paper: var(--pearl);
+  --paper-deep: #e4e2df;
+  --ink: var(--choc);
+  --ink-soft: #5c3c3c;
+  --muted: var(--color-muted);
+  --accent: var(--color-accent);
+  --chocolate: var(--choc);
+  --cream: var(--pearl);
+  --ember: var(--orange);
+  --line: var(--color-border);
+  --cream-ink: rgba(239, 238, 236, 0.82);
+  --shadow: 0 18px 40px rgba(66, 36, 36, 0.12);
+
+  --font-display: "Satoshi", Arial, "Avenir Next", sans-serif;
+  --font-body: "Satoshi", Arial, "Avenir Next", sans-serif;
   --display: var(--font-display);
   --serif: var(--font-display);
   --sans: var(--font-body);
@@ -46,11 +61,6 @@
   --distance: 18px;
 }
 
-.shell[data-mood="quiet"] {
-  --ember: #8d3b24;
-  --accent: #8d3b24;
-}
-
 .shell[data-mood="expressive"] {
-  --paper-deep: #f6ebe4;
+  --paper-deep: #f3e6e1;
 }

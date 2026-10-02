@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { LoverLoverLogo } from "./LoverLoverLogo";
 import { useSectionPath } from "../state/routeBase";
 import { useSession } from "../state/SessionContext";
 
@@ -8,7 +9,8 @@ export function AgencyMark() {
 
   return (
     <Link to={sectionPath("welcome")} className="mark" onClick={() => activate("welcome")}>
-      <img className="mark-logo" src="/brand/lover-lover-wordmark.png" alt="Lover Lover" />
+      <LoverLoverLogo kind="secondary" color="choc" className="mark-logo logo-on-light" alt="Lover Lover" />
+      <LoverLoverLogo kind="secondary" color="pearl" className="mark-logo logo-on-dark" alt="" />
       <span className="mark-kicker">Brief</span>
     </Link>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { buildBrandIntelligence } from "../../domain/brandIntelligence";
 import { STARTER_WORKFLOWS, starterPrompt } from "../../domain/project/agentPack";
 import { adaptiveFollowUps } from "../../domain/project/adaptiveQuestions";
@@ -102,6 +103,7 @@ export function ProjectWorkspace() {
     <div className="studio">
       <header className="studio-top">
         <div>
+          <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
           <p className="studio-kicker"><Link to="/studio">Clients</Link> · {DISCOVERY_LABEL[project.discoveryStatus]}</p>
           <h1>{project.businessName || "Untitled project"}</h1>
           <p className="studio-lead">{project.clientName || "Client not named"}{project.category ? ` · ${project.category}` : ""}</p>

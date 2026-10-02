@@ -1,0 +1,16 @@
+/* Satoshi variable, WOFF2 only. Source: the WEB kit in the brand folder. */
+@font-face {
+  font-family: "Satoshi";
+  src: url("/Lover%20Lover%20Brand%20Assets/FONTS/Satoshi_Font/Fonts/WEB/fonts/Satoshi-Variable.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/Lover%20Lover%20Brand%20Assets/FONTS/Satoshi_Font/Fonts/WEB/fonts/Satoshi-VariableItalic.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}

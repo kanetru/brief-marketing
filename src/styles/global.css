@@ -40,8 +40,8 @@ button {
 }
 
 ::selection {
-  background: #e7c4b4;
-  color: var(--ink);
+  background: var(--baby-blue);
+  color: var(--choc);
 }
 
 :focus-visible {
@@ -73,8 +73,20 @@ button {
 
 .mark-logo {
   display: block;
-  height: 2.4rem;
+  height: 1.7rem;
   width: auto;
+}
+
+.logo-on-dark {
+  display: none;
+}
+
+.shell.is-dark .logo-on-light {
+  display: none;
+}
+
+.shell.is-dark .logo-on-dark {
+  display: block;
 }
 
 .mark-kicker {
@@ -194,7 +206,7 @@ button {
 .display {
   margin: 0;
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 900;
   font-size: clamp(2.15rem, 5vw, 3.45rem);
   letter-spacing: -0.045em;
   line-height: 0.98;
@@ -209,7 +221,7 @@ button {
 .question.is-hero .display {
   font-size: clamp(2.8rem, 8vw, 5.4rem);
   line-height: 0.92;
-  font-weight: 700;
+  font-weight: 900;
   letter-spacing: -0.05em;
   text-transform: uppercase;
 }
@@ -543,16 +555,20 @@ button {
   padding: 0.9rem 1.4rem;
   border-radius: var(--radius-pill);
   background: var(--accent);
-  color: var(--cream);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  color: var(--choc);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0;
   text-transform: uppercase;
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
 .primary-button:hover:not(:disabled) {
   transform: translateY(-1px);
+}
+
+.primary-button:focus-visible {
+  outline-color: var(--choc);
 }
 
 .primary-button:disabled {
@@ -2267,7 +2283,10 @@ button {
   background: rgba(250, 246, 242, 0.22);
 }
 
-.shell.is-dark .progress .fill,
+.shell.is-dark .progress .fill {
+  background: var(--pearl);
+}
+
 .shell.is-dark .text-button {
   background: transparent;
   color: var(--cream);
@@ -2301,9 +2320,38 @@ button {
 }
 
 .opening-mark {
-  width: min(15rem, 68vw);
+  display: block;
+  width: min(16rem, 70vw);
   height: auto;
-  margin-bottom: 1.6rem;
+  margin: 0.35rem 0 0.85rem;
+}
+
+.opening-by {
+  margin: 0.85rem 0 0;
+  font-weight: 500;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+
+.brand-star,
+.progress-star {
+  display: block;
+  width: 1.15rem;
+  height: auto;
+}
+
+.answer .brand-star {
+  margin: 0 0 0.9rem;
+}
+
+.progress-current {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.progress-star {
+  width: 0.85rem;
 }
 
 .opening-title {

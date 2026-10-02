@@ -35,6 +35,13 @@
   margin-bottom: 0.8rem;
 }
 
+.studio-logo {
+  display: block;
+  height: 1.85rem;
+  width: auto;
+  margin-bottom: 0.85rem;
+}
+
 .studio-kicker,
 .studio-meta,
 .studio-version {
@@ -282,12 +289,12 @@
 }
 
 .learning-beat .kicker {
-  color: var(--ember);
+  color: var(--baby-blue);
 }
 
 .learning-beat h2 {
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 900;
   letter-spacing: -0.045em;
   line-height: 0.98;
   font-size: clamp(2rem, 5vw, 3.3rem);

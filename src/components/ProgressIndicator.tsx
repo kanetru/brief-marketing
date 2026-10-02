@@ -1,3 +1,4 @@
+import { LoverLoverLogo } from "./LoverLoverLogo";
 import { SECTIONS, sectionIndex, sectionReached, stepCount } from "../domain/sections";
 import type { SectionId } from "../types/discovery";
 
@@ -25,7 +26,11 @@ export function ProgressIndicator({ current, furthest, step, totalSteps, hideSec
 
   return (
     <nav className="progress" aria-label="Session progress">
-      <p className="progress-current">{currentLabel}</p>
+      <p className="progress-current">
+        <LoverLoverLogo kind="icon" color="orange" className="progress-star logo-on-light" alt="" />
+        <LoverLoverLogo kind="icon" color="pearl" className="progress-star logo-on-dark" alt="" />
+        {currentLabel}
+      </p>
       <ol>
         {visible.map((section) => {
           const index = sectionIndex(section.id);

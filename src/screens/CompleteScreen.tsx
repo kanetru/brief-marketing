@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { LoverLoverLogo } from "../components/LoverLoverLogo";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
 import { QuestionScreen } from "../components/QuestionScreen";
@@ -19,7 +20,8 @@ export function CompleteScreen() {
     return (
       <DiscoveryLayout section="complete" step={step} width="hero" footer={<NavigationControls showBack={false} showForward={false} onBack={goBack} onForward={() => activate("complete")} forwardLabel="Continue" />}>
         <QuestionScreen size="hero" kicker="Handoff" title={message.title} supporting={message.body}>
-          <img className="opening-mark" src="/brand/lover-lover-wordmark.png" alt="" />
+          <LoverLoverLogo kind="icon" color="orange" className="brand-star" alt="" />
+          <LoverLoverLogo kind="secondary" color="pearl" className="opening-mark" alt="Lover Lover" />
           <aside className="statement">
             <p className="statement-lead">{message.next}</p>
           </aside>
@@ -52,7 +54,8 @@ export function CompleteScreen() {
         title="That's it."
         supporting="Your answers are with your manager. You can leave this here."
       >
-        <img className="opening-mark" src="/brand/lover-lover-wordmark.png" alt="" />
+        <LoverLoverLogo kind="icon" color="orange" className="brand-star" alt="" />
+        <LoverLoverLogo kind="secondary" color="pearl" className="opening-mark" alt="Lover Lover" />
         <aside className="statement">
           <p className="statement-lead">Brief has what it needs.</p>
           <p>Nothing here is a strategy. That stays with the person doing the work.</p>

@@ -1,10 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import "@fontsource/inter-tight/400.css";
-import "@fontsource/inter-tight/500.css";
-import "@fontsource/inter-tight/700.css";
-import "@fontsource/great-vibes/400.css";
 import "@fontsource-variable/fraunces";
 import "@fontsource-variable/fraunces/wght-italic.css";
 import "@fontsource-variable/outfit";
@@ -27,6 +23,7 @@ import "@fontsource/newsreader/500.css";
 import { App } from "./App";
 import { ProjectProvider } from "./state/ProjectContext";
 import { SessionProvider } from "./state/SessionContext";
+import "./design/satoshi.css";
 import "./design/tokens.css";
 import "./design/motion.css";
 import "./styles/global.css";

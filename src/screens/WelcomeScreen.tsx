@@ -1,3 +1,4 @@
+import { LoverLoverLogo } from "../components/LoverLoverLogo";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
 import { DEMO_ACCOUNT } from "../domain/project/account";
@@ -30,9 +31,9 @@ export function WelcomeScreen() {
       }
     >
       <article className="opening">
-        <img className="opening-mark" src="/brand/lover-lover-wordmark.png" alt="Lover Lover" />
         <h1 className="display opening-title">Brief</h1>
-        <p className="opening-line">by Lover Lover</p>
+        <p className="opening-by">by</p>
+        <LoverLoverLogo kind="secondary" color="pearl" className="opening-mark" alt="Lover Lover" />
         <p className="opening-support">We're going to learn how your business thinks, sounds and looks.</p>
         <p className="opening-note">
           {manager
