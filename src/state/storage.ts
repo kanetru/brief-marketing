@@ -12,6 +12,7 @@ import type {
   VisualPreferences,
   VoicePreferences,
 } from "../types/discovery";
+import type { StrategyInputs } from "../types/strategy";
 import { blankObservations, blankProfile, blankQuestions, createSession } from "./createSession";
 
 export const STORAGE_KEY = "lover-lover.discovery-session.v3";
@@ -22,6 +23,7 @@ const SECTION_IDS: readonly SectionId[] = [
   "business",
   "audience",
   "goals",
+  "reality",
   "personality",
   "spectrum",
   "visual",
@@ -34,6 +36,11 @@ const SECTION_IDS: readonly SectionId[] = [
   "profile",
   "complete",
 ];
+
+function mergeStrategy(value: unknown, fresh: StrategyInputs): StrategyInputs {
+  if (!value || typeof value !== "object" || !Array.isArray((value as StrategyInputs).offers)) return fresh;
+  return { ...fresh, ...(value as StrategyInputs) };
+}
 
 function isSectionId(value: unknown): value is SectionId {
   return typeof value === "string" && SECTION_IDS.includes(value as SectionId);
@@ -156,6 +163,7 @@ export function migrateSession(value: unknown): DiscoverySession | null {
     business: record.business,
     audience: record.audience,
     goals: record.goals,
+    strategyInputs: mergeStrategy(raw.strategyInputs, fresh.strategyInputs),
     personality: record.personality,
     personalitySpectrum: mergeSpectrum(record.personalitySpectrum, fresh.personalitySpectrum),
     visualPreferences: mergeVisual(record.visualPreferences, fresh.visualPreferences),

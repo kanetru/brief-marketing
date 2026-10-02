@@ -3,6 +3,7 @@ import { SessionInspector } from "./components/SessionInspector";
 import { AudienceScreen } from "./screens/AudienceScreen";
 import { BusinessScreen } from "./screens/BusinessScreen";
 import { GoalsScreen } from "./screens/GoalsScreen";
+import { RealityScreen } from "./screens/RealityScreen";
 import { ClarifyScreen } from "./screens/ClarifyScreen";
 import { ColourScreen } from "./screens/ColourScreen";
 import { CompleteScreen } from "./screens/CompleteScreen";
@@ -32,6 +33,7 @@ export function App() {
         <Route path="/demo/business" element={<BusinessScreen />} />
         <Route path="/demo/audience" element={<AudienceScreen />} />
         <Route path="/demo/goals" element={<GoalsScreen />} />
+        <Route path="/demo/reality" element={<RealityScreen />} />
         <Route path="/demo/personality" element={<PersonalityScreen />} />
         <Route path="/demo/spectrum" element={<SpectrumScreen />} />
         <Route path="/demo/visual" element={<VisualScreen />} />
@@ -54,6 +56,7 @@ export function App() {
           <Route path="business" element={<BusinessScreen />} />
           <Route path="audience" element={<AudienceScreen />} />
           <Route path="goals" element={<GoalsScreen />} />
+          <Route path="reality" element={<RealityScreen />} />
           <Route path="personality" element={<PersonalityScreen />} />
           <Route path="spectrum" element={<SpectrumScreen />} />
           <Route path="visual" element={<VisualScreen />} />

@@ -10,6 +10,7 @@ import { canAdvance } from "../state/guards";
 import { useSession } from "../state/SessionContext";
 import { desiredText, textValue } from "../state/textEvidence";
 import { useConversation } from "../state/useConversation";
+import { AwarenessStep, HesitateStep, SituationStep } from "./strategySteps";
 
 export function AudienceScreen() {
   const { session, setBestCustomers, setDesiredText, setDesiredSame, setDesiredUncertain } = useSession();
@@ -31,6 +32,9 @@ export function AudienceScreen() {
       }
     >
       <TransitionWrapper transitionKey={`audience-${step}`}>
+        {step === 2 ? <SituationStep /> : null}
+        {step === 3 ? <HesitateStep /> : null}
+        {step === 4 ? <AwarenessStep /> : null}
         {step === 0 ? (
           <QuestionScreen
             kicker="Audience"
@@ -45,14 +49,15 @@ export function AudienceScreen() {
               onChange={setBestCustomers}
             />
           </QuestionScreen>
-        ) : (
+        ) : null}
+        {step === 1 ? (
           <DesiredStep
             answer={session.audience.desiredCustomers}
             onText={setDesiredText}
             onSame={setDesiredSame}
             onUncertain={setDesiredUncertain}
           />
-        )}
+        ) : null}
       </TransitionWrapper>
     </DiscoveryLayout>
   );

@@ -24,6 +24,21 @@ export function canAdvance(session: DiscoverySession, section: SectionId, step: 
       return session.goals.outcomes.selected.length > 0;
     case "goals:1":
       return hasText(session.goals.twelveMonthSuccess);
+    case "business:4":
+    case "business:5":
+    case "business:6":
+    case "business:7":
+    case "audience:2":
+    case "audience:3":
+    case "audience:4":
+    case "goals:2":
+    case "reality:0":
+    case "reality:1":
+    case "reality:2":
+    case "reality:3":
+    case "reality:4":
+    case "reality:5":
+      return true;
     case "personality:0":
       return poleCount(session.personality.attract) > 0;
     case "personality:1":

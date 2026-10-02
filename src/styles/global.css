@@ -445,6 +445,28 @@ button {
   font-size: 1.25rem;
 }
 
+.offer-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.offer-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  align-items: baseline;
+  border-top: 1px solid var(--line);
+  padding-top: 0.55rem;
+}
+
+.offer-list .meta {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
 .quiet-row {
   display: flex;
   flex-wrap: wrap;

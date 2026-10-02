@@ -84,6 +84,19 @@ export function buildEvidenceLedger(
     .join(", ");
   say({ id: "goals.outcomes", sourceType: "client_statement", sourceReference: "goals.outcomes", text: goals, topic: "strategy", kind: "preference" });
   say({ id: "goals.horizon", sourceType: "client_statement", sourceReference: "goals.twelveMonthSuccess", text: textValue(session.goals.twelveMonthSuccess), topic: "strategy", kind: "preference" });
+  const strategy = session.strategyInputs;
+  if (strategy) {
+    say({ id: "strategy.offers", sourceType: "client_statement", sourceReference: "strategy.offers", text: strategy.offers.map((offer) => `${offer.name} (${offer.role})`).join("; "), topic: "company", kind: "fact" });
+    say({ id: "strategy.want", sourceType: "client_statement", sourceReference: "strategy.want", text: strategy.want.join(", "), topic: "strategy", kind: "preference" });
+    say({ id: "strategy.situation", sourceType: "client_statement", sourceReference: "strategy.situation", text: textValue(strategy.situation), topic: "audience", kind: "fact" });
+    say({ id: "strategy.awareness", sourceType: "client_statement", sourceReference: "strategy.awareness", text: strategy.awareness ?? "", topic: "audience", kind: "fact" });
+    say({ id: "strategy.journey", sourceType: "client_statement", sourceReference: "strategy.journey", text: [textValue(strategy.hear), textValue(strategy.beforeContact), textValue(strategy.mustBelieve)].filter(Boolean).join(" "), topic: "audience", kind: "fact" });
+    say({ id: "strategy.proof", sourceType: "client_statement", sourceReference: "strategy.proof", text: textValue(strategy.proofAvailable), topic: "proof", kind: "fact" });
+    say({ id: "strategy.neighbours", sourceType: "client_statement", sourceReference: "strategy.neighbours", text: textValue(strategy.neighbours), topic: "brand", kind: "preference" });
+    if (strategy.whyExist.state === "evidence") {
+      say({ id: "strategy.why", sourceType: "client_statement", sourceReference: "strategy.whyExist", text: strategy.whyExist.evidence.raw, topic: "brand", kind: "fact" });
+    }
+  }
   const attract = session.personality.attract.selected
     .map((id) => PERSONALITY_TRAITS.find((item) => item.id === id)?.label ?? id)
     .join(", ");

@@ -10,6 +10,7 @@ import { canAdvance } from "../state/guards";
 import { useSession } from "../state/SessionContext";
 import { textValue } from "../state/textEvidence";
 import { useConversation } from "../state/useConversation";
+import { OffersStep, PurposeStep, ValuesStep, WantStep } from "./strategySteps";
 
 export function BusinessScreen() {
   const { session, setBusinessText, setDifferentiationUncertain } = useSession();
@@ -73,6 +74,10 @@ export function BusinessScreen() {
             />
           </QuestionScreen>
         ) : null}
+        {step === 4 ? <OffersStep /> : null}
+        {step === 5 ? <WantStep /> : null}
+        {step === 6 ? <PurposeStep /> : null}
+        {step === 7 ? <ValuesStep /> : null}
         {step === 3 ? (
           <DifferentiationStep
             answer={business.differentiation}

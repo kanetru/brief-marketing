@@ -26,6 +26,7 @@ import type {
   TypographyDirectionId,
   VisualChoice,
 } from "../types/discovery";
+import type { OfferInput, StrategyInputs, StrategyListField, StrategyTextField } from "../types/strategy";
 import { createSession } from "./createSession";
 import { applyText, unanswered } from "./textEvidence";
 
@@ -43,6 +44,12 @@ export type Action =
   | { type: "toggle-outcome"; outcome: MarketingOutcome }
   | { type: "goals-something-else"; value: string }
   | { type: "goals-horizon"; value: string }
+  | { type: "strategy-text"; field: StrategyTextField; value: string }
+  | { type: "strategy-uncertain" }
+  | { type: "strategy-toggle"; field: StrategyListField; value: string }
+  | { type: "strategy-set"; field: "awareness" | "capacity" | "time"; value: string | null }
+  | { type: "strategy-offer"; offer: OfferInput }
+  | { type: "strategy-offer-remove"; id: string }
   | { type: "toggle-trait"; pole: PersonalityPoleId; trait: PersonalityTrait }
   | { type: "add-custom-trait"; pole: PersonalityPoleId; value: string }
   | { type: "remove-custom-trait"; pole: PersonalityPoleId; value: string }
@@ -263,6 +270,58 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
           ...state.goals,
           twelveMonthSuccess: applyText(state.goals.twelveMonthSuccess, action.value, timestamp),
         },
+      };
+    }
+    case "strategy-text": {
+      const timestamp = new Date().toISOString();
+      const current = state.strategyInputs[action.field];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        strategyInputs: {
+          ...state.strategyInputs,
+          [action.field]: applyText(current, action.value, timestamp),
+        } as StrategyInputs,
+      };
+    }
+    case "strategy-uncertain": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        strategyInputs: { ...state.strategyInputs, whyExist: { state: "uncertain", reason: "not_sure", capturedAt: timestamp } },
+      };
+    }
+    case "strategy-toggle": {
+      const timestamp = new Date().toISOString();
+      const current = state.strategyInputs[action.field] as readonly string[];
+      const value = action.value;
+      const next = current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
+      return {
+        ...state,
+        updatedAt: timestamp,
+        strategyInputs: { ...state.strategyInputs, [action.field]: next } as StrategyInputs,
+      };
+    }
+    case "strategy-set": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        strategyInputs: { ...state.strategyInputs, [action.field]: action.value } as StrategyInputs,
+      };
+    }
+    case "strategy-offer": {
+      const timestamp = new Date().toISOString();
+      const offers = [...state.strategyInputs.offers.filter((offer) => offer.id !== action.offer.id), action.offer];
+      return { ...state, updatedAt: timestamp, strategyInputs: { ...state.strategyInputs, offers } };
+    }
+    case "strategy-offer-remove": {
+      const timestamp = new Date().toISOString();
+      return {
+        ...state,
+        updatedAt: timestamp,
+        strategyInputs: { ...state.strategyInputs, offers: state.strategyInputs.offers.filter((offer) => offer.id !== action.id) },
       };
     }
     case "toggle-trait": {

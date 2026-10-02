@@ -1,4 +1,5 @@
 import type { DiscoverySession } from "./discovery";
+import type { StrategicPlan } from "./strategy";
 
 export type EvidenceSourceType =
   | "client_statement"
@@ -453,6 +454,8 @@ export interface ProjectIntelligence {
   library: LibraryAsset[];
   openQuestions: OpenQuestion[];
   contradictions: Contradiction[];
+  /** Derived on read. Not stored on the project, so it cannot drift from the evidence. */
+  strategy: StrategicPlan;
   agentPack: AgentPack;
   discoveryProgress: number;
 }

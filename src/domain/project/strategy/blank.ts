@@ -1,0 +1,43 @@
+import { unanswered } from "../../../state/textEvidence";
+import type { StrategyInputs } from "../../../types/strategy";
+
+export function blankStrategyInputs(): StrategyInputs {
+  return {
+    offers: [],
+    want: [],
+    wantNote: unanswered(),
+    whyExist: unanswered(),
+    whatWasMissing: unanswered(),
+    whatGetsBetter: unanswered(),
+    refuse: unanswered(),
+    differently: unanswered(),
+    embarrassed: unanswered(),
+    situation: unanswered(),
+    afterwards: unanswered(),
+    hesitate: unanswered(),
+    hateAlternatives: unanswered(),
+    lean: [],
+    leanNote: unanswered(),
+    awareness: null,
+    goalFollowUp: unanswered(),
+    capacity: null,
+    active: [],
+    working: [],
+    chore: unanswered(),
+    canMake: [],
+    whoCreates: unanswered(),
+    time: null,
+    constraints: [],
+    hear: unanswered(),
+    beforeContact: unanswered(),
+    mustBelieve: unanswered(),
+    stopsThem: unanswered(),
+    afterBuy: unanswered(),
+    comeBack: unanswered(),
+    proofKinds: [],
+    proofAvailable: unanswered(),
+    neighbourKinds: [],
+    neighbours: unanswered(),
+    wrongCompany: unanswered(),
+  };
+}
