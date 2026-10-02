@@ -261,7 +261,7 @@ function searchPhrases(source: StrategySource): string[] {
   const text = `${source.offer} ${source.description}`.toLowerCase();
   const phrases: string[] = [];
   if (/joinery|furniture|cabinet/.test(text)) phrases.push("custom furniture", "architectural joinery");
-  if (/architect/.test(text)) phrases.push("architect for a house");
+  if (/\barchitects?\b|\barchitecture\b/.test(text)) phrases.push("architect for a house");
   if (/restaurant|dinner|dining/.test(text)) phrases.push(source.businessName ? `${source.businessName} booking` : "where to eat tonight");
   return phrases;
 }
