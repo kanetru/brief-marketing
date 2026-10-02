@@ -1,11 +1,14 @@
 import { organicFixture } from "../../fixtures/brandFixtures";
+import { demoSiteResearch } from "./demoResearch";
 import {
   createProject,
   inviteDiscovery,
   markDiscoveryOpened,
   submitDiscovery,
   withCompetitor,
+  withCompetitorResearch,
   withLibraryAsset,
+  withWebsiteResearch,
 } from "../../state/projectStore";
 import type { BriefProject } from "../../types/project";
 
@@ -39,11 +42,28 @@ export function seedDemoWorkspace(now = new Date().toISOString()): BriefProject[
     notes: "Craftsmanship in every finished interior.",
   }, now);
   north = withCompetitor(north, {
+    id: "c-sons",
+    name: "North & Sons",
+    website: "https://northandsons.example",
+    notes: "",
+  }, now);
+  north = withCompetitor(north, {
+    id: "c-field",
+    name: "Field & Grain",
+    website: "https://field.example",
+    notes: "",
+  }, now);
+  north = withCompetitor(north, {
     id: "c-oak",
     name: "Oak Room",
     website: "https://oak.example",
     notes: "",
   }, now);
+  const demoResearch = demoSiteResearch(now);
+  north = withWebsiteResearch(north, demoResearch.website, now);
+  for (const item of demoResearch.competitors) {
+    north = withCompetitorResearch(north, item.id, item.research, now);
+  }
   north = withLibraryAsset(north, {
     id: "lib-joint",
     name: "workshop-joint-01.jpg",

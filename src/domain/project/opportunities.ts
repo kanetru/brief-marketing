@@ -1,9 +1,14 @@
 import { textsContainFiller } from "../languageGuard";
-import type { CategorySynthesis, Opportunity, UnderstandingField } from "../../types/project";
+import type { CategorySynthesis, Opportunity, ResearchTension, UnderstandingField } from "../../types/project";
 
 const BANNED = ["modern yet timeless", "bold yet approachable", "premium experience", "meaningful connection", "stand out", "purpose-driven", "your brand is"];
 
-export function buildOpportunities(fields: UnderstandingField[], category: CategorySynthesis | null, businessName: string): Opportunity[] {
+export function buildOpportunities(
+  fields: UnderstandingField[],
+  category: CategorySynthesis | null,
+  businessName: string,
+  tensions: ResearchTension[] = [],
+): Opportunity[] {
   const idea = textOf(fields, "brand.central_idea");
   const offer = textOf(fields, "company.offer");
   const audience = textOf(fields, "audience.primary");
@@ -80,18 +85,50 @@ export function buildOpportunities(fields: UnderstandingField[], category: Categ
       impactHypothesis: "The gap is only real where the client's own words disagree with those notes.",
     });
   }
-  const making = category?.patterns.find((pattern) => pattern.id === "pattern-making-gap");
+  const making = category?.patterns.find((pattern) => pattern.id === "pattern-process-invisible")
+    ?? category?.patterns.find((pattern) => pattern.id === "pattern-making-gap");
   if (making && making.evidenceIds.length > 0) {
+    const fromResearch = making.id === "pattern-process-invisible";
     drafted.push({
       id: "opp-making",
       title: "Show the making",
       type: "content",
       why: making.statement,
+      observation: making.statement,
+      hypothesis: fromResearch ? "Construction could become a distinctive proof and content system." : "There may be room to make the making part of the story.",
+      clientEvidence: ["Discovery keeps returning to how the work is made."],
+      marketEvidence: fromResearch ? [making.statement] : [],
+      websiteEvidence: tensions.some((item) => item.id === "tension-making-site") ? ["The pages read barely explain construction."] : [],
+      requiredAssets: ["process photography", "workshop video", "maker interview"],
+      epistemicStatus: "hypothesis",
       evidenceIds: making.evidenceIds,
       confidence: "medium",
-      action: "Try a short series, each piece centred on one construction decision. It needs process photography.",
+      action: fromResearch
+        ? "Try Bench Notes: a short series, each piece centred on one construction decision. It needs process photography."
+        : "Try a short series, each piece centred on one construction decision. It needs process photography.",
       effort: "medium",
       impactHypothesis: "The work becomes visible where the category mostly shows the finished result.",
+    });
+  }
+  const longevity = tensions.find((item) => item.kind === "claim_proof" && item.evidenceIds.length > 0);
+  if (longevity) {
+    drafted.push({
+      id: "opp-longevity",
+      title: "Prove longevity",
+      type: "proof",
+      why: "The pages ask the customer to trust a longevity claim they do not yet prove.",
+      observation: longevity.statement,
+      hypothesis: "Proof may make the positioning more credible.",
+      clientEvidence: [],
+      marketEvidence: [],
+      websiteEvidence: longevity.quotes.map((quote) => quote.text),
+      requiredAssets: ["old customer examples", "material specifications", "repair and process information"],
+      epistemicStatus: "hypothesis",
+      evidenceIds: longevity.evidenceIds,
+      confidence: "medium",
+      action: "Build a durability section from materials, repairability, construction, and older pieces still in use.",
+      effort: "medium",
+      impactHypothesis: "A claim with something beside it is easier to stand behind than a claim alone.",
     });
   }
   return drafted.filter(acceptOpportunity);

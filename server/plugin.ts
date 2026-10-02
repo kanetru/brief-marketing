@@ -5,7 +5,7 @@ import { analyzeDiscovery } from "./analyze";
 import { generateDiscoveryProfile, refineDiscoveryProfile } from "./profile";
 import { generateCreativeReading, type StrategistRequest } from "./strategist";
 import { resolveTerritoryImages, type TerritoryImageRequest } from "./territoryImages";
-import { researchPage } from "./research";
+import { researchPage, researchSiteUrl } from "./research";
 
 export function discoveryApiPlugin(): Plugin {
   const handle: Connect.NextHandleFunction = (req, res, next) => {
@@ -16,7 +16,8 @@ export function discoveryApiPlugin(): Plugin {
       url !== "/api/discovery/profile/refine" &&
       url !== "/api/discovery/strategist" &&
       url !== "/api/territory-images" &&
-      url !== "/api/research/page"
+      url !== "/api/research/page" &&
+      url !== "/api/research/site"
     ) {
       next();
       return;
@@ -31,6 +32,11 @@ export function discoveryApiPlugin(): Plugin {
         if (url === "/api/research/page") {
           const target = (body as { url?: string }).url ?? "";
           send(res, 200, await researchPage(target));
+          return;
+        }
+        if (url === "/api/research/site") {
+          const target = body as { url?: string; businessName?: string };
+          send(res, 200, await researchSiteUrl(target.url ?? "", target.businessName ?? ""));
           return;
         }
         if (url === "/api/territory-images") {
