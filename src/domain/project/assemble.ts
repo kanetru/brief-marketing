@@ -7,6 +7,9 @@ import { profileCompetitor, synthesiseCategory } from "./competitors";
 import { buildEvidenceLedger } from "./evidenceLedger";
 import { buildOpportunities } from "./opportunities";
 import { compareMarket } from "./research/compare";
+import { unavailablePlatformIntelligence } from "./strategy/platform";
+import { deriveStrategy } from "./strategy/plan";
+import { strategySource } from "./strategy/read";
 import type { BriefProject, CategorySynthesis, ProjectIntelligence } from "../../types/project";
 
 export function buildProjectIntelligence(project: BriefProject, generatedAt = new Date().toISOString()): ProjectIntelligence {
@@ -50,6 +53,14 @@ export function buildProjectIntelligence(project: BriefProject, generatedAt = ne
   const contradictions = findContradictions(project.discovery);
   const readingQuestions = buildBrandIntelligence(project.discovery).reading.tomorrow.questions;
   const openQuestions = openQuestionsFrom(project.discovery, adaptiveFollowUps(project.discovery, project.followUps), readingQuestions);
+  const strategy = deriveStrategy(
+    strategySource(project.discovery, {
+      categoryLanguage: category?.languageInCommon ?? [],
+      categoryClaims: category?.commonClaims ?? [],
+    }),
+    unavailablePlatformIntelligence,
+    project.overrides,
+  );
   const partial = {
     projectId: project.id,
     version: project.version,
@@ -64,6 +75,7 @@ export function buildProjectIntelligence(project: BriefProject, generatedAt = ne
     library: project.library ?? [],
     openQuestions,
     contradictions,
+    strategy,
     discoveryProgress: discoveryProgress(project.discovery),
   };
   return { ...partial, agentPack: buildAgentPack(project, partial) };

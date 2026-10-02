@@ -12,9 +12,11 @@ import { describeClientSite } from "../../domain/project/research/compare";
 import { requestSiteResearch } from "../../services/researchClient";
 import { useProjects } from "../../state/ProjectContext";
 import type { AgentFile, AssetCategory, AssetItem, BriefProject, CategoryPattern, DiscoveryStatus, ProjectIntelligence, ResearchTension, SourceQuote, UnderstandingField } from "../../types/project";
+import { StrategyView } from "./StrategyView";
 
 const PANELS = [
   ["overview", "Overview"],
+  ["strategy", "Strategy"],
   ["understanding", "Understanding"],
   ["market", "Market"],
   ["creative", "Creative"],
@@ -125,6 +127,19 @@ export function ProjectWorkspace() {
           idea={idea?.text ?? ""}
           worth={worth}
           onOpen={setPanel}
+        />
+      ) : null}
+      {panel === "strategy" ? (
+        <StrategyView
+          plan={intelligence.strategy}
+          insight={intelligence.category?.observation || intelligence.tensions[0]?.statement || ""}
+          onSave={(fieldId, text, status) => api.setOverride(project.id, {
+            fieldId,
+            text,
+            status,
+            decisionStatus: "approved",
+            updatedAt: new Date().toISOString(),
+          })}
         />
       ) : null}
       {panel === "understanding" ? (
@@ -238,6 +253,16 @@ function Overview({
       <p className="studio-kicker">The read</p>
       <h2>{idea || "The picture is still thin."}</h2>
       <p>Brief has {strength} of {project.businessName || "this business"}.</p>
+      <dl className="strategy-read">
+        <div><dt>Commercial objective</dt><dd>{intelligence.strategy.objective}</dd></div>
+        <div><dt>Primary audience</dt><dd>{intelligence.strategy.audience.identitySignals || "Not yet named."}</dd></div>
+        <div><dt>Current positioning</dt><dd>{intelligence.strategy.positioning.statement}</dd></div>
+        <div><dt>Key market insight</dt><dd>{intelligence.category?.observation || intelligence.tensions[0]?.statement || "No market read yet."}</dd></div>
+        <div><dt>Current opportunity</dt><dd>{intelligence.opportunities[0]?.title || "Nothing strong enough yet."}</dd></div>
+        <div><dt>Major constraint</dt><dd>{intelligence.strategy.constraint || "None named."}</dd></div>
+        <div><dt>Next priority</dt><dd>{intelligence.strategy.nextPriority || "Not set."}</dd></div>
+      </dl>
+      <button type="button" className="studio-text-button" onClick={() => onOpen("strategy")}>Open the strategy</button>
       {worth.length > 0 ? (
         <div>
           <p className="studio-kicker">{worth.length} {worth.length === 1 ? "thing" : "things"} worth your attention</p>
@@ -868,6 +893,9 @@ function AgentPackPanel({
         <CopyChip label="Content strategy" file={named("07_content_strategy.md")} onCopy={onCopy} />
         <CopyChip label="Visual direction" file={named("05_visual_direction.md")} onCopy={onCopy} />
         <CopyChip label="Competitor context" file={named("06_competitors.md")} onCopy={onCopy} />
+        <CopyChip label="Channel strategy" file={named("12_channel_strategy.md")} onCopy={onCopy} />
+        <CopyChip label="Customer journey" file={named("13_customer_journey.md")} onCopy={onCopy} />
+        <CopyChip label="Roadmap" file={named("14_marketing_roadmap.md")} onCopy={onCopy} />
       </div>
       <h3>Start a task</h3>
       <div className="studio-row">

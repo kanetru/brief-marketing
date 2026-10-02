@@ -27,6 +27,7 @@ import type {
   TypographyDirectionId,
   VisualChoice,
 } from "../types/discovery";
+import type { OfferInput, StrategyListField, StrategyTextField } from "../types/strategy";
 import { loadSession, saveSession } from "./storage";
 import { sessionReducer, type Action } from "./sessionReducer";
 
@@ -43,6 +44,12 @@ interface SessionApi {
   toggleOutcome: (outcome: MarketingOutcome) => void;
   setSomethingElse: (value: string) => void;
   setTwelveMonth: (value: string) => void;
+  setStrategyText: (field: StrategyTextField, value: string) => void;
+  toggleStrategy: (field: StrategyListField, value: string) => void;
+  setStrategyValue: (field: "awareness" | "capacity" | "time", value: string | null) => void;
+  saveOffer: (offer: OfferInput) => void;
+  removeOffer: (id: string) => void;
+  setWhyUncertain: () => void;
   toggleTrait: (pole: PersonalityPoleId, trait: PersonalityTrait) => void;
   addCustomTrait: (pole: PersonalityPoleId, value: string) => void;
   removeCustomTrait: (pole: PersonalityPoleId, value: string) => void;
@@ -131,6 +138,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (value: string) => send({ type: "goals-horizon", value }),
     [send],
   );
+  const setStrategyText = useCallback(
+    (field: StrategyTextField, value: string) => send({ type: "strategy-text", field, value }),
+    [send],
+  );
+  const toggleStrategy = useCallback(
+    (field: StrategyListField, value: string) => send({ type: "strategy-toggle", field, value }),
+    [send],
+  );
+  const setStrategyValue = useCallback(
+    (field: "awareness" | "capacity" | "time", value: string | null) => send({ type: "strategy-set", field, value }),
+    [send],
+  );
+  const saveOffer = useCallback((offer: OfferInput) => send({ type: "strategy-offer", offer }), [send]);
+  const removeOffer = useCallback((id: string) => send({ type: "strategy-offer-remove", id }), [send]);
+  const setWhyUncertain = useCallback(() => send({ type: "strategy-uncertain" }), [send]);
   const toggleTrait = useCallback(
     (pole: PersonalityPoleId, trait: PersonalityTrait) => send({ type: "toggle-trait", pole, trait }),
     [send],
@@ -285,6 +307,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toggleOutcome,
       setSomethingElse,
       setTwelveMonth,
+      setStrategyText,
+      toggleStrategy,
+      setStrategyValue,
+      saveOffer,
+      removeOffer,
+      setWhyUncertain,
       toggleTrait,
       addCustomTrait,
       removeCustomTrait,
@@ -339,6 +367,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toggleOutcome,
       setSomethingElse,
       setTwelveMonth,
+      setStrategyText,
+      toggleStrategy,
+      setStrategyValue,
+      saveOffer,
+      removeOffer,
+      setWhyUncertain,
       toggleTrait,
       addCustomTrait,
       removeCustomTrait,

@@ -169,10 +169,20 @@ describe("project intelligence", () => {
       "09_guardrails.md",
       "10_open_questions.md",
       "11_evidence.md",
+      "12_channel_strategy.md",
+      "13_customer_journey.md",
+      "14_marketing_roadmap.md",
     ]);
     expect(intelligence.agentPack.master.name).toBe("BRIEF_CONTEXT.md");
     expect(intelligence.agentPack.master.markdown).toContain("canonical project context");
     expect(intelligence.agentPack.master.markdown).toContain("furniture for homes");
+    expect(intelligence.agentPack.master.markdown).toContain("Primary goal:");
+    expect(intelligence.agentPack.master.markdown).not.toMatch(/post consistently|25\s*[–-]\s*34|year-olds/i);
+    const channels = intelligence.agentPack.files.find((file) => file.name === "12_channel_strategy.md");
+    expect(channels?.markdown).toMatch(/Website/);
+    expect(channels?.markdown).not.toMatch(/\d+\s*%/);
+    expect(intelligence.agentPack.files.find((file) => file.name === "07_content_strategy.md")?.markdown).toMatch(/Bench notes/);
+    expect(intelligence.strategy.channels.find((item) => item.priority === "primary")?.channel).toBe("website");
     expect(intelligence.agentPack.master.markdown).toContain("FACT");
     const company = intelligence.agentPack.files.find((file) => file.name === "01_company.md");
     expect(company?.markdown).toContain("furniture for homes");

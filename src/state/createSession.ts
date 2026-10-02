@@ -16,6 +16,7 @@ import type {
   VisualPreferences,
   VoicePreferences,
 } from "../types/discovery";
+import { blankStrategyInputs } from "../domain/project/strategy/blank";
 import { unanswered } from "./textEvidence";
 
 function notStarted(): NotStartedSection {
@@ -32,6 +33,7 @@ function blankSteps(): Record<SectionId, number> {
     business: 0,
     audience: 0,
     goals: 0,
+    reality: 0,
     personality: 0,
     spectrum: 0,
     visual: 0,
@@ -173,6 +175,7 @@ export function createSession(timestamp = new Date().toISOString()): DiscoverySe
       somethingElse: unanswered(),
       twelveMonthSuccess: unanswered(),
     },
+    strategyInputs: blankStrategyInputs(),
     personality: {
       attract: blankPole(),
       avoid: blankPole(),

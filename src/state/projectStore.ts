@@ -1,3 +1,4 @@
+import { migrateSession } from "./storage";
 import { createSession } from "./createSession";
 import { DEMO_ACCOUNT } from "../domain/project/account";
 import { projectStatus } from "../domain/project/assemble";
@@ -253,6 +254,7 @@ function normaliseProject(project: BriefProject): BriefProject {
     ...project,
     managerId: project.managerId || DEMO_ACCOUNT.id,
     workspaceId: project.workspaceId || DEMO_ACCOUNT.workspaceId,
+    discovery: migrateSession(project.discovery) ?? project.discovery,
     discoveryStatus: project.discoveryStatus ?? "draft",
     history: (project.history ?? []).map((event) => ({
       at: event.at,

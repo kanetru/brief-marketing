@@ -20,6 +20,7 @@ export type SectionId =
   | "business"
   | "audience"
   | "goals"
+  | "reality"
   | "personality"
   | "spectrum"
   | "visual"
@@ -616,6 +617,8 @@ export interface DiscoverySession {
   agentQuestions: AgentQuestionLayer;
   discoveryProfile: DiscoveryProfile;
   territoryFeedback: TerritoryFeedback;
+  /** Raw commercial, audience, and capacity evidence. Strategy is derived from it. */
+  strategyInputs: import("./strategy").StrategyInputs;
   /** Creative strategist reading. Derived. Never overwrites client evidence. */
   strategist: import("./creativeReading").StrategistState;
 }

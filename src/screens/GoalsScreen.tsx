@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChoiceCard } from "../components/ChoiceCard";
+import { LearningBeat } from "../components/LearningBeat";
 import { ChoiceGrid } from "../components/ChoiceGrid";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
@@ -12,6 +13,7 @@ import { canAdvance } from "../state/guards";
 import { useSession } from "../state/SessionContext";
 import { textValue } from "../state/textEvidence";
 import { useConversation } from "../state/useConversation";
+import { FollowUpStep } from "./strategySteps";
 
 export function GoalsScreen() {
   const { session, setTwelveMonth } = useSession();
@@ -35,11 +37,18 @@ export function GoalsScreen() {
     >
       <TransitionWrapper transitionKey={`goals-${step}`}>
         {step === 0 ? <OutcomesStep /> : null}
+        {step === 2 ? (
+          <>
+            <FollowUpStep />
+            <LearningBeat />
+          </>
+        ) : null}
         {step === 1 ? (
           <QuestionScreen
             kicker="Goals"
-            title="If we were having this conversation 12 months from now, what would make you think your marketing had worked?"
-            supporting="A result, a feeling, a change in the work — whatever would actually convince you."
+            title="Imagine we meet again a year from today."
+            prompt="What would have to happen for you to say: that worked?"
+            supporting="A result, a feeling, a kind of work. Not a twelve-month plan. We derive that."
           >
             <TextResponse
               labelledBy="question-title"

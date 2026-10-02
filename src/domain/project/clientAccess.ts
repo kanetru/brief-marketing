@@ -7,6 +7,7 @@ export const CLIENT_SECTIONS = [
   "business",
   "audience",
   "goals",
+  "reality",
   "personality",
   "spectrum",
   "visual",

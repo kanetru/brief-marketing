@@ -1,5 +1,7 @@
+import { CHANNEL_LABEL } from "./strategy/channels";
 import type { AgentFile, AgentPack, EvidenceRecord, ProjectIntelligence, UnderstandingField } from "../../types/project";
 import type { BriefProject } from "../../types/project";
+import type { StrategicPlan } from "../../types/strategy";
 
 export function buildAgentPack(project: BriefProject, intelligence: Omit<ProjectIntelligence, "agentPack">): AgentPack {
   const files = [
@@ -15,6 +17,9 @@ export function buildAgentPack(project: BriefProject, intelligence: Omit<Project
     file("09_guardrails.md", "Guardrails", guardrailFile(intelligence)),
     file("10_open_questions.md", "Open questions", questionFile(intelligence)),
     file("11_evidence.md", "Evidence", evidenceFile(intelligence)),
+    file("12_channel_strategy.md", "Channel strategy", channelFile(intelligence.strategy)),
+    file("13_customer_journey.md", "Customer journey", journeyFile(intelligence.strategy)),
+    file("14_marketing_roadmap.md", "Marketing roadmap", roadmapFile(intelligence.strategy)),
   ];
   const master = file("BRIEF_CONTEXT.md", "Complete context", masterFile(project, intelligence, files));
   return { generatedAt: intelligence.generatedAt, projectVersion: project.version, files, master };
@@ -47,6 +52,8 @@ function masterFile(project: BriefProject, intelligence: Omit<ProjectIntelligenc
     "An approved direction is a decision the manager made. It is not a fact.",
     "Published copy is what a website currently says. It is not a fact about the business.",
     "",
+    strategyPreface(intelligence.strategy),
+    "",
     sections,
   ].join("\n");
 }
@@ -62,11 +69,19 @@ function companyFile(intelligence: Omit<ProjectIntelligence, "agentPack">): stri
 }
 
 function audienceFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
-  return sectionFields(intelligence, "audience");
+  return [sectionFields(intelligence, "audience"), "", psychologyFile(intelligence.strategy)].join("\n");
 }
 
 function positioningFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
-  return [sectionFields(intelligence, "market"), "", sectionFields(intelligence, "brand")].join("\n");
+  const plan = intelligence.strategy;
+  const position = [
+    "## Social position",
+    `${plan.positioning.epistemicStatus} · ${plan.positioning.decisionStatus}`,
+    plan.positioning.statement,
+    "",
+    "The client did not write this. It is a hypothesis until the manager approves it.",
+  ].join("\n");
+  return [sectionFields(intelligence, "market"), "", sectionFields(intelligence, "brand"), "", position].join("\n");
 }
 
 function voiceFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
@@ -95,9 +110,115 @@ function competitorFile(intelligence: Omit<ProjectIntelligence, "agentPack">): s
 }
 
 function contentFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
+  const plan = intelligence.strategy;
+  const territories = plan.territories.map((item) => [
+    `### ${item.name}`,
+    item.idea,
+    `For: ${item.audienceNeed}`,
+    `Toward: ${item.purpose}`,
+    `Formats: ${item.formats.join(", ") || "Not yet chosen."}`,
+    `Needs: ${item.assets.join(", ") || "Unknown."}`,
+    `Proof: ${item.proof}`,
+    `Risk: ${item.risk}`,
+  ].join("\n")).join("\n\n");
+  const language = languageBlock(plan);
   const items = intelligence.opportunities.filter((item) => item.type === "content" || item.type === "campaign" || item.type === "format" || item.type === "channel");
-  if (items.length === 0) return "No content opportunities yet.";
-  return items.map((item) => `### ${item.title}\n${item.why}\n\nDo: ${item.action}`).join("\n\n");
+  const moves = items.length === 0 ? "" : items.map((item) => `### ${item.title}\n${item.why}\n\nDo: ${item.action}`).join("\n\n");
+  return [territories, language, moves].filter(Boolean).join("\n\n");
+}
+
+function psychologyFile(plan: StrategicPlan): string {
+  const audience = plan.audience;
+  const lines = [
+    ["Situation", audience.situation],
+    ["Afterwards", audience.desiredOutcome],
+    ["Hesitation", audience.anxieties],
+    ["Alternatives", audience.frustrations],
+    ["Must believe", audience.trustSignals],
+    ["Awareness", audience.awarenessState === "unknown" ? "" : audience.awarenessState.replaceAll("_", " ")],
+    ["What they lean toward", audience.attractionSignals.join(", ")],
+  ].filter(([, value]) => value.trim());
+  const body = lines.length === 0
+    ? "How they decide is still unknown."
+    : lines.map(([label, value]) => `**${label}**\n${value}`).join("\n\n");
+  return `## How they decide\n\n${body}\n\nNo demographic profile is included. None was evidenced.`;
+}
+
+function languageBlock(plan: StrategicPlan): string {
+  const groups: Array<[string, string[]]> = [
+    ["Owned", plan.language.owned],
+    ["Customer", plan.language.customer],
+    ["Category", plan.language.category],
+    ["Search", plan.language.search],
+    ["Clichés", plan.language.cliches],
+    ["Avoid", plan.language.avoid],
+  ];
+  const filled = groups.filter(([, values]) => values.length > 0);
+  if (filled.length === 0) return "";
+  return ["## Language", ...filled.map(([label, values]) => `**${label}**\n${values.join("; ")}`)].join("\n\n");
+}
+
+function channelFile(plan: StrategicPlan): string {
+  const groups = ["primary", "secondary", "test", "maintain", "deprioritise", "not_now"] as const;
+  return groups.map((priority) => {
+    const items = plan.channels.filter((item) => item.priority === priority);
+    if (items.length === 0) return "";
+    const body = items.map((item) => [
+      `### ${CHANNEL_LABEL[item.channel]}`,
+      `Role: ${item.role}`,
+      `Why: ${item.why}`,
+      `For: ${item.forWhom}`,
+      `Toward: ${item.goal}`,
+      `Strength: ${item.strength}`,
+      `Limit: ${item.limitation}`,
+      `Success: ${item.success}`,
+      item.needs.length ? `Needs: ${item.needs.join("; ")}` : "",
+    ].filter(Boolean).join("\n")).join("\n\n");
+    return `## ${priority.replace("_", " ")}\n\n${body}`;
+  }).filter(Boolean).join("\n\n");
+}
+
+function journeyFile(plan: StrategicPlan): string {
+  return plan.journey.map((stage) => [
+    `### ${stage.stage}`,
+    stage.customerState,
+    `Tension: ${stage.tension}`,
+    `Proof: ${stage.proof}`,
+    `Content: ${stage.content}`,
+    `Channel: ${stage.channel}`,
+  ].join("\n")).join("\n\n");
+}
+
+function roadmapFile(plan: StrategicPlan): string {
+  return plan.roadmap.map((stage) => [
+    `### ${stage.marker} · ${stage.horizon} · ${stage.phase}`,
+    stage.objective,
+    `Why: ${stage.why}`,
+    `Do: ${stage.actions.join("; ")}`,
+    `Depends on: ${stage.dependencies.join("; ")}`,
+    `Signal: ${stage.success}`,
+    `Status: ${stage.status}`,
+  ].join("\n")).join("\n\n");
+}
+
+function strategyPreface(plan: StrategicPlan): string {
+  const roles = plan.channels
+    .filter((item) => item.priority === "primary" || item.priority === "secondary")
+    .map((item) => `${CHANNEL_LABEL[item.channel]} (${item.priority}): ${item.role}`)
+    .join("\n");
+  const position = plan.positioning.decisionStatus === "approved"
+    ? plan.positioning.statement
+    : `${plan.positioning.statement} (${plan.positioning.epistemicStatus}, not yet approved)`;
+  return [
+    "Strategy in force",
+    `Primary goal: ${plan.objective}`,
+    `Audience: ${plan.audience.identitySignals || "Not yet named."}`,
+    `Positioning: ${position}`,
+    roles ? `Channel roles:\n${roles}` : "Channel roles: none derived.",
+    `Content territories: ${plan.territories.map((item) => item.name).join("; ") || "None yet."}`,
+    `Constraint: ${plan.constraint || "None named."}`,
+    `Roadmap priority: ${plan.nextPriority || "Not yet set."}`,
+  ].join("\n\n");
 }
 
 function assetFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {

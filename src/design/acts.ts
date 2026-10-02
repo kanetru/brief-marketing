@@ -9,6 +9,18 @@ export interface ActLine {
 /** Short pauses between chapters. Welcome and the ending are their own screens. */
 export function actFor(section: SectionId): ActLine | null {
   switch (section) {
+    case "goals":
+      return {
+        kicker: "A year from today",
+        title: "What would have to be true?",
+        line: "Not a plan. The result you would be willing to call success.",
+      };
+    case "reality":
+      return {
+        kicker: "The conditions",
+        title: "What can actually happen.",
+        line: "A channel you cannot feed is not a strategy.",
+      };
     case "audience":
       return {
         kicker: "The people",

@@ -10,7 +10,8 @@ import { VOICE_ROUNDS } from "./voice";
  * welcome:      0 intro
  * business:     0 name, 1 description, 2 peopleComeFor, 3 differentiation
  * audience:     0 current, 1 desired
- * goals:        0 outcomes, 1 twelve-month marker
+ * goals:        0 outcomes, 1 twelve-month marker, 2 adaptive follow-up
+ * reality:      0 channels, 1 what works, 2 capability, 3 journey, 4 proof, 5 neighbours
  * personality:  0 attract, 1 avoid
  * spectrum:     0 intro, then one step per dimension
  * visual:       0 intro, then one step per comparison pair
@@ -25,9 +26,10 @@ import { VOICE_ROUNDS } from "./voice";
  */
 export const SECTIONS = [
   { id: "welcome", label: "Intro", path: "/demo/start", steps: 1 },
-  { id: "business", label: "Business", path: "/demo/business", steps: 4 },
-  { id: "audience", label: "Audience", path: "/demo/audience", steps: 2 },
-  { id: "goals", label: "Goals", path: "/demo/goals", steps: 2 },
+  { id: "business", label: "Business", path: "/demo/business", steps: 8 },
+  { id: "audience", label: "Audience", path: "/demo/audience", steps: 5 },
+  { id: "goals", label: "Goals", path: "/demo/goals", steps: 3 },
+  { id: "reality", label: "Conditions", path: "/demo/reality", steps: 6 },
   { id: "personality", label: "Personality", path: "/demo/personality", steps: 2 },
   { id: "spectrum", label: "Spectrum", path: "/demo/spectrum", steps: 1 + SPECTRUM_DIMENSIONS.length },
   { id: "visual", label: "Visual", path: "/demo/visual", steps: 1 + VISUAL_COMPARISON_PAIRS.length },
