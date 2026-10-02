@@ -51,6 +51,28 @@ export function profileCompetitor(input: CompetitorInput, researched: boolean | 
     unavailableReason: "",
   };
   const research = typeof researched === "object" && researched ? researched : null;
+  const site = research?.site && research.site.pages.length > 0 ? research.site : null;
+  if (site) {
+    const home = site.pages.find((item) => item.role === "home") ?? site.pages[0];
+    return {
+      ...base,
+      basis: "research",
+      headline: site.positioning,
+      apparentPositioning: site.positioning && site.positioning === home?.description
+        ? site.positioning
+        : [site.positioning, home?.description].filter(Boolean).join(" "),
+      audience: site.audienceSignals.join(", "),
+      offer: site.offers.join("; "),
+      tone: site.verbalCharacter,
+      visualConventions: "",
+      contentThemes: site.contentPatterns.join(" "),
+      proof: site.proof.join(" "),
+      callsToAction: site.callsToAction.join("; "),
+      language: site.recurringLanguage.join(", "),
+      evidenceIds: [`competitor.${input.id}`],
+      unavailableReason: "",
+    };
+  }
   const page = research && observationHasSubstance(research.observation) ? research.observation : null;
   if (page) {
     return {
@@ -106,7 +128,7 @@ export function synthesiseCategory(profiles: CompetitorProfile[], clientDifferen
   };
 }
 
-const PATTERN_STOP = new Set(["about", "their", "which", "there", "these", "those", "where", "while", "would", "could", "should", "other", "after", "before", "people", "business", "company", "brand", "every", "piece", "pieces", "client", "notes"]);
+const PATTERN_STOP = new Set(["about", "their", "which", "there", "these", "those", "where", "while", "would", "could", "should", "other", "after", "before", "people", "business", "company", "brand", "every", "piece", "pieces", "client", "notes", "homepage", "pages"]);
 const VISUAL_WORDS = new Set(["interior", "interiors", "finished", "photograph", "photography", "portrait", "texture", "styled"]);
 
 function repeatedPatterns(profiles: CompetitorProfile[]): CategoryPattern[] {

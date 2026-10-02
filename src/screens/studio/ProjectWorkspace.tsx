@@ -7,9 +7,10 @@ import { attentionLine } from "../../domain/project/attention";
 import { buildProjectIntelligence } from "../../domain/project/assemble";
 import { nextAssetStatus } from "../../domain/project/assetRegister";
 import { sharePath } from "../../domain/project/access";
-import { requestPageResearch } from "../../services/researchClient";
+import { describeClientSite } from "../../domain/project/research/compare";
+import { requestSiteResearch } from "../../services/researchClient";
 import { useProjects } from "../../state/ProjectContext";
-import type { AgentFile, AssetCategory, AssetItem, BriefProject, DiscoveryStatus, ProjectIntelligence, UnderstandingField } from "../../types/project";
+import type { AgentFile, AssetCategory, AssetItem, BriefProject, CategoryPattern, DiscoveryStatus, ProjectIntelligence, ResearchTension, SourceQuote, UnderstandingField } from "../../types/project";
 
 const PANELS = [
   ["overview", "Overview"],
@@ -35,6 +36,13 @@ const DISCOVERY_LABEL: Record<DiscoveryStatus, string> = {
 
 type Panel = (typeof PANELS)[number][0];
 
+interface ResearchRun {
+  status: "reading" | "complete";
+  label: string;
+  pages: string[];
+  competitorsResearched: number;
+}
+
 const KIND_LABEL: Record<UnderstandingField["kind"], string> = {
   fact: "Fact",
   preference: "Preference",
@@ -54,6 +62,7 @@ export function ProjectWorkspace() {
   const project = api.projects.find((item) => item.id === projectId) ?? null;
   const [panel, setPanel] = useState<Panel>("overview");
   const [notice, setNotice] = useState("");
+  const [researchRun, setResearchRun] = useState<ResearchRun | null>(null);
   const intelligence = useMemo(
     () => (project ? buildProjectIntelligence(project, project.updatedAt) : null),
     [project],
@@ -128,21 +137,33 @@ export function ProjectWorkspace() {
           project={project}
           profiles={intelligence.competitors}
           category={intelligence.category}
+          tensions={intelligence.tensions}
           evidence={intelligence.evidence}
+          opportunities={intelligence.opportunities}
+          run={researchRun}
           onAdd={(competitor) => api.setCompetitor(project.id, competitor)}
           onRemove={(id) => api.removeCompetitor(project.id, id)}
-          onResearch={async (competitorId, url) => {
-            setNotice("Reading the page…");
-            const research = await requestPageResearch(url);
-            api.setCompetitorResearch(project.id, competitorId, research);
-            setNotice(research.observation ? "What that site says is now evidence." : research.unavailableReason || "Research unavailable.");
-          }}
-          onReadSite={async () => {
-            if (!project.website) return;
-            setNotice("Reading the client site…");
-            const research = await requestPageResearch(project.website);
-            api.setWebsiteResearch(project.id, research);
-            setNotice(research.observation ? "What the client site says is now evidence. It is not a fact about the business." : research.unavailableReason || "Research unavailable.");
+          onResearch={async () => {
+            const pages: string[] = [];
+            let competitorsResearched = 0;
+            const targets = project.competitors.filter((item) => item.website.trim()).slice(0, 10);
+            if (project.website) {
+              setResearchRun({ status: "reading", label: project.businessName, pages: [], competitorsResearched: 0 });
+              const research = await requestSiteResearch(project.website, project.businessName);
+              api.setWebsiteResearch(project.id, research);
+              for (const item of research.site?.pages ?? []) pages.push(item.label);
+            }
+            for (const competitor of targets) {
+              setResearchRun({ status: "reading", label: competitor.name, pages: [...pages], competitorsResearched });
+              const research = await requestSiteResearch(competitor.website, competitor.name);
+              api.setCompetitorResearch(project.id, competitor.id, research);
+              if ((research.site?.pages.length ?? 0) > 0) {
+                competitorsResearched += 1;
+                for (const item of research.site?.pages ?? []) pages.push(`${competitor.name} · ${item.label}`);
+              }
+            }
+            setResearchRun({ status: "complete", label: project.businessName, pages, competitorsResearched });
+            setNotice(pages.length > 0 ? "Research is now evidence. Published copy is not a fact about the business." : "Research is unavailable.");
           }}
         />
       ) : null}
@@ -345,70 +366,119 @@ function Market({
   project,
   profiles,
   category,
+  tensions,
   evidence,
+  opportunities,
+  run,
   onAdd,
   onRemove,
   onResearch,
-  onReadSite,
 }: {
   project: BriefProject;
   profiles: ProjectIntelligence["competitors"];
   category: ProjectIntelligence["category"];
+  tensions: ResearchTension[];
   evidence: ProjectIntelligence["evidence"];
+  opportunities: ProjectIntelligence["opportunities"];
+  run: ResearchRun | null;
   onAdd: (competitor: { id: string; name: string; website: string; notes: string }) => void;
   onRemove: (id: string) => void;
-  onResearch: (competitorId: string, url: string) => Promise<void>;
-  onReadSite: () => Promise<void>;
+  onResearch: () => Promise<void>;
 }) {
   const [name, setName] = useState("");
   const [website, setWebsite] = useState("");
   const [notes, setNotes] = useState("");
-  const [openPattern, setOpenPattern] = useState<string | null>(null);
-  const site = project.websiteResearch?.observation;
+  const [openId, setOpenId] = useState<string | null>(null);
+  const site = project.websiteResearch?.site;
+  const reading = site ? describeClientSite(site) : null;
+  const canResearch = Boolean(project.website) || project.competitors.some((item) => item.website.trim());
+  const storedPages = [
+    ...(site?.pages.map((page) => page.label) ?? []),
+    ...project.competitors.flatMap((item) => (project.competitorResearch?.[item.id]?.site?.pages ?? []).map((page) => `${item.name} · ${page.label}`)),
+  ];
+  const published = evidence.filter((item) => item.claimScope === "published_copy").length;
+  const researchOpportunities = opportunities.filter((item) => item.id === "opp-making" || item.id === "opp-longevity" || (item.marketEvidence?.length ?? 0) > 0).length;
   return (
     <section className="studio-panel">
       <h2>Market</h2>
-      <p>Patterns matter more than individual competitor reports. Empty fields stay empty.</p>
+      <p>Brief compares the client's discovery, the client's site, and the competitor pages it actually read.</p>
+      <article className="studio-card">
+        <p className="studio-kicker">{run?.status === "reading" ? `Researching ${run.label}` : run?.status === "complete" ? "Research complete" : storedPages.length > 0 ? "Research on record" : "Research"}</p>
+        {run?.status === "reading" ? <p>Reading the public pages…</p> : null}
+        <ul className="studio-evidence">
+          {(run ? run.pages : storedPages).map((page) => <li key={page}>✓ {page}</li>)}
+        </ul>
+        {run?.status === "complete" || (!run && storedPages.length > 0) ? (
+          <p className="studio-meta">
+            {(run?.status === "complete" ? run.pages.length : storedPages.length)} pages read
+            {" · "}{(run?.status === "complete" ? run.competitorsResearched : profiles.filter((item) => item.basis === "research").length)} competitors researched
+            {" · "}{published} evidence items
+            {" · "}{category?.patterns.length ?? 0} category patterns
+            {" · "}{researchOpportunities} opportunities
+          </p>
+        ) : null}
+        <button type="button" className="studio-button" disabled={!canResearch || run?.status === "reading"} onClick={() => void onResearch()}>Research</button>
+      </article>
       <article className="studio-card">
         <p className="studio-kicker">Client website</p>
-        {site ? (
+        {site && reading ? (
           <>
-            <h3>{site.headline || "No headline"}</h3>
-            <p>{site.description || site.excerpt}</p>
-            <p className="studio-meta">Published copy · {site.url} · {site.retrievedAt.slice(0, 10)}</p>
+            <h3>{site.positioning || "No headline"}</h3>
+            <p>{reading.says}</p>
+            {site.offers.length > 0 ? <p>Offer · {site.offers.join(", ")}</p> : null}
+            {site.audienceSignals.length > 0 ? <p>Audience on the page · {site.audienceSignals.join(", ")}</p> : <p className="studio-meta">Audience was not named. Brief left it blank.</p>}
+            {site.claims.length > 0 ? <p>Claims · {site.claims.join("; ")}</p> : null}
+            {site.callsToAction.length > 0 ? <p>Primary ask · {site.callsToAction[0]}</p> : null}
+            {site.proof.length > 0 ? <p>Proof · {site.proof.join(" ")}</p> : <p className="studio-meta">No concrete proof line on the pages read.</p>}
+            {reading.emphasises.length > 0 ? <p>Emphasises · {reading.emphasises.join(", ")}</p> : null}
+            {site.unansweredQuestions.map((line) => <p key={line} className="studio-meta">{line}</p>)}
+            {site.researchLimitations.map((line) => <p key={line} className="studio-meta">{line}</p>)}
           </>
         ) : (
           <p>{project.websiteResearch?.unavailableReason || "Not read yet. A URL is not a fact about the business."}</p>
         )}
-        <button type="button" className="studio-button" disabled={!project.website} onClick={() => void onReadSite()}>Read the client site</button>
       </article>
       {category ? (
         <div className="studio-cards">
-          <p className="studio-kicker">Category intelligence · {category.basis === "research" ? "retrieved pages" : "notes only"}</p>
+          <p className="studio-kicker">The market · {category.basis === "research" ? "retrieved pages" : "notes only"}</p>
           <p>{category.observation}</p>
-          {category.patterns.map((pattern) => (
-            <article key={pattern.id} className="studio-card">
-              <p className="studio-kicker">{pattern.title} · {pattern.epistemicStatus} · {pattern.count} of {pattern.total}</p>
-              <h3>{pattern.title === "White space" ? "What might this mean?" : pattern.title}</h3>
-              <p>{pattern.statement}</p>
-              <button type="button" className="studio-text-button" onClick={() => setOpenPattern(openPattern === pattern.id ? null : pattern.id)}>
-                {openPattern === pattern.id ? "Hide evidence" : "View evidence"}
-              </button>
-              {openPattern === pattern.id ? (
-                <ul className="studio-evidence">
-                  {pattern.evidenceIds.map((id) => {
-                    const record = evidence.find((item) => item.id === id);
-                    return <li key={id}><span>{record?.claimScope === "published_copy" ? "published copy" : record?.epistemicStatus ?? "source"}</span>{record?.text ?? id}</li>;
-                  })}
-                </ul>
-              ) : null}
-            </article>
-          ))}
-          {category.patterns.length === 0 ? <p>No pattern repeats across the sources on record.</p> : null}
+          {PATTERN_GROUPS.map((group) => {
+            const items = category.patterns.filter((pattern) => group.types.includes(pattern.patternType ?? "") || group.titles.includes(pattern.title));
+            if (items.length === 0) return null;
+            return (
+              <div key={group.title}>
+                <h3>{group.title}</h3>
+                {items.map((pattern) => (
+                  <PatternCard key={pattern.id} pattern={pattern} evidence={evidence} open={openId === pattern.id} onToggle={() => setOpenId(openId === pattern.id ? null : pattern.id)} />
+                ))}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <p>Category synthesis is unavailable until at least one competitor has notes or a retrieved page.</p>
       )}
+      {tensions.length > 0 ? (
+        <div className="studio-cards">
+          <h3>Tensions with this client</h3>
+          {tensions.map((item) => (
+            <article key={item.id} className="studio-card">
+              <p className="studio-kicker">{item.kind.replaceAll("_", " ")} · hypothesis</p>
+              <h3>{item.title}</h3>
+              <p>{item.statement}</p>
+              <EvidenceToggle
+                id={item.id}
+                title={item.title}
+                quotes={item.quotes}
+                evidenceIds={item.evidenceIds}
+                evidence={evidence}
+                open={openId === item.id}
+                onToggle={() => setOpenId(openId === item.id ? null : item.id)}
+              />
+            </article>
+          ))}
+        </div>
+      ) : null}
       <form
         className="studio-form"
         onSubmit={(event) => {
@@ -426,23 +496,105 @@ function Market({
         <button type="submit" className="studio-button" disabled={project.competitors.length >= 10}>Add competitor</button>
       </form>
       <div className="studio-cards">
-        {profiles.map((profile) => (
-          <article key={profile.id} className="studio-card" data-basis={profile.basis}>
-            <p className="studio-kicker">{profile.basis === "unavailable" ? "Research unavailable" : profile.basis === "research" ? "Retrieved page" : "From your notes"}</p>
-            <h3>{profile.name}</h3>
-            {profile.website ? <p>{profile.website}</p> : null}
-            {profile.basis === "unavailable" ? <p>{profile.unavailableReason}</p> : null}
-            {profile.headline ? <p>{profile.headline}</p> : null}
-            {profile.basis !== "unavailable" ? <p>{profile.apparentPositioning}</p> : null}
-            {profile.basis === "research" && !profile.audience ? <p className="studio-meta">Audience was not on the page. Brief left it blank.</p> : null}
-            <div className="studio-row">
-              {profile.website ? <button type="button" className="studio-text-button" onClick={() => void onResearch(profile.id, profile.website)}>Read this page</button> : null}
-              <button type="button" className="studio-text-button" onClick={() => onRemove(profile.id)}>Remove</button>
-            </div>
-          </article>
-        ))}
+        <h3>Competitors</h3>
+        {profiles.map((profile) => {
+          const researched = project.competitorResearch?.[profile.id]?.site;
+          return (
+            <article key={profile.id} className="studio-card" data-basis={profile.basis}>
+              <p className="studio-kicker">{profile.basis === "unavailable" ? "Research unavailable" : profile.basis === "research" ? "Retrieved pages" : "From your notes"}</p>
+              <h3>{profile.name}</h3>
+              {profile.website ? <p>{profile.website}</p> : null}
+              {researched ? <p className="studio-meta">{researched.pages.length} pages read · {researched.researchedAt.slice(0, 10)}</p> : null}
+              {profile.basis === "unavailable" ? <p>{profile.unavailableReason}</p> : null}
+              {profile.headline ? <p>{profile.headline}</p> : null}
+              {profile.basis !== "unavailable" && profile.apparentPositioning ? <p>{profile.apparentPositioning}</p> : null}
+              {profile.offer ? <p>Offer · {profile.offer}</p> : null}
+              {profile.audience ? <p>Audience · {profile.audience}</p> : null}
+              {profile.basis === "research" && !profile.audience ? <p className="studio-meta">Audience was not on the pages read. Brief left it blank.</p> : null}
+              {profile.proof ? <p>Proof · {profile.proof}</p> : null}
+              {profile.callsToAction ? <p>Ask · {profile.callsToAction}</p> : null}
+              {profile.tone ? <p>{profile.tone}</p> : null}
+              {profile.contentThemes ? <p>{profile.contentThemes}</p> : null}
+              {profile.basis === "research" ? <p className="studio-meta">Visual research is limited. The pictures were not read.</p> : null}
+              <div className="studio-row">
+                <button type="button" className="studio-text-button" onClick={() => onRemove(profile.id)}>Remove</button>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </section>
+  );
+}
+
+const PATTERN_GROUPS: Array<{ title: string; types: string[]; titles: string[] }> = [
+  { title: "What everyone does", types: ["common_claim", "common_offer", "audience_pattern", "content_pattern", "cta_pattern"], titles: ["Category pattern", "Visual pattern"] },
+  { title: "Where they differ", types: ["differentiation_signal"], titles: [] },
+  { title: "Category language", types: ["category_cliche", "common_language"], titles: ["Language pattern"] },
+  { title: "Proof", types: ["proof_pattern"], titles: [] },
+  { title: "White space", types: ["whitespace_hypothesis", "underused_theme"], titles: ["White space"] },
+];
+
+function PatternCard({
+  pattern,
+  evidence,
+  open,
+  onToggle,
+}: {
+  pattern: CategoryPattern;
+  evidence: ProjectIntelligence["evidence"];
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <article className="studio-card">
+      <p className="studio-kicker">{pattern.patternType?.replaceAll("_", " ") ?? pattern.title} · {pattern.epistemicStatus} · {pattern.prevalence ?? `${pattern.count} of ${pattern.total}`}</p>
+      <h3>{pattern.title}</h3>
+      <p>{pattern.statement}</p>
+      {pattern.implication ? <p className="studio-meta">{pattern.implication}</p> : null}
+      <EvidenceToggle id={pattern.id} title={pattern.title} quotes={pattern.quotes ?? []} evidenceIds={pattern.evidenceIds} evidence={evidence} open={open} onToggle={onToggle} />
+    </article>
+  );
+}
+
+function EvidenceToggle({
+  title,
+  quotes,
+  evidenceIds,
+  evidence,
+  open,
+  onToggle,
+}: {
+  id: string;
+  title: string;
+  quotes: SourceQuote[];
+  evidenceIds: string[];
+  evidence: ProjectIntelligence["evidence"];
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <>
+      <button type="button" className="studio-text-button" onClick={onToggle}>{open ? "Hide evidence" : "View evidence"}</button>
+      {open ? (
+        <div className="studio-evidence">
+          <p className="studio-kicker">{title}</p>
+          <p>Supported by</p>
+          {quotes.map((quote) => (
+            <blockquote key={`${quote.who}-${quote.page}-${quote.text}`}>
+              <p className="studio-kicker">{quote.who}</p>
+              <p>{quote.page}</p>
+              <p>“{quote.text}”</p>
+              {quote.url ? <p className="studio-meta">{quote.url}</p> : null}
+            </blockquote>
+          ))}
+          {quotes.length === 0 ? evidenceIds.map((id) => {
+            const record = evidence.find((item) => item.id === id);
+            return <p key={id}><span>{record?.claimScope === "published_copy" ? "published copy" : record?.epistemicStatus ?? "source"}</span> {record?.text ?? id}</p>;
+          }) : null}
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -486,8 +638,11 @@ function Opportunities({ items, evidence }: { items: ProjectIntelligence["opport
           <article key={item.id} className="studio-card">
             <p className="studio-kicker">{item.type} · {item.effort} effort · {item.confidence}</p>
             <h3>{item.title}</h3>
-            <p>{item.why}</p>
+            <p>{item.observation || item.why}</p>
+            {item.hypothesis ? <p><strong>Hypothesis. </strong>{item.hypothesis}</p> : null}
+            {item.observation && item.why !== item.observation ? <p>{item.why}</p> : null}
             <p><strong>Try. </strong>{item.action}</p>
+            {item.requiredAssets && item.requiredAssets.length > 0 ? <p className="studio-meta">Requires · {item.requiredAssets.join(", ")}</p> : null}
             {item.impactHypothesis ? <p className="studio-meta">{item.impactHypothesis}</p> : null}
             <ul className="studio-evidence">
               {item.evidenceIds.map((id) => {

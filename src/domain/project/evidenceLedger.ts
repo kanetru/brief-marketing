@@ -140,8 +140,10 @@ export function buildEvidenceLedger(
     });
   }
   publishPage(say, "website", "website_research", extras.websiteResearch);
+  publishSite(say, "website.obs", "website_research", extras.websiteResearch);
   for (const competitor of extras.competitorResearch) {
     publishPage(say, `competitor.${competitor.id}.page`, "competitor_research", competitor.research, competitor.name);
+    publishSite(say, `competitor.${competitor.id}.obs`, "competitor_research", competitor.research, competitor.name);
   }
   return records;
 }
@@ -185,6 +187,43 @@ function publishPage(
       decisionStatus: "unreviewed",
       url: page.url,
       retrievedAt: page.retrievedAt,
+      claimScope: "published_copy",
+    });
+  }
+}
+
+function publishSite(
+  say: (input: {
+    id: string;
+    sourceType: EvidenceSourceType;
+    sourceReference: string;
+    text: string;
+    topic: string;
+    kind: EvidenceKind;
+    confidence?: EvidenceRecord["confidence"];
+    decisionStatus?: DecisionStatus;
+    url?: string;
+    retrievedAt?: string;
+    claimScope?: EvidenceRecord["claimScope"];
+  }) => void,
+  idPrefix: string,
+  sourceType: EvidenceSourceType,
+  research: StoredResearch | null,
+  name = "",
+) {
+  const observations = research?.site?.observations ?? [];
+  for (const item of observations.slice(0, 12)) {
+    say({
+      id: `${idPrefix}.${item.id}`,
+      sourceType,
+      sourceReference: item.sourceUrl,
+      text: name ? `${name}: ${item.observation}` : item.observation,
+      topic: "market",
+      kind: "inference",
+      confidence: "medium",
+      decisionStatus: "unreviewed",
+      url: item.sourceUrl,
+      retrievedAt: research?.retrievedAt,
       claimScope: "published_copy",
     });
   }

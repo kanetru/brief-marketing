@@ -6,7 +6,8 @@ import { buildUnderstanding, inferenceSeeds } from "./companyUnderstanding";
 import { profileCompetitor, synthesiseCategory } from "./competitors";
 import { buildEvidenceLedger } from "./evidenceLedger";
 import { buildOpportunities } from "./opportunities";
-import type { BriefProject, ProjectIntelligence } from "../../types/project";
+import { compareMarket } from "./research/compare";
+import type { BriefProject, CategorySynthesis, ProjectIntelligence } from "../../types/project";
 
 export function buildProjectIntelligence(project: BriefProject, generatedAt = new Date().toISOString()): ProjectIntelligence {
   const seeds = inferenceSeeds(project.discovery);
@@ -29,8 +30,22 @@ export function buildProjectIntelligence(project: BriefProject, generatedAt = ne
   const competitors = project.competitors.map((item) => profileCompetitor(item, project.competitorResearch?.[item.id] ?? false));
   const described = fields.find((field) => field.id === "company.what_they_do")?.text ?? "";
   const difference = fields.find((field) => field.id === "market.differentiation")?.text ?? "";
-  const category = synthesiseCategory(competitors, [described, difference].filter(Boolean).join(" "));
-  const opportunities = buildOpportunities(fields, category, project.businessName);
+  const audience = fields.find((field) => field.id === "audience.primary")?.text ?? "";
+  const offer = fields.find((field) => field.id === "company.offer")?.text ?? "";
+  const clientSite = project.websiteResearch?.site ?? null;
+  const competitorSites = project.competitors.flatMap((item) => {
+    const site = project.competitorResearch?.[item.id]?.site;
+    return site && site.pages.length > 0 ? [{ id: item.id, name: item.name || site.businessName, site }] : [];
+  });
+  const compared = compareMarket({
+    businessName: project.businessName,
+    discovery: { description: described, audience, difference, offer },
+    clientSite,
+    competitors: competitorSites,
+  });
+  const category = mergeCategory(synthesiseCategory(competitors, [described, difference].filter(Boolean).join(" ")), compared);
+  const tensions = compared.tensions;
+  const opportunities = buildOpportunities(fields, category, project.businessName, tensions);
   const assets = buildAssetRegister(project, fields);
   const contradictions = findContradictions(project.discovery);
   const readingQuestions = buildBrandIntelligence(project.discovery).reading.tomorrow.questions;
@@ -43,6 +58,7 @@ export function buildProjectIntelligence(project: BriefProject, generatedAt = ne
     understanding,
     competitors,
     category,
+    tensions,
     opportunities,
     assets,
     library: project.library ?? [],
@@ -51,6 +67,26 @@ export function buildProjectIntelligence(project: BriefProject, generatedAt = ne
     discoveryProgress: discoveryProgress(project.discovery),
   };
   return { ...partial, agentPack: buildAgentPack(project, partial) };
+}
+
+function mergeCategory(
+  category: CategorySynthesis | null,
+  compared: { patterns: CategorySynthesis["patterns"]; summary: string },
+): CategorySynthesis | null {
+  if (!category) return null;
+  if (compared.patterns.length === 0) return category;
+  const covered = compared.patterns.some((item) => item.id === "pattern-process-invisible");
+  const kept = covered ? category.patterns.filter((item) => item.id !== "pattern-making-gap") : category.patterns;
+  const whiteSpace = [
+    ...compared.patterns.filter((item) => item.patternType === "whitespace_hypothesis").map((item) => item.statement),
+    ...category.whiteSpace.filter((line) => !(covered && /making is largely absent/i.test(line))),
+  ];
+  return {
+    ...category,
+    observation: category.basis === "research" && compared.summary ? compared.summary : category.observation,
+    patterns: [...compared.patterns, ...kept],
+    whiteSpace,
+  };
 }
 
 export function projectStatus(project: BriefProject): BriefProject["status"] {

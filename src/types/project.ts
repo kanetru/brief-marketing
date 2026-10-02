@@ -159,6 +159,11 @@ export interface CategoryPattern {
   total: number;
   evidenceIds: string[];
   epistemicStatus: "hypothesis" | "recommendation";
+  patternType?: PatternType;
+  competitorsSupporting?: string[];
+  prevalence?: string;
+  implication?: string;
+  quotes?: SourceQuote[];
 }
 
 export interface Opportunity {
@@ -171,6 +176,13 @@ export interface Opportunity {
   action: string;
   effort: Effort;
   impactHypothesis: string;
+  observation?: string;
+  hypothesis?: string;
+  clientEvidence?: string[];
+  marketEvidence?: string[];
+  websiteEvidence?: string[];
+  requiredAssets?: string[];
+  epistemicStatus?: EpistemicStatus;
 }
 
 export interface AssetItem {
@@ -220,11 +232,128 @@ export interface PageObservation {
   recurringLanguage: string[];
 }
 
+export type ResearchPageRole =
+  | "home"
+  | "about"
+  | "services"
+  | "products"
+  | "work"
+  | "process"
+  | "philosophy"
+  | "pricing"
+  | "faq"
+  | "testimonials"
+  | "journal"
+  | "contact"
+  | "other";
+
+export type ResearchObservationType =
+  | "positioning"
+  | "offer"
+  | "audience"
+  | "claim"
+  | "proof"
+  | "cta"
+  | "language"
+  | "theme"
+  | "gap";
+
+/** A line taken from a page. It is what the page says, not a fact about the business. */
+export interface ResearchObservation {
+  id: string;
+  observation: string;
+  sourceUrl: string;
+  sourcePage: string;
+  evidenceText: string;
+  observationType: ResearchObservationType;
+  epistemicStatus: "inference";
+  claimScope: "published_copy";
+}
+
+export interface ResearchPageRecord {
+  url: string;
+  role: ResearchPageRole;
+  label: string;
+  headline: string;
+  description: string;
+  excerpt: string;
+  headings: string[];
+  callsToAction: string[];
+  proofLines: string[];
+  recurringLanguage: string[];
+  retrievedAt: string;
+  /** This provider reads text. It has not seen the pictures. */
+  visualResearch: "limited";
+}
+
+export interface SiteResearchResult {
+  siteUrl: string;
+  businessName: string;
+  researchedAt: string;
+  pages: ResearchPageRecord[];
+  observations: ResearchObservation[];
+  summary: string;
+  positioning: string;
+  offers: string[];
+  audienceSignals: string[];
+  claims: string[];
+  proof: string[];
+  callsToAction: string[];
+  recurringLanguage: string[];
+  themes: string[];
+  contentPatterns: string[];
+  /** Empty when the provider only read HTML text. */
+  visualObservations: string[];
+  verbalCharacter: string;
+  unansweredQuestions: string[];
+  researchLimitations: string[];
+}
+
 export interface StoredResearch {
   url: string;
   retrievedAt: string;
   observation: PageObservation | null;
+  /** Present when more than the homepage was considered. Older records omit it. */
+  site?: SiteResearchResult | null;
   unavailableReason: string;
+}
+
+export type PatternType =
+  | "common_claim"
+  | "common_language"
+  | "common_offer"
+  | "audience_pattern"
+  | "proof_pattern"
+  | "content_pattern"
+  | "cta_pattern"
+  | "category_cliche"
+  | "underused_theme"
+  | "differentiation_signal"
+  | "contradiction"
+  | "whitespace_hypothesis";
+
+export interface SourceQuote {
+  who: string;
+  page: string;
+  url: string;
+  text: string;
+}
+
+export type TensionKind =
+  | "discovery_website"
+  | "discovery_category"
+  | "website_category"
+  | "claim_proof"
+  | "audience_language";
+
+export interface ResearchTension {
+  id: string;
+  kind: TensionKind;
+  title: string;
+  statement: string;
+  evidenceIds: string[];
+  epistemicStatus: "hypothesis";
+  quotes: SourceQuote[];
 }
 
 export interface LibraryAsset {
@@ -318,6 +447,7 @@ export interface ProjectIntelligence {
   understanding: CompanyUnderstanding;
   competitors: CompetitorProfile[];
   category: CategorySynthesis | null;
+  tensions: ResearchTension[];
   opportunities: Opportunity[];
   assets: AssetItem[];
   library: LibraryAsset[];

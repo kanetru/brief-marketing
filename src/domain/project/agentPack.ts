@@ -88,7 +88,10 @@ function competitorFile(intelligence: Omit<ProjectIntelligence, "agentPack">): s
   const category = intelligence.category
     ? `\n\nCategory note: ${intelligence.category.observation}`
     : "\n\nCategory synthesis is unavailable until notes or a research provider exist.";
-  return lines.join("\n\n") + category;
+  const tensions = intelligence.tensions.length
+    ? `\n\n${intelligence.tensions.map((item) => `${item.title}\n${item.statement}`).join("\n\n")}`
+    : "";
+  return lines.join("\n\n") + category + tensions;
 }
 
 function contentFile(intelligence: Omit<ProjectIntelligence, "agentPack">): string {
