@@ -1,0 +1,72 @@
+@keyframes ll-rise {
+  from { opacity: 0; transform: translateY(var(--distance)); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ll-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.opening-mark,
+.opening-title,
+.opening-line,
+.opening-support,
+.opening-note {
+  animation: ll-rise var(--duration-slow) var(--ease-out) both;
+}
+
+.opening-title { animation-delay: var(--stagger); }
+.opening-line { animation-delay: calc(var(--stagger) * 2); }
+.opening-support { animation-delay: calc(var(--stagger) * 3); }
+.opening-note { animation-delay: calc(var(--stagger) * 4); }
+
+.act {
+  animation: ll-fade var(--duration) var(--ease-out) both;
+}
+
+.learning-beat {
+  animation: ll-fade var(--duration-slow) var(--ease-out) both;
+}
+
+.learning-beat h2 {
+  animation: ll-rise var(--duration) var(--ease-out) calc(var(--stagger) * 2) both;
+}
+
+.learning-beat[data-kind="learn-tension"] .quiet:first-child {
+  animation: ll-rise var(--duration) var(--ease-out) both;
+}
+
+.learning-beat[data-kind="learn-tension"] .quiet:last-child {
+  animation: ll-rise var(--duration) var(--ease-out) var(--stagger) both;
+}
+
+.question {
+  animation: ll-rise var(--duration) var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opening-mark,
+  .opening-title,
+  .opening-line,
+  .opening-support,
+  .opening-note,
+  .act,
+  .learning-beat,
+  .learning-beat h2,
+  .learning-beat[data-kind="learn-tension"] .quiet,
+  .question,
+  .choice-card,
+  .primary-button,
+  .transition,
+  .reveal,
+  .spectrum-thumb,
+  .compare-panel,
+  .palette-card,
+  .type-card,
+  .imagery-card,
+  .voice-option {
+    animation: ll-fade 120ms linear both;
+    transition: none;
+  }
+}

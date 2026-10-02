@@ -98,6 +98,7 @@ export function PersonalityScreen() {
       }
     >
       <TransitionWrapper transitionKey={`personality-${step}`}>
+        <LearningBeat />
         {step === 0 ? (
           <QuestionScreen
             kicker="Personality"
@@ -140,7 +141,6 @@ export function PersonalityScreen() {
             />
           </QuestionScreen>
         ) : null}
-        <LearningBeat />
       </TransitionWrapper>
     </DiscoveryLayout>
   );

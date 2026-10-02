@@ -8,8 +8,8 @@ export function AgencyMark() {
 
   return (
     <Link to={sectionPath("welcome")} className="mark" onClick={() => activate("welcome")}>
-      <span className="mark-name">Lover Lover</span>
-      <span className="mark-kicker">Discovery</span>
+      <img className="mark-logo" src="/brand/lover-lover-wordmark.png" alt="Lover Lover" />
+      <span className="mark-kicker">Brief</span>
     </Link>
   );
 }

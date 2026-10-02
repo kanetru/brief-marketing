@@ -18,7 +18,8 @@ export function CompleteScreen() {
   if (project) {
     return (
       <DiscoveryLayout section="complete" step={step} width="hero" footer={<NavigationControls showBack={false} showForward={false} onBack={goBack} onForward={() => activate("complete")} forwardLabel="Continue" />}>
-        <QuestionScreen size="hero" kicker="Thank you" title={message.title} supporting={message.body}>
+        <QuestionScreen size="hero" kicker="Handoff" title={message.title} supporting={message.body}>
+          <img className="opening-mark" src="/brand/lover-lover-wordmark.png" alt="" />
           <aside className="statement">
             <p className="statement-lead">{message.next}</p>
           </aside>
@@ -47,13 +48,14 @@ export function CompleteScreen() {
     >
       <QuestionScreen
         size="hero"
-        kicker="Handover"
-        title="You're done."
-        supporting="Thanks — your responses are ready for your media manager. They'll use this alongside their own experience and conversations with you to shape the creative direction."
+        kicker="Handoff"
+        title="That's it."
+        supporting="Your answers are with your manager. You can leave this here."
       >
+        <img className="opening-mark" src="/brand/lover-lover-wordmark.png" alt="" />
         <aside className="statement">
-          <p className="statement-lead">We haven't defined your brand here.</p>
-          <p>We've given them a much better place to start.</p>
+          <p className="statement-lead">Brief has what it needs.</p>
+          <p>Nothing here is a strategy. That stays with the person doing the work.</p>
         </aside>
         {project ? (
           <p className="meta">You can close this. The same link brings you back.</p>

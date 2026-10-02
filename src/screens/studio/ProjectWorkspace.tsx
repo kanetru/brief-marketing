@@ -402,9 +402,29 @@ function Market({
     <section className="studio-panel">
       <h2>Market</h2>
       <p>Brief compares the client's discovery, the client's site, and the competitor pages it actually read.</p>
+      {category ? (
+        <div className="studio-cards">
+          <p className="studio-kicker">The market · {category.basis === "research" ? "retrieved pages" : "notes only"}</p>
+          <p>{category.observation}</p>
+          {PATTERN_GROUPS.map((group) => {
+            const items = category.patterns.filter((pattern) => group.types.includes(pattern.patternType ?? "") || group.titles.includes(pattern.title));
+            if (items.length === 0) return null;
+            return (
+              <div key={group.title}>
+                <h3>{group.title}</h3>
+                {items.map((pattern) => (
+                  <PatternCard key={pattern.id} pattern={pattern} evidence={evidence} open={openId === pattern.id} onToggle={() => setOpenId(openId === pattern.id ? null : pattern.id)} />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p>Category synthesis is unavailable until at least one competitor has notes or a retrieved page.</p>
+      )}
       <article className="studio-card">
-        <p className="studio-kicker">{run?.status === "reading" ? `Researching ${run.label}` : run?.status === "complete" ? "Research complete" : storedPages.length > 0 ? "Research on record" : "Research"}</p>
-        {run?.status === "reading" ? <p>Reading the public pages…</p> : null}
+        <p className="studio-kicker">{run?.status === "reading" ? "Reading the market" : run?.status === "complete" ? "Something is taking shape" : storedPages.length > 0 ? "Research on record" : "Research"}</p>
+        {run?.status === "reading" && run.label ? <p>{run.label}</p> : null}
         <ul className="studio-evidence">
           {(run ? run.pages : storedPages).map((page) => <li key={page}>✓ {page}</li>)}
         </ul>
@@ -438,26 +458,6 @@ function Market({
           <p>{project.websiteResearch?.unavailableReason || "Not read yet. A URL is not a fact about the business."}</p>
         )}
       </article>
-      {category ? (
-        <div className="studio-cards">
-          <p className="studio-kicker">The market · {category.basis === "research" ? "retrieved pages" : "notes only"}</p>
-          <p>{category.observation}</p>
-          {PATTERN_GROUPS.map((group) => {
-            const items = category.patterns.filter((pattern) => group.types.includes(pattern.patternType ?? "") || group.titles.includes(pattern.title));
-            if (items.length === 0) return null;
-            return (
-              <div key={group.title}>
-                <h3>{group.title}</h3>
-                {items.map((pattern) => (
-                  <PatternCard key={pattern.id} pattern={pattern} evidence={evidence} open={openId === pattern.id} onToggle={() => setOpenId(openId === pattern.id ? null : pattern.id)} />
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <p>Category synthesis is unavailable until at least one competitor has notes or a retrieved page.</p>
-      )}
       {tensions.length > 0 ? (
         <div className="studio-cards">
           <h3>Tensions with this client</h3>

@@ -1,9 +1,12 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { actAlreadySeen, actFor, markActSeen } from "../design/acts";
+import { experienceMood } from "../design/mood";
 import { sectionById } from "../domain/sections";
 import { useSectionPath } from "../state/routeBase";
 import type { SectionId } from "../types/discovery";
 import { useSession } from "../state/SessionContext";
+import { ActInterstitial } from "./ActInterstitial";
 import { AgencyMark } from "./AgencyMark";
 import { EmergingPicture } from "./EmergingPicture";
 import { ProgressIndicator } from "./ProgressIndicator";
@@ -30,6 +33,10 @@ export function DiscoveryLayout({
   const location = useLocation();
   const { session, activate } = useSession();
   const sectionPath = useSectionPath();
+  const act = step === 0 ? actFor(section) : null;
+  const [actOpen, setActOpen] = useState(() => Boolean(act) && !actAlreadySeen(section));
+  const mood = experienceMood(session.personality.attract.selected);
+  const dark = section === "welcome" || section === "complete" || actOpen;
 
   useEffect(() => {
     if (session.progress.section !== section) {
@@ -46,31 +53,50 @@ export function DiscoveryLayout({
     document.title = `${sectionById(section).label} — Lover Lover`;
   }, [section]);
 
+  useEffect(() => {
+    const next = step === 0 ? actFor(section) : null;
+    setActOpen(Boolean(next) && !actAlreadySeen(section));
+  }, [section, step]);
+
   return (
-    <div className="shell" data-section={section} data-step={step}>
+    <div className={dark ? "shell is-dark" : "shell"} data-section={section} data-step={step} data-mood={mood}>
       <header className="top">
         <div className="brand">
           <AgencyMark />
           {location.pathname.startsWith("/demo") ? <Link className="session-link" to="/studio">Manager</Link> : null}
           <SessionToggle />
         </div>
-        <ProgressIndicator
-          current={section}
-          furthest={session.progress.furthest}
-          step={step}
-          totalSteps={totalSteps}
-          hideSections={location.pathname.startsWith("/c/") ? ["profile"] : []}
-          onSelect={(next) => {
-            activate(next);
-            navigate(sectionPath(next));
-          }}
-        />
+        {section === "welcome" || section === "complete" ? null : (
+          <ProgressIndicator
+            current={section}
+            furthest={session.progress.furthest}
+            step={step}
+            totalSteps={totalSteps}
+            hideSections={location.pathname.startsWith("/c/") ? ["profile"] : []}
+            onSelect={(next) => {
+              activate(next);
+              navigate(sectionPath(next));
+            }}
+          />
+        )}
       </header>
       <main className={`column is-${width}`}>
-        <EmergingPicture />
-        {children}
+        {actOpen && act ? (
+          <ActInterstitial
+            act={act}
+            onContinue={() => {
+              markActSeen(section);
+              setActOpen(false);
+            }}
+          />
+        ) : (
+          <>
+            <EmergingPicture />
+            {children}
+          </>
+        )}
       </main>
-      {footer ? <footer className={`dock is-${width}`}>{footer}</footer> : null}
+      {footer && !actOpen ? <footer className={`dock is-${width}`}>{footer}</footer> : null}
     </div>
   );
 }

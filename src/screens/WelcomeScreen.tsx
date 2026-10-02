@@ -1,6 +1,5 @@
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
-import { QuestionScreen } from "../components/QuestionScreen";
 import { DEMO_ACCOUNT } from "../domain/project/account";
 import { canAdvance } from "../state/guards";
 import { useClientProject } from "../state/ProjectContext";
@@ -12,7 +11,7 @@ export function WelcomeScreen() {
   const project = useClientProject();
   const { step, goBack, goForward, showBack, showForward } = useConversation("welcome");
   const resume = session.progress.furthest !== "welcome";
-  const business = project?.businessName.trim();
+  const manager = project ? DEMO_ACCOUNT.name : null;
 
   return (
     <DiscoveryLayout
@@ -25,36 +24,22 @@ export function WelcomeScreen() {
           showForward={showForward}
           onBack={goBack}
           onForward={goForward}
-          forwardLabel={resume ? "Continue" : "Let's begin"}
+          forwardLabel={resume ? "Keep going" : "Begin"}
           forwardDisabled={!canAdvance(session, "welcome", step)}
         />
       }
     >
-      <QuestionScreen
-        size="hero"
-        title={
-          business ? (
-            <>
-              Let's get a clear picture of <span className="title-break">{business}.</span>
-            </>
-          ) : (
-            <>
-              Help us understand <span className="title-break">your business.</span>
-            </>
-          )
-        }
-        supporting={
-          project
-            ? `${DEMO_ACCOUNT.name} asked for this conversation. Your answers go to ${DEMO_ACCOUNT.name}. You won't need an account.`
-            : "A conversation, not a form. Your answers become a picture your manager can use in the work, and in the tools they already use."
-        }
-      >
-        <aside className="statement">
-          <p className="statement-lead">This isn't here to define your brand for you.</p>
-          <p>Think of it as the starting point for a better creative conversation.</p>
-        </aside>
-        <p className="meta">Around 15 minutes</p>
-      </QuestionScreen>
+      <article className="opening">
+        <img className="opening-mark" src="/brand/lover-lover-wordmark.png" alt="Lover Lover" />
+        <h1 className="display opening-title">Brief</h1>
+        <p className="opening-line">by Lover Lover</p>
+        <p className="opening-support">We're going to learn how your business thinks, sounds and looks.</p>
+        <p className="opening-note">
+          {manager
+            ? `${manager} asked for this. Your answers go to ${manager}. You won't need an account, and you won't be handed a strategy.`
+            : "A conversation with a point of view. Your answers become something a manager can actually use."}
+        </p>
+      </article>
     </DiscoveryLayout>
   );
 }

@@ -15,6 +15,7 @@ export function NavigationControls({
   forwardLabel,
   forwardDisabled = false,
 }: NavigationControlsProps) {
+  const spoken = forwardLabel === "Continue" ? "Keep going" : forwardLabel === "Let's begin" ? "Begin" : forwardLabel;
   return (
     <div className="nav-controls">
       {showBack ? (
@@ -32,7 +33,7 @@ export function NavigationControls({
           disabled={forwardDisabled}
           data-testid="continue"
         >
-          {forwardLabel}
+          {spoken}
           <span aria-hidden="true">→</span>
         </button>
       ) : (

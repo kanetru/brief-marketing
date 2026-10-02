@@ -8,7 +8,7 @@ export function QuietChoice({ label, pressed, onClick }: QuietChoiceProps) {
   return (
     <button
       type="button"
-      className={pressed ? "quiet is-pressed" : "quiet"}
+      className={pressed ? "quiet quiet-choice is-pressed" : "quiet quiet-choice"}
       aria-pressed={pressed}
       onClick={onClick}
     >

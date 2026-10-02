@@ -12,7 +12,7 @@ export function LearningBeat() {
   const prompt = learningPrompts(session).find((item) => !project.learning.some((answer) => answer.id === item.id));
   if (!prompt) return null;
   return (
-    <aside className="learning-beat">
+    <aside className="learning-beat" data-kind={prompt.id}>
       <p className="kicker">{prompt.kicker}</p>
       <h2>{prompt.statement}</h2>
       <div className="quiet-row">
