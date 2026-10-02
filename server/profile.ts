@@ -9,8 +9,7 @@ import type { DiscoveryEvidence } from "../src/domain/evidence";
 import { PROFILE_RESPONSE_SCHEMA } from "../src/domain/profileSchema";
 import type { ProfileGenerationRequest, ProfileRefinementRequest } from "../src/domain/profileRequest";
 import type { AgentObservation, AnalysisFailureCode, DiscoveryProfileVersion, ProfileClarification, ProfileContent } from "../src/types/discovery";
-
-const DEFAULT_MODEL = "gpt-4o-mini";
+import { modelFor } from "../src/config/aiModels";
 
 export interface ProfileServiceResult {
   ok: true;
@@ -56,7 +55,7 @@ async function runProfile(
     return ready(evidence, observations, clarifications, null, "not_configured", generatedAt, previous, feedbackNote, null, null);
   }
 
-  const modelName = process.env.OPENAI_MODEL?.trim() || DEFAULT_MODEL;
+  const modelName = modelFor("discoveryProfile");
   const user =
     previous && feedbackNote
       ? buildRefinementPrompt(evidence, observations, clarifications, previous, feedbackNote)

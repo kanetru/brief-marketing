@@ -41,10 +41,9 @@ Create a `.env` file in the project root (see `.env.example`):
 
 ```bash
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o-mini
 ```
 
-Restart `npm run dev` after changing it. `gpt-4o-mini` is the default when `OPENAI_MODEL` is unset. The model must support structured JSON schema output.
+Restart `npm run dev` after changing it. Model choice lives in `src/config/aiModels.ts`. `OPENAI_MODEL` overrides only the client strategist, which defaults to `gpt-5.6-sol` with high reasoning on the Responses API. Clarification, the profile, and the creative reading default to `gpt-4o-mini` through their own variables, so a strategist change leaves them on the cheaper model. Website research extracts HTML locally and does not call a model.
 
 The interviewer instructions live in `src/agent/discoveryInterviewer.v1.ts`. The profile prompt lives in `src/agent/discoveryProfile.v1.ts`. The browser posts that work to `/api/discovery/profile`.
 
