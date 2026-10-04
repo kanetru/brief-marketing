@@ -2,6 +2,8 @@ import { migrateSession } from "./storage";
 import { createSession } from "./createSession";
 import { DEMO_ACCOUNT } from "../domain/project/account";
 import { projectStatus } from "../domain/project/assemble";
+import { emptyWatch, normaliseWatch, withStoredReaction } from "../domain/intelligence/watch";
+import type { ManagerReaction } from "../types/intelligence";
 import type { StoredClientReading } from "../types/clientRead";
 import type {
   AssetStatus,
@@ -81,6 +83,7 @@ export function createProject(input: {
     competitorResearch: {},
     learning: [],
     clientReading: null,
+    watch: emptyWatch(now),
   };
   return { ...project, status: projectStatus(project) };
 }
@@ -226,6 +229,16 @@ export function withProjectDetails(
   return bump(project, now, "", details, null);
 }
 
+export function withReaction(project: BriefProject, reaction: ManagerReaction, now = reaction.at): BriefProject {
+  const watch = withStoredReaction(normaliseWatch(project.watch, now), { ...reaction, at: now });
+  const note = reaction.action === "save"
+    ? "Saved an opportunity"
+    : reaction.action === "dismiss" || reaction.action === "not_relevant"
+      ? "Set a signal aside"
+      : "Noted a reaction";
+  return bump(project, now, note, { watch }, "intelligence_reaction");
+}
+
 export function touchProject(project: BriefProject, now = new Date().toISOString()): BriefProject {
   return bump(project, now, "Agent pack regenerated", {}, "pack_regenerated");
 }
@@ -279,6 +292,7 @@ function normaliseProject(project: BriefProject): BriefProject {
     competitorResearch: project.competitorResearch ?? {},
     learning: project.learning ?? [],
     clientReading: project.clientReading ?? null,
+    watch: normaliseWatch(project.watch, project.updatedAt),
   };
 }
 

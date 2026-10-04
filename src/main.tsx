@@ -21,6 +21,7 @@ import "@fontsource/ibm-plex-sans/500.css";
 import "@fontsource/newsreader/400.css";
 import "@fontsource/newsreader/500.css";
 import { App } from "./App";
+import { AgencyProvider } from "./state/AgencyContext";
 import { ProjectProvider } from "./state/ProjectContext";
 import { SessionProvider } from "./state/SessionContext";
 import "./design/satoshi.css";
@@ -40,9 +41,11 @@ createRoot(root).render(
   <StrictMode>
     <SessionProvider>
       <ProjectProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <AgencyProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AgencyProvider>
       </ProjectProvider>
     </SessionProvider>
   </StrictMode>,

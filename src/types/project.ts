@@ -1,6 +1,7 @@
 import type { DiscoverySession } from "./discovery";
 import type { StrategicPlan } from "./strategy";
 import type { ClientBrain, StoredClientReading } from "./clientRead";
+import type { WatchState } from "./intelligence";
 
 export type EvidenceSourceType =
   | "client_statement"
@@ -46,6 +47,8 @@ export type HistoryKind =
   | "asset_completed"
   | "pack_regenerated"
   | "client_reread"
+  | "intelligence_reaction"
+  | "watch_checked"
   | "note";
 
 export type Confidence = "low" | "medium" | "high";
@@ -442,6 +445,8 @@ export interface BriefProject {
   learning: LearningResponse[];
   /** A model reading, when one has been asked for. Absent means local fallback. */
   clientReading: StoredClientReading | null;
+  /** Signals, readings, and the memory of what the manager did with them. */
+  watch: WatchState;
 }
 
 export interface ProjectIntelligence {

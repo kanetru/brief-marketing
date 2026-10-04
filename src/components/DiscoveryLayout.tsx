@@ -2,7 +2,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { actAlreadySeen, actFor, markActSeen } from "../design/acts";
 import { experienceMood } from "../design/mood";
+import { POWERED_BY, themeVars } from "../domain/agency/theme";
 import { sectionById } from "../domain/sections";
+import { useAgencyBrand } from "./useAgencyBrand";
 import { useSectionPath } from "../state/routeBase";
 import type { SectionId } from "../types/discovery";
 import { useSession } from "../state/SessionContext";
@@ -37,6 +39,7 @@ export function DiscoveryLayout({
   const [actOpen, setActOpen] = useState(() => Boolean(act) && !actAlreadySeen(section));
   const mood = experienceMood(session.personality.attract.selected);
   const dark = section === "welcome" || section === "complete" || actOpen;
+  const brand = useAgencyBrand();
 
   useEffect(() => {
     if (session.progress.section !== section) {
@@ -50,8 +53,10 @@ export function DiscoveryLayout({
   }, [section, step]);
 
   useEffect(() => {
-    document.title = `${sectionById(section).label} — Lover Lover`;
-  }, [section]);
+    document.title = brand
+      ? `${sectionById(section).label} — ${brand.name}`
+      : `${sectionById(section).label} — Brief`;
+  }, [brand, section]);
 
   useEffect(() => {
     const next = step === 0 ? actFor(section) : null;
@@ -59,7 +64,14 @@ export function DiscoveryLayout({
   }, [section, step]);
 
   return (
-    <div className={dark ? "shell is-dark" : "shell"} data-section={section} data-step={step} data-mood={mood}>
+    <div
+      className={dark ? "shell is-dark" : "shell"}
+      data-section={section}
+      data-step={step}
+      data-mood={mood}
+      data-agency={brand?.workspaceId || undefined}
+      style={brand ? themeVars(brand.theme) : undefined}
+    >
       <header className="top">
         <div className="brand">
           <AgencyMark />
@@ -97,6 +109,7 @@ export function DiscoveryLayout({
         )}
       </main>
       {footer && !actOpen ? <footer className={`dock is-${width}`}>{footer}</footer> : null}
+      {brand ? <p className="powered-by">{POWERED_BY}</p> : null}
     </div>
   );
 }

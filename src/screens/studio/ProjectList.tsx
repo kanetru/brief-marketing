@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { DEMO_ACCOUNT } from "../../domain/project/account";
-import { attentionLine, needsAttention } from "../../domain/project/attention";
+import { attentionForProject, workspaceAttention } from "../../domain/intelligence/attention";
 import { buildProjectIntelligence } from "../../domain/project/assemble";
 import { organicFixture } from "../../fixtures/brandFixtures";
 import { useProjects } from "../../state/ProjectContext";
@@ -27,9 +27,10 @@ export function ProjectList() {
   const [website, setWebsite] = useState("");
   const [category, setCategory] = useState("");
   const ranked = useMemo(() => {
-    return [...projects].sort((a, b) => Number(needsAttention(b)) - Number(needsAttention(a)));
+    const order = new Map(workspaceAttention(projects).map((item, index) => [item.projectId, index]));
+    return [...projects].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   }, [projects]);
-  const attention = projects.filter(needsAttention).length;
+  const attention = workspaceAttention(projects).filter((item) => item.kind !== "quiet" && item.kind !== "onboarding").length;
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
@@ -58,13 +59,15 @@ export function ProjectList() {
       <header className="studio-top">
         <div>
           <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
-          <p className="studio-kicker">{DEMO_ACCOUNT.workspaceName}</p>
+          <p className="studio-kicker">Brief · Brand intelligence</p>
           <h1>{greeting}, {DEMO_ACCOUNT.name.split(" ")[0]}.</h1>
-          <p className="studio-lead">
-            {projects.length} {projects.length === 1 ? "client" : "clients"}. {attention} {attention === 1 ? "needs" : "need"} attention.
-          </p>
+          <p className="studio-lead">What needs your attention.</p>
+          <p className="studio-meta">{DEMO_ACCOUNT.workspaceName} · {projects.length} {projects.length === 1 ? "client" : "clients"} · {attention} worth opening</p>
         </div>
-        <Link to="/demo/start">Preview discovery</Link>
+        <div className="studio-links">
+          <Link to="/studio/look">Make Brief look like you</Link>
+          <Link to="/demo/start">Preview discovery</Link>
+        </div>
       </header>
       <div className="studio-split">
         <form className="studio-create" onSubmit={openNew}>
@@ -104,18 +107,15 @@ export function ProjectList() {
 
 function ClientRow({ project }: { project: BriefProject }) {
   const intelligence = useMemo(() => buildProjectIntelligence(project, project.updatedAt), [project]);
-  const line = attentionLine(project, intelligence);
+  const item = attentionForProject(project);
+  const demo = project.watch.signals.some((signal) => signal.origin === "demo");
   return (
-    <li>
+    <li data-screen="attention-row">
       <Link to={`/studio/${project.id}`}>
         <strong>{project.businessName || "Untitled project"}</strong>
-        <span>{STATUS[project.discoveryStatus]}</span>
-        <em>
-          {intelligence.opportunities.length} {intelligence.opportunities.length === 1 ? "opportunity" : "opportunities"}
-          {" · "}
-          {intelligence.openQuestions.length} unresolved {intelligence.openQuestions.length === 1 ? "question" : "questions"}
-        </em>
-        <p className="studio-attention">{line}</p>
+        <span>{STATUS[project.discoveryStatus]}{demo ? " · Demo data" : ""}</span>
+        <p className="studio-attention">{item.headline}</p>
+        <em>{item.detail || `${intelligence.openQuestions.length} unresolved`}</em>
       </Link>
     </li>
   );

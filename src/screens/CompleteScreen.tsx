@@ -3,6 +3,8 @@ import { LoverLoverLogo } from "../components/LoverLoverLogo";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
 import { QuestionScreen } from "../components/QuestionScreen";
+import { useAgencyBrand } from "../components/useAgencyBrand";
+import { POWERED_BY } from "../domain/agency/theme";
 import { DEMO_ACCOUNT } from "../domain/project/account";
 import { clientContribution, completionMessage } from "../domain/project/clientAccess";
 import { useClientProject } from "../state/ProjectContext";
@@ -12,19 +14,20 @@ import { useConversation } from "../state/useConversation";
 export function CompleteScreen() {
   const { activate, session } = useSession();
   const project = useClientProject();
+  const brand = useAgencyBrand();
   const { step, goBack, showBack } = useConversation("complete");
-  const message = completionMessage(DEMO_ACCOUNT.name);
+  const message = completionMessage(brand?.name || DEMO_ACCOUNT.name);
   const given = clientContribution(session);
 
   if (project) {
     return (
       <DiscoveryLayout section="complete" step={step} width="hero" footer={<NavigationControls showBack={false} showForward={false} onBack={goBack} onForward={() => activate("complete")} forwardLabel="Continue" />}>
         <QuestionScreen size="hero" kicker="Handoff" title={message.title} supporting={message.body}>
-          <LoverLoverLogo kind="icon" color="orange" className="brand-star" alt="" />
-          <LoverLoverLogo kind="secondary" color="pearl" className="opening-mark" alt="Lover Lover" />
+          {brand?.theme.logo ? <img src={brand.theme.logo} alt="" className="opening-mark" /> : <LoverLoverLogo kind="icon" color="orange" className="brand-star" alt="" />}
           <aside className="statement">
             <p className="statement-lead">{message.next}</p>
           </aside>
+          <p className="powered-by">{POWERED_BY}</p>
           <p className="meta">
             {given.answered} questions answered · {given.visuals} visual directions explored · {given.references} references supplied
           </p>

@@ -2447,6 +2447,16 @@ button {
   text-transform: uppercase;
 }
 
+.shell[data-agency] .opening-title {
+  font-size: clamp(2.7rem, 9vw, 6.4rem);
+  overflow-wrap: anywhere;
+}
+
+.shell.is-dark[data-agency] .opening-mark,
+.shell.is-dark[data-agency] .mark-logo {
+  filter: brightness(0) invert(1);
+}
+
 .opening-line {
   margin: 0.2rem 0 0;
   font-size: clamp(1.3rem, 3vw, 1.8rem);

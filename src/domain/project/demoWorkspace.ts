@@ -1,5 +1,8 @@
 import { organicFixture } from "../../fixtures/brandFixtures";
+import { attachDemoWatch } from "../intelligence/demo";
+import { buildProjectIntelligence } from "./assemble";
 import { demoSiteResearch } from "./demoResearch";
+import { createSession } from "../../state/createSession";
 import {
   createProject,
   inviteDiscovery,
@@ -10,6 +13,7 @@ import {
   withLibraryAsset,
   withWebsiteResearch,
 } from "../../state/projectStore";
+import type { DiscoverySession } from "../../types/discovery";
 import type { BriefProject } from "../../types/project";
 
 export const SEED_KEY = "lover-lover.seeded.v1";
@@ -102,9 +106,55 @@ export function seedDemoWorkspace(now = new Date().toISOString()): BriefProject[
     businessName: "Late Service",
     website: "",
     category: "Restaurant",
+    discovery: textSession("late-service", "Late Service", "A neighbourhood restaurant with a short menu and a long bar.", "People come for a weeknight they don't have to plan.", "People who live nearby and come back when the room feels easy.", "Fuller midweek seatings without discounting the room.", now),
     now,
   });
   late = inviteDiscovery(late, now);
+  late = markDiscoveryOpened(late, now);
+  late = submitDiscovery(late, now);
 
-  return [north, kiln, late];
+  let field = createProject({
+    clientName: "Field Office",
+    businessName: "Field Office",
+    website: "",
+    category: "Architecture",
+    discovery: textSession("field-office", "Field Office", "An architecture practice working on civic and institutional buildings.", "Clients come for a principal who will say what should not be built.", "Public clients and the specifiers who advise them.", "Be the practice a specifier can defend, without publishing faster than the work.", now),
+    now,
+  });
+  field = inviteDiscovery(field, now);
+  field = markDiscoveryOpened(field, now);
+  field = submitDiscovery(field, now);
+
+  return [north, kiln, late, field].map((project) => {
+    const kind = project.businessName === "North Workshop"
+      ? "north"
+      : project.businessName === "Late Service"
+        ? "late"
+        : project.businessName === "Field Office"
+          ? "field"
+          : "kiln";
+    return attachDemoWatch(kind, project, buildProjectIntelligence(project, now), now);
+  });
+}
+
+function textSession(
+  id: string,
+  name: string,
+  description: string,
+  comeFor: string,
+  customers: string,
+  success: string,
+  now: string,
+): DiscoverySession {
+  const session = createSession(now);
+  session.id = id;
+  const said = (raw: string) => ({ state: "evidence" as const, evidence: { raw, capturedAt: now } });
+  session.business.name = said(name);
+  session.business.description = said(description);
+  session.business.peopleComeFor = said(comeFor);
+  session.audience.bestCustomers = said(customers);
+  session.goals.twelveMonthSuccess = said(success);
+  session.goals.outcomes = { state: "selected", selected: ["generate_enquiries"], capturedAt: now };
+  session.progress = { ...session.progress, section: "complete", furthest: "complete" };
+  return session;
 }
