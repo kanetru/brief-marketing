@@ -12,23 +12,29 @@ import { requestSiteResearch } from "../../services/researchClient";
 import { useProjects } from "../../state/ProjectContext";
 import type { AgentFile, AssetCategory, AssetItem, BriefProject, CategoryPattern, DiscoveryStatus, ProjectIntelligence, ResearchTension, SourceQuote, UnderstandingField } from "../../types/project";
 import { StrategyView } from "./StrategyView";
+import { BrandBrainPanel, HistoryPanel, IntelligenceDesk, MarketWatch } from "./IntelligenceDesk";
 import { buildStrategistPacket } from "../../domain/project/strategist/packet";
 import { requestClientReading } from "../../services/ai/clientStrategistClient";
 import { CHANNEL_LABEL } from "../../domain/project/strategy/channels";
 
 const PANELS = [
+  ["intelligence", "Intelligence"],
+  ["brand", "Brand"],
+  ["market", "Market"],
+  ["strategy", "Strategy"],
+  ["content", "Content"],
+  ["needs", "Assets"],
+  ["history", "History"],
+  ["pack", "Use in AI"],
+] as const;
+
+const STRATEGY_AREAS = [
   ["read", "The read"],
   ["matters", "What matters"],
   ["customer", "The customer"],
-  ["market", "The market"],
-  ["brand", "The brand"],
   ["channels", "Where to show up"],
-  ["content", "What to talk about"],
-  ["needs", "What we need"],
   ["plan", "The plan"],
   ["unknown", "What we don't know"],
-  ["discovery", "What they told us"],
-  ["pack", "Use in AI"],
 ] as const;
 
 const DISCOVERY_LABEL: Record<DiscoveryStatus, string> = {
@@ -59,6 +65,26 @@ const KIND_LABEL: Record<UnderstandingField["kind"], string> = {
   recommendation: "Recommendation",
 };
 
+function StrategyRelation({ project }: { project: BriefProject }) {
+  const reading = project.watch.readings[0];
+  if (!reading) return null;
+  const lines = [...reading.changedHypotheses, ...reading.challengedDecisions];
+  if (lines.length === 0) return null;
+  return (
+    <section className="studio-panel" data-screen="strategy">
+      <p className="studio-kicker">Current strategy</p>
+      <h2>What the latest signals do to the read.</h2>
+      {lines.map((item) => (
+        <p key={item.id}>
+          {item.strategyRelation === "challenge" ? "Challenges an earlier read. " : item.strategyRelation === "support" ? "Supports the current hypothesis. " : "Does not affect the strategy. "}
+          {item.headline}
+        </p>
+      ))}
+      <p className="studio-meta">These stay hypotheses. You decide.</p>
+    </section>
+  );
+}
+
 function fieldMark(field: UnderstandingField): string {
   if (field.decisionStatus === "approved" && field.epistemicStatus !== "fact") return "Approved direction";
   return KIND_LABEL[field.epistemicStatus];
@@ -68,7 +94,8 @@ export function ProjectWorkspace() {
   const { projectId = "" } = useParams();
   const api = useProjects();
   const project = api.projects.find((item) => item.id === projectId) ?? null;
-  const [panel, setPanel] = useState<Panel>("read");
+  const [panel, setPanel] = useState<Panel>("intelligence");
+  const [strategyArea, setStrategyArea] = useState<(typeof STRATEGY_AREAS)[number][0]>("read");
   const [notice, setNotice] = useState("");
   const [researchRun, setResearchRun] = useState<ResearchRun | null>(null);
   const intelligence = useMemo(
@@ -105,7 +132,7 @@ export function ProjectWorkspace() {
       <header className="studio-top">
         <div>
           <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
-          <p className="studio-kicker"><Link to="/studio">Clients</Link> · {DISCOVERY_LABEL[project.discoveryStatus]}</p>
+          <p className="studio-kicker"><Link to="/studio">Clients</Link> · Brand intelligence · {DISCOVERY_LABEL[project.discoveryStatus]}</p>
           <h1>{project.businessName || "Untitled project"}</h1>
           <p className="studio-lead">{project.clientName || "Client not named"}{project.category ? ` · ${project.category}` : ""}</p>
         </div>
@@ -113,15 +140,34 @@ export function ProjectWorkspace() {
       </header>
       <nav className="studio-nav" aria-label="Project">
         {PANELS.map(([id, label]) => (
-          <button key={id} type="button" aria-current={panel === id ? "page" : undefined} onClick={() => setPanel(id)}>
+          <button key={id} type="button" aria-current={panel === id ? "page" : undefined} onClick={() => { setPanel(id); setNotice(""); }}>
             {label}
           </button>
         ))}
       </nav>
       {notice ? <p className="studio-notice">{notice}</p> : null}
-      {panel === "read" || panel === "matters" || panel === "customer" || panel === "channels" || panel === "content" || panel === "plan" || panel === "unknown" ? (
-        <StrategyView
-          area={panel}
+      {panel === "intelligence" ? (
+        <IntelligenceDesk
+          project={project}
+          intelligence={intelligence}
+          onReact={(reaction) => {
+            api.setReaction(project.id, reaction);
+            setNotice(reaction.action === "save" ? "Saved. Brief will remember that." : reaction.action === "dismiss" ? "Set aside." : "Noted.");
+          }}
+        />
+      ) : null}
+      {panel === "strategy" || panel === "content" ? (
+        <>
+          {panel === "strategy" ? (
+            <nav className="studio-nav" aria-label="Strategy">
+              {STRATEGY_AREAS.map(([id, label]) => (
+                <button key={id} type="button" aria-current={strategyArea === id ? "page" : undefined} onClick={() => setStrategyArea(id)}>{label}</button>
+              ))}
+            </nav>
+          ) : null}
+          <StrategyRelation project={project} />
+          <StrategyView
+          area={panel === "content" ? "content" : strategyArea}
           plan={intelligence.strategy}
           brain={intelligence.clientBrain}
           insight={intelligence.category?.observation || intelligence.tensions[0]?.statement || ""}
@@ -161,8 +207,11 @@ export function ProjectWorkspace() {
             updatedAt: new Date().toISOString(),
           })}
         />
+        </>
       ) : null}
       {panel === "market" ? (
+        <>
+        <MarketWatch project={project} />
         <Market
           project={project}
           profiles={intelligence.competitors}
@@ -196,9 +245,11 @@ export function ProjectWorkspace() {
             setNotice(pages.length > 0 ? "Research is now evidence. Published copy is not a fact about the business." : "Research is unavailable.");
           }}
         />
+        </>
       ) : null}
       {panel === "brand" ? (
         <>
+          <BrandBrainPanel project={project} intelligence={intelligence} />
           <Creative reading={reading} reactions={project.discovery.territoryFeedback} />
           <Understanding
             fields={intelligence.understanding.fields}
@@ -215,7 +266,7 @@ export function ProjectWorkspace() {
           onAddLibrary={(asset) => api.addLibraryAsset(project.id, asset)}
         />
       ) : null}
-      {panel === "discovery" ? (
+      {panel === "brand" ? (
         <DiscoveryPanel
           project={project}
           link={link}
@@ -232,6 +283,7 @@ export function ProjectWorkspace() {
           onNotes={(notes) => api.setNotes(project.id, notes)}
         />
       ) : null}
+      {panel === "history" ? <HistoryPanel project={project} /> : null}
       {panel === "pack" ? (
         <AgentPackPanel
           files={intelligence.agentPack.files}

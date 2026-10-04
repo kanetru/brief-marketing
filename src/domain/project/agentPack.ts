@@ -58,8 +58,42 @@ function masterFile(project: BriefProject, intelligence: Omit<ProjectIntelligenc
     intelligence.clientBrain.source === "live_model" ? `The read\n\n${intelligence.clientBrain.output.clientRead}` : "The read\n\nNo model reading is stored. Do not treat the rule candidates as that reading.",
     strategyPreface(intelligence),
     "",
+    intelligenceSection(project),
+    "",
     sections,
   ].join("\n");
+}
+
+function intelligenceSection(project: BriefProject): string {
+  const watch = project.watch;
+  const reading = watch?.readings[0];
+  const lines = [
+    "Current brand brain, market, and recent signals",
+    "",
+    `Last updated ${watch?.updatedAt || project.updatedAt}.`,
+  ];
+  if (!reading) {
+    lines.push("No intelligence reading is stored. Do not invent signals, follower counts, or search volume.");
+    return lines.join("\n");
+  }
+  lines.push(reading.source === "demo"
+    ? "The market read below is demo data. It is not a live model and it is not live social, search, or price data."
+    : reading.source === "live_model"
+      ? "The market read below is a model reading. Hypotheses stay hypotheses."
+      : "A strategist has not read the latest signals. Do not treat the notes as that reading.");
+  lines.push(reading.summary);
+  const signals = (watch?.signals ?? []).slice(0, 6).map((signal) => `- ${signal.title} (${signal.origin})`);
+  if (signals.length) lines.push("", "Recent signals", ...signals);
+  const opportunities = reading.opportunities.map((item) => `- ${item.headline}`);
+  if (opportunities.length) lines.push("", "Current opportunities", ...opportunities);
+  const risks = reading.thingsNotWorthReactingTo.map((item) => `- ${item.headline}`);
+  if (risks.length) lines.push("", "Probably not worth reacting to", ...risks);
+  const decisions = (watch?.reactions ?? []).map((reaction) => `- ${reaction.action} ${reaction.targetId}`);
+  if (decisions.length) lines.push("", "Manager reactions", ...decisions);
+  if (reading.challengedDecisions.length) {
+    lines.push("", "Strategy challenged", ...reading.challengedDecisions.map((item) => `- ${item.headline}`));
+  }
+  return lines.join("\n");
 }
 
 function readme(project: BriefProject, generatedAt: string): string {

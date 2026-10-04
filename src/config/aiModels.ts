@@ -1,11 +1,13 @@
 /**
  * One place for which model each server task calls.
- * OPENAI_MODEL overrides the client strategist only.
+ * OPENAI_MODEL overrides the client strategist and brand-intelligence interpretation.
+ * It does not change extraction or classification. Interpretation is never scheduled.
  * Cheaper tasks have their own variables, so they stay cheap when the strategist changes.
  */
 
 export type AiTaskId =
   | "clientStrategist"
+  | "brandIntelligence"
   | "creativeStrategist"
   | "discoveryAnalysis"
   | "discoveryProfile"
@@ -37,6 +39,17 @@ export const AI_TASKS: readonly AiTaskSpec[] = [
     id: "clientStrategist",
     task: "Strategic reading of the whole client",
     endpoints: ["POST /api/client-strategist"],
+    provider: "openai",
+    api: "responses",
+    defaultModel: "gpt-5.6-sol",
+    reasoningEffort: "high",
+    env: "OPENAI_MODEL",
+    callsModel: true,
+  },
+  {
+    id: "brandIntelligence",
+    task: "Interpret meaningful signals against the brand brain. Never on a timer.",
+    endpoints: ["No route. Reuse the client strategist only after the cheap filter says something changed."],
     provider: "openai",
     api: "responses",
     defaultModel: "gpt-5.6-sol",

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { SEED_KEY, seedDemoWorkspace } from "../domain/project/demoWorkspace";
 import type { StoredClientReading } from "../types/clientRead";
+import type { ManagerReaction } from "../types/intelligence";
 import type { AssetStatus, BriefProject, CompetitorInput, FollowUp, LearningResponse, LibraryAsset, StatementOverride, StoredResearch } from "../types/project";
 import type { DiscoverySession } from "../types/discovery";
 import {
@@ -22,6 +23,7 @@ import {
   withLearning,
   withLibraryAsset,
   withClientReading,
+  withReaction,
   withManagerNotes,
   withOverride,
   withProjectDetails,
@@ -51,6 +53,7 @@ interface ProjectApi {
   addLibraryAsset: (projectId: string, asset: LibraryAsset) => void;
   setLearning: (projectId: string, response: LearningResponse) => void;
   setClientReading: (projectId: string, reading: StoredClientReading) => void;
+  setReaction: (projectId: string, reaction: ManagerReaction) => void;
 }
 
 const ProjectContext = createContext<ProjectApi | null>(null);
@@ -106,6 +109,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     addLibraryAsset: (projectId, asset) => mutate(projectId, (project) => withLibraryAsset(project, asset)),
     setLearning: (projectId, response) => mutate(projectId, (project) => withLearning(project, response)),
     setClientReading: (projectId, reading) => mutate(projectId, (project) => withClientReading(project, reading)),
+    setReaction: (projectId, reaction) => mutate(projectId, (project) => withReaction(project, reaction)),
   }), [mutate, projects]);
 
   return <ProjectContext.Provider value={api}>{children}</ProjectContext.Provider>;

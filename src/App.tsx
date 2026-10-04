@@ -19,6 +19,7 @@ import { VisualScreen } from "./screens/VisualScreen";
 import { VoiceScreen } from "./screens/VoiceScreen";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
 import { ClientIndex, ClientProjectGate, ManagerGate } from "./screens/studio/gates";
+import { AgencySetup } from "./screens/studio/AgencySetup";
 import { ProjectList } from "./screens/studio/ProjectList";
 import { ProjectWorkspace } from "./screens/studio/ProjectWorkspace";
 import { FollowUpScreen } from "./screens/FollowUpScreen";
@@ -49,6 +50,7 @@ export function App() {
         <Route path="/demo/handover" element={<HandoverScreen />} />
         <Route path="/demo/complete" element={<CompleteScreen />} />
         <Route path="/studio" element={<ManagerGate><ProjectList /></ManagerGate>} />
+        <Route path="/studio/look" element={<ManagerGate><AgencySetup /></ManagerGate>} />
         <Route path="/studio/:projectId" element={<ManagerGate><ProjectWorkspace /></ManagerGate>} />
         <Route path="/c/:token" element={<ClientProjectGate />}>
           <Route index element={<ClientIndex />} />

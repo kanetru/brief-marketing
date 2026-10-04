@@ -404,11 +404,163 @@
   margin: 1.2rem 0 0;
 }
 
+.studio-links {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: end;
+}
+
+.intel-sentence,
+.intel-read {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.intel-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.1rem;
+  align-items: center;
+}
+
+.intel-switch button {
+  border: 0;
+  background: none;
+  padding: 0;
+  min-height: 44px;
+  color: var(--ink-soft);
+}
+
+.intel-switch button[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.intel-bucket {
+  margin: 2rem 0 0.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.intel-card {
+  border-top: 1px solid var(--line);
+  padding: 1.4rem 0 0.4rem;
+}
+
+.intel-card h3,
+.intel-brief-title,
+.intel-quiet h3 {
+  font-family: var(--serif);
+  font-weight: 520;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  margin: 0.25rem 0 0.8rem;
+}
+
+.intel-label {
+  display: block;
+  margin-top: 0.9rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.intel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1rem;
+  align-items: center;
+  margin: 1rem 0 1.2rem;
+}
+
+.intel-actions button {
+  min-height: 44px;
+}
+
+.intel-drawer {
+  border-top: 1px solid var(--line);
+  padding: 0.8rem 0 1rem;
+}
+
+.intel-quiet {
+  padding: 1.5rem 0 2rem;
+  max-width: 36rem;
+}
+
+.intel-brief-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.intel-brief-list li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem;
+}
+
+.intel-brief-list span {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+}
+
+.provenance {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.provenance[data-origin="demo"] {
+  color: var(--cherry);
+}
+
+.agency-preview {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 2rem 1.4rem;
+  min-height: 16rem;
+  display: grid;
+  align-content: end;
+  gap: 0.6rem;
+}
+
+.agency-preview-logo {
+  height: 2.4rem;
+  width: auto;
+}
+
+.agency-preview-name {
+  font-family: var(--serif);
+  font-size: 2.4rem;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  margin: 0;
+}
+
+.powered-by {
+  margin: 1.2rem 1.25rem 1.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 @media (max-width: 800px) {
   .studio-top,
   .studio-split,
   .studio-assets li,
   .studio-files li {
     grid-template-columns: 1fr;
+  }
+
+  .studio-links {
+    justify-items: start;
   }
 }
