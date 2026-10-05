@@ -10,6 +10,8 @@ const FONTS = [
   { name: "Libre Baskerville", stack: '"Libre Baskerville", "Times New Roman", serif' },
 ] as const;
 
+export const APPROVED_FONTS = FONTS.map((font) => font.name);
+
 export function appliedFont(requested: string): string {
   const name = requested.replace(/["']/g, "").split(",")[0]?.trim().toLowerCase() ?? "";
   const known = FONTS.find((font) => font.name.toLowerCase() === name || font.stack.toLowerCase().includes(name));
@@ -96,6 +98,11 @@ export function themeVars(theme: AgencyTheme): CSSProperties {
     "--display": safe.headingFont,
     "--radius-frame": safe.radiusCharacter || "0px",
   } as CSSProperties;
+}
+
+export function openingLogo(theme: { logo?: string; logoDark?: string }, surface: "light" | "dark"): string {
+  if (surface === "dark" && theme.logoDark?.trim()) return theme.logoDark;
+  return theme.logo?.trim() || "";
 }
 
 export function initialsMark(name: string, colour: string): string {

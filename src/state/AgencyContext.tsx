@@ -7,7 +7,7 @@ interface AgencyApi {
   brands: Record<string, WorkspaceBrand>;
   brandFor: (workspaceId: string) => WorkspaceBrand | null;
   saveBrand: (brand: WorkspaceBrand) => void;
-  storeLogo: (workspaceId: string, dataUrl: string) => StoredBrandAsset | null;
+  storeLogo: (workspaceId: string, dataUrl: string, kind?: StoredBrandAsset["kind"]) => StoredBrandAsset | null;
 }
 
 const AgencyContext = createContext<AgencyApi | null>(null);
@@ -29,13 +29,13 @@ export function AgencyProvider({ children }: { children: ReactNode }) {
     setBrands((current) => ({ ...current, [brand.workspaceId]: brand }));
   }, []);
 
-  const storeLogo = useCallback((workspaceId: string, dataUrl: string) => {
+  const storeLogo = useCallback((workspaceId: string, dataUrl: string, kind: StoredBrandAsset["kind"] = "logo") => {
     const store = browserStore();
     if (!store) return null;
     const asset: StoredBrandAsset = {
-      id: `${workspaceId}-logo`,
+      id: `${workspaceId}-${kind}`,
       workspaceId,
-      kind: "logo",
+      kind,
       url: dataUrl,
       createdAt: new Date().toISOString(),
     };

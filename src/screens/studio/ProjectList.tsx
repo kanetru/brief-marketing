@@ -2,22 +2,12 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { DEMO_ACCOUNT } from "../../domain/project/account";
-import { attentionForProject, workspaceAttention } from "../../domain/intelligence/attention";
-import { buildProjectIntelligence } from "../../domain/project/assemble";
+import { workspaceAttention } from "../../domain/intelligence/attention";
+import { clientCardModel } from "../../domain/workspace/clientCard";
+import { LAST_CLIENT_KEY } from "../../domain/workspace/managerNav";
 import { organicFixture } from "../../fixtures/brandFixtures";
 import { useProjects } from "../../state/ProjectContext";
-import type { BriefProject, DiscoveryStatus } from "../../types/project";
-
-const STATUS: Record<DiscoveryStatus, string> = {
-  draft: "Not sent",
-  invited: "Waiting for the client",
-  opened: "Client opened discovery",
-  in_progress: "Discovery in progress",
-  submitted: "Discovery complete",
-  follow_up_requested: "Follow-up with the client",
-  follow_up_complete: "Follow-up complete",
-  closed: "Closed",
-};
+import type { BriefProject } from "../../types/project";
 
 export function ProjectList() {
   const { projects, create } = useProjects();
@@ -31,8 +21,6 @@ export function ProjectList() {
     return [...projects].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   }, [projects]);
   const attention = workspaceAttention(projects).filter((item) => item.kind !== "quiet" && item.kind !== "onboarding").length;
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   function openNew(event: FormEvent) {
     event.preventDefault();
@@ -59,20 +47,18 @@ export function ProjectList() {
       <header className="studio-top">
         <div>
           <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
-          <p className="studio-kicker">Brief · Brand intelligence</p>
-          <h1>{greeting}, {DEMO_ACCOUNT.name.split(" ")[0]}.</h1>
-          <p className="studio-lead">What needs your attention.</p>
-          <p className="studio-meta">{DEMO_ACCOUNT.workspaceName} · {projects.length} {projects.length === 1 ? "client" : "clients"} · {attention} worth opening</p>
+          <p className="studio-kicker">{DEMO_ACCOUNT.workspaceName}</p>
+          <h1>Clients</h1>
+          <p className="studio-meta">{projects.length} {projects.length === 1 ? "client" : "clients"} · {attention} to open</p>
         </div>
         <div className="studio-links">
-          <Link to="/studio/look">Make Brief look like you</Link>
+          <Link to="/studio/look">Client experience</Link>
           <Link to="/demo/start">Preview discovery</Link>
         </div>
       </header>
       <div className="studio-split">
         <form className="studio-create" onSubmit={openNew}>
-          <p className="studio-kicker">New client</p>
-          <h2>Start a project.</h2>
+          <h2>New client</h2>
           <label>
             Client
             <input value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Who you're working with" />
@@ -91,13 +77,13 @@ export function ProjectList() {
           </label>
           <button type="submit" className="studio-button">Create project</button>
           <button type="button" className="studio-text-button" onClick={openExample}>
-            Open another worked example
+            Worked example
           </button>
         </form>
-        <ul className="studio-project-list">
-          {ranked.length === 0 ? <li className="studio-empty">No clients yet. A project is where the understanding accumulates.</li> : null}
+        <ul className="studio-project-list" data-screen="client-cards">
+          {ranked.length === 0 ? <li className="studio-empty">No clients yet.</li> : null}
           {ranked.map((project) => (
-            <ClientRow key={project.id} project={project} />
+            <ClientCard key={project.id} project={project} />
           ))}
         </ul>
       </div>
@@ -105,17 +91,17 @@ export function ProjectList() {
   );
 }
 
-function ClientRow({ project }: { project: BriefProject }) {
-  const intelligence = useMemo(() => buildProjectIntelligence(project, project.updatedAt), [project]);
-  const item = attentionForProject(project);
-  const demo = project.watch.signals.some((signal) => signal.origin === "demo");
+export function ClientCard({ project }: { project: BriefProject }) {
+  const card = clientCardModel(project);
+  const selected = typeof sessionStorage !== "undefined" && sessionStorage.getItem(LAST_CLIENT_KEY) === project.id;
   return (
     <li data-screen="attention-row">
-      <Link to={`/studio/${project.id}`}>
-        <strong>{project.businessName || "Untitled project"}</strong>
-        <span>{STATUS[project.discoveryStatus]}{demo ? " · Demo data" : ""}</span>
-        <p className="studio-attention">{item.headline}</p>
-        <em>{item.detail || `${intelligence.openQuestions.length} unresolved`}</em>
+      <Link to={`/studio/${project.id}`} className="client-card" data-selected={selected ? "true" : "false"} data-tone={card.tone}>
+        <strong>{card.name}</strong>
+        <span>{card.subtitle}</span>
+        <p className="studio-attention">{card.status}</p>
+        <em>{card.updated}</em>
+        <span>{card.watch}</span>
       </Link>
     </li>
   );

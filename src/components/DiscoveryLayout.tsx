@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { actAlreadySeen, actFor, markActSeen } from "../design/acts";
 import { experienceMood } from "../design/mood";
+import { chapterAct, resolveExperience } from "../domain/agency/experience";
 import { POWERED_BY, themeVars } from "../domain/agency/theme";
 import { sectionById } from "../domain/sections";
 import { useAgencyBrand } from "./useAgencyBrand";
@@ -35,11 +36,11 @@ export function DiscoveryLayout({
   const location = useLocation();
   const { session, activate } = useSession();
   const sectionPath = useSectionPath();
-  const act = step === 0 ? actFor(section) : null;
+  const brand = useAgencyBrand();
+  const act = step === 0 ? (brand ? chapterAct(resolveExperience(brand), section) : actFor(section)) : null;
   const [actOpen, setActOpen] = useState(() => Boolean(act) && !actAlreadySeen(section));
   const mood = experienceMood(session.personality.attract.selected);
   const dark = section === "welcome" || section === "complete" || actOpen;
-  const brand = useAgencyBrand();
 
   useEffect(() => {
     if (session.progress.section !== section) {
@@ -59,9 +60,9 @@ export function DiscoveryLayout({
   }, [brand, section]);
 
   useEffect(() => {
-    const next = step === 0 ? actFor(section) : null;
+    const next = step === 0 ? (brand ? chapterAct(resolveExperience(brand), section) : actFor(section)) : null;
     setActOpen(Boolean(next) && !actAlreadySeen(section));
-  }, [section, step]);
+  }, [brand, section, step]);
 
   return (
     <div
@@ -70,6 +71,8 @@ export function DiscoveryLayout({
       data-step={step}
       data-mood={mood}
       data-agency={brand?.workspaceId || undefined}
+      data-button={brand?.theme.buttonStyle || undefined}
+      data-logo-dark={brand?.theme.logoDark ? "true" : undefined}
       style={brand ? themeVars(brand.theme) : undefined}
     >
       <header className="top">
