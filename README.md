@@ -37,13 +37,20 @@ Answers are kept in `localStorage` under `lover-lover.discovery-session.v3`. Old
 
 The browser posts evidence to `/api/discovery/analyze`. The Vite dev server and `vite preview` handle that route and call the provider. The key is read from the environment on the server. It is not a `VITE_` variable, so it is not included in the client bundle.
 
-Create a `.env` file in the project root (see `.env.example`):
+## Local API setup
+
+1. Copy `.env.example` to `.env.local`
+2. Add your OpenAI API key
+3. Add your EnsembleData API token
+4. Start the development server
 
 ```bash
-OPENAI_API_KEY=sk-...
+npm run dev
 ```
 
-Restart `npm run dev` after changing it. Model choice lives in `src/config/aiModels.ts`. `OPENAI_MODEL` overrides only the client strategist, which defaults to `gpt-5.6-sol` with high reasoning on the Responses API. Clarification, the profile, and the creative reading default to `gpt-4o-mini` through their own variables, so a strategist change leaves them on the cheaper model. Website research extracts HTML locally and does not call a model.
+The dev server prints `OpenAI: configured` or `OpenAI: not configured`, and the same for EnsembleData. It does not print the values. Both stay on the server. A missing OpenAI key keeps the existing local fallback. A missing EnsembleData token is `not_configured` and does not turn demo social into live data.
+
+Restart `npm run dev` after changing `.env.local`. Model choice lives in `src/config/aiModels.ts`. `OPENAI_MODEL` overrides only the client strategist, which defaults to `gpt-5.6-sol` with high reasoning on the Responses API. Clarification, the profile, and the creative reading default to `gpt-4o-mini` through their own variables, so a strategist change leaves them on the cheaper model. Website research extracts HTML locally and does not call a model.
 
 The interviewer instructions live in `src/agent/discoveryInterviewer.v1.ts`. The profile prompt lives in `src/agent/discoveryProfile.v1.ts`. The browser posts that work to `/api/discovery/profile`.
 

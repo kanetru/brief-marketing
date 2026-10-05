@@ -1,4 +1,4 @@
-import type { Connect, Plugin } from "vite";
+import type { Connect, Plugin, PreviewServer, ViteDevServer } from "vite";
 import type { DiscoveryEvidence } from "../src/domain/evidence";
 import type { ProfileGenerationRequest, ProfileRefinementRequest } from "../src/domain/profileRequest";
 import { analyzeDiscovery } from "./analyze";
@@ -7,6 +7,7 @@ import { generateCreativeReading, type StrategistRequest } from "./strategist";
 import { generateClientReading, type ClientStrategistRequest } from "./clientStrategist";
 import { resolveTerritoryImages, type TerritoryImageRequest } from "./territoryImages";
 import { researchPage, researchSiteUrl } from "./research";
+import { applyServerEnv, providerStatusLines } from "./env";
 
 export function discoveryApiPlugin(): Plugin {
   const handle: Connect.NextHandleFunction = (req, res, next) => {
@@ -83,12 +84,22 @@ export function discoveryApiPlugin(): Plugin {
   return {
     name: "discovery-api",
     configureServer(server) {
+      prepare(server, true);
       server.middlewares.use(handle);
     },
     configurePreviewServer(server) {
+      prepare(server, false);
       server.middlewares.use(handle);
     },
   };
+}
+
+function prepare(server: ViteDevServer | PreviewServer, report: boolean) {
+  // Tests set their own fake env. Never load .env.local into a test process.
+  if (process.env.VITEST) return;
+  applyServerEnv(server.config.mode, server.config.envDir);
+  if (!report || server.config.mode !== "development") return;
+  for (const line of providerStatusLines()) console.info(line);
 }
 
 function readBody(req: Connect.IncomingMessage): Promise<string> {
