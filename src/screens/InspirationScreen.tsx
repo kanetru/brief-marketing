@@ -33,7 +33,7 @@ export function InspirationScreen() {
         {positive ? (
           <ReferenceStep
             title="Who gets it right?"
-            supporting="They don't have to be competitors. Show us businesses, publications, people or accounts whose communication you admire."
+            supporting="Who do you pay attention to? They don't have to be competitors."
             noteLabel="What do you like about them?"
             references={session.inspiration.positiveReferences}
             limit={LIMITS.inspirationPositive}

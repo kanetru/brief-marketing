@@ -8,6 +8,12 @@ import { generateClientReading, type ClientStrategistRequest } from "./clientStr
 import { resolveTerritoryImages, type TerritoryImageRequest } from "./territoryImages";
 import { researchPage, researchSiteUrl } from "./research";
 import { applyServerEnv, providerStatusLines } from "./env";
+import { readEnsembleToken } from "./ensembleData";
+import { runMarketDiscovery } from "./marketRun";
+import type { EnsembleCache } from "./ensembleClient";
+import type { CompetitorDiscoveryContext, SocialDiscoveryQuery } from "../src/types/marketDiscovery";
+
+const ensembleCache: EnsembleCache = new Map();
 
 export function discoveryApiPlugin(): Plugin {
   const handle: Connect.NextHandleFunction = (req, res, next) => {
@@ -20,7 +26,8 @@ export function discoveryApiPlugin(): Plugin {
       url !== "/api/client-strategist" &&
       url !== "/api/territory-images" &&
       url !== "/api/research/page" &&
-      url !== "/api/research/site"
+      url !== "/api/research/site" &&
+      url !== "/api/market/discover"
     ) {
       next();
       return;
@@ -40,6 +47,33 @@ export function discoveryApiPlugin(): Plugin {
         if (url === "/api/research/site") {
           const target = body as { url?: string; businessName?: string };
           send(res, 200, await researchSiteUrl(target.url ?? "", target.businessName ?? ""));
+          return;
+        }
+        if (url === "/api/market/discover") {
+          const request = body as {
+            context?: CompetitorDiscoveryContext;
+            queries?: SocialDiscoveryQuery[];
+            executeQueryIds?: string[];
+            refresh?: boolean;
+          };
+          const context = request.context;
+          if (!context || typeof context.clientId !== "string" || !context.clientId.trim()) {
+            send(res, 400, { ok: false, failure: "unavailable", message: "Discovery unavailable" });
+            return;
+          }
+          const result = await runMarketDiscovery({
+            context,
+            queries: Array.isArray(request.queries) ? request.queries : undefined,
+            executeQueryIds: Array.isArray(request.executeQueryIds) ? request.executeQueryIds.filter((id) => typeof id === "string") : undefined,
+            refresh: request.refresh === true,
+            now: new Date().toISOString(),
+          }, {
+            fetchImpl: fetch,
+            cache: ensembleCache,
+            token: readEnsembleToken(),
+            openaiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
+          });
+          send(res, 200, result);
           return;
         }
         if (url === "/api/territory-images") {

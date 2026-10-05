@@ -12,7 +12,9 @@ export type AiTaskId =
   | "discoveryAnalysis"
   | "discoveryProfile"
   | "researchExtraction"
-  | "territoryImages";
+  | "territoryImages"
+  | "marketQueries"
+  | "marketClassification";
 
 export type ModelApi = "responses" | "chat_completions" | "images" | "none";
 
@@ -100,6 +102,28 @@ export const AI_TASKS: readonly AiTaskSpec[] = [
     reasoningEffort: null,
     env: "OPENAI_MODEL_RESEARCH",
     callsModel: false,
+  },
+  {
+    id: "marketQueries",
+    task: "Turn the brand brain into a short set of social discovery searches",
+    endpoints: ["POST /api/market/discover"],
+    provider: "openai",
+    api: "responses",
+    defaultModel: "gpt-5.6-sol",
+    reasoningEffort: "high",
+    env: "OPENAI_MODEL",
+    callsModel: true,
+  },
+  {
+    id: "marketClassification",
+    task: "Classify discovered accounts against the brand brain",
+    endpoints: ["POST /api/market/discover"],
+    provider: "openai",
+    api: "responses",
+    defaultModel: "gpt-5.6-sol",
+    reasoningEffort: "high",
+    env: "OPENAI_MODEL",
+    callsModel: true,
   },
   {
     id: "territoryImages",

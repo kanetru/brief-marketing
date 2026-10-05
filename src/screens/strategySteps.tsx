@@ -407,7 +407,7 @@ export function ProofStep() {
 export function NeighbourStep() {
   const { inputs, setStrategyText } = useStrategy();
   return (
-    <QuestionScreen kicker="Conditions" title="Who would make sense standing next to you?" supporting="And who would feel completely wrong.">
+    <QuestionScreen kicker="Conditions" title="Who do you think you're compared with?" supporting="Add anyone that comes to mind. One is enough. None is fine too — Brief can help find the others.">
       <Cards field="neighbourKinds" options={NEIGHBOURS} selected={inputs.neighbourKinds} />
       <TextResponse labelledBy="question-title" length="short" placeholder="Names, if you have them" value={textValue(inputs.neighbours)} onChange={(value) => setStrategyText("neighbours", value)} />
       <p className="field-label">Who would feel completely wrong?</p>

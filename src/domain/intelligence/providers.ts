@@ -75,7 +75,7 @@ export function emptyBatch(): ProviderBatch {
  * Live social configuration.
  * The token is read on the server from ENSEMBLEDATA_API_TOKEN.
  * It must never be a VITE_ variable or sent to the browser.
- * This pass does not call EnsembleData.
+ * Live account discovery calls EnsembleData only from the server, and only when a manager runs it.
  */
 export const SOCIAL_INTELLIGENCE_PROVIDER = {
   id: "ensembledata",

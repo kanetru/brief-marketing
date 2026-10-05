@@ -2,6 +2,7 @@ import type { DiscoverySession } from "./discovery";
 import type { StrategicPlan } from "./strategy";
 import type { ClientBrain, StoredClientReading } from "./clientRead";
 import type { WatchState } from "./intelligence";
+import type { MarketDiscoveryRecord } from "./marketDiscovery";
 
 export type EvidenceSourceType =
   | "client_statement"
@@ -49,6 +50,7 @@ export type HistoryKind =
   | "client_reread"
   | "intelligence_reaction"
   | "watch_checked"
+  | "market_watch"
   | "note";
 
 export type Confidence = "low" | "medium" | "high";
@@ -447,6 +449,8 @@ export interface BriefProject {
   clientReading: StoredClientReading | null;
   /** Signals, readings, and the memory of what the manager did with them. */
   watch: WatchState;
+  /** Manager-run account discovery. Absent until normalised. Never filled with demo accounts. */
+  marketDiscovery?: MarketDiscoveryRecord;
 }
 
 export interface ProjectIntelligence {

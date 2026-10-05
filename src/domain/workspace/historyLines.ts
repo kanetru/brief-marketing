@@ -16,6 +16,7 @@ const LINE: Record<HistoryKind, string> = {
   client_reread: "Strategy reread.",
   intelligence_reaction: "Insight updated.",
   watch_checked: "Intelligence checked.",
+  market_watch: "Market watch updated.",
   note: "Note added.",
 };
 

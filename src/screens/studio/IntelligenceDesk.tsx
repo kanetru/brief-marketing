@@ -5,6 +5,7 @@ import { runDueJobs } from "../../domain/intelligence/jobs";
 import { competitorCount, formatChecked, platformsFor } from "../../domain/workspace/clientCard";
 import { historyDate, historyLine } from "../../domain/workspace/historyLines";
 import { competitorCards } from "../../domain/workspace/marketCards";
+import { MarketDiscoveryPanel } from "./MarketDiscoveryPanel";
 import type { BriefProject, ProjectIntelligence } from "../../types/project";
 import type { DataOrigin, IntelligenceItem, ManagerReaction, Signal } from "../../types/intelligence";
 
@@ -287,7 +288,7 @@ export function HistoryPanel({ project }: { project: BriefProject }) {
   );
 }
 
-export function MarketWatch({ project }: { project: BriefProject }) {
+export function MarketWatch({ project, intelligence }: { project: BriefProject; intelligence: ProjectIntelligence }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const cards = competitorCards(project);
   const open = project.watch.competitors.find((competitor) => competitor.id === openId) ?? null;
@@ -299,8 +300,9 @@ export function MarketWatch({ project }: { project: BriefProject }) {
   const demo = project.watch.signals.some((signal) => signal.origin === "demo") || project.watch.competitors.some((competitor) => competitor.origin === "demo");
   return (
     <div data-screen="market-watch">
-      {demo ? <p className="provenance" data-origin="demo">Demo</p> : null}
+      <MarketDiscoveryPanel project={project} intelligence={intelligence} />
       <h3 className="intel-bucket">Competitors</h3>
+      {demo ? <p className="provenance" data-origin="demo">Demo</p> : null}
       {cards.length === 0 ? <p>None</p> : null}
       {cards.map((card) => (
         <article key={card.id} className="intel-card" data-screen="competitor">

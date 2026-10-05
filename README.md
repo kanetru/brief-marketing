@@ -50,6 +50,8 @@ npm run dev
 
 The dev server prints `OpenAI: configured` or `OpenAI: not configured`, and the same for EnsembleData. It does not print the values. Both stay on the server. A missing OpenAI key keeps the existing local fallback. A missing EnsembleData token is `not_configured` and does not turn demo social into live data.
 
+On a client's Market screen, Find competitors asks the server to search Instagram and TikTok. That call is explicit. A saved result stays on the client until Refresh live. If discovery fails, onboarding still completes and the market screen says discovery is unavailable.
+
 Restart `npm run dev` after changing `.env.local`. Model choice lives in `src/config/aiModels.ts`. `OPENAI_MODEL` overrides only the client strategist, which defaults to `gpt-5.6-sol` with high reasoning on the Responses API. Clarification, the profile, and the creative reading default to `gpt-4o-mini` through their own variables, so a strategist change leaves them on the cheaper model. Website research extracts HTML locally and does not call a model.
 
 The interviewer instructions live in `src/agent/discoveryInterviewer.v1.ts`. The profile prompt lives in `src/agent/discoveryProfile.v1.ts`. The browser posts that work to `/api/discovery/profile`.

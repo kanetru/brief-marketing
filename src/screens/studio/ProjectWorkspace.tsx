@@ -263,7 +263,7 @@ export function ProjectWorkspace() {
       ) : null}
       {panel === "market" ? (
         <>
-        <MarketWatch project={project} />
+        <MarketWatch project={project} intelligence={intelligence} />
         <Market
           project={project}
           profiles={intelligence.competitors}

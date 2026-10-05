@@ -3,8 +3,10 @@ import { createSession } from "./createSession";
 import { DEMO_ACCOUNT } from "../domain/project/account";
 import { projectStatus } from "../domain/project/assemble";
 import { emptyWatch, normaliseWatch, withStoredReaction } from "../domain/intelligence/watch";
-import type { ManagerReaction } from "../types/intelligence";
+import type { MarketDiscoveryRecord } from "../types/marketDiscovery";
+import { emptyMarketDiscovery } from "../domain/market/review";
 import type { StoredClientReading } from "../types/clientRead";
+import type { ManagerReaction } from "../types/intelligence";
 import type {
   AssetStatus,
   BriefProject,
@@ -84,6 +86,7 @@ export function createProject(input: {
     learning: [],
     clientReading: null,
     watch: emptyWatch(now),
+    marketDiscovery: emptyMarketDiscovery(now),
   };
   return { ...project, status: projectStatus(project) };
 }
@@ -239,6 +242,10 @@ export function withReaction(project: BriefProject, reaction: ManagerReaction, n
   return bump(project, now, note, { watch }, "intelligence_reaction");
 }
 
+export function withMarketDiscovery(project: BriefProject, marketDiscovery: MarketDiscoveryRecord, now = marketDiscovery.updatedAt): BriefProject {
+  return bump(project, now, "Market watch updated", { marketDiscovery }, "market_watch");
+}
+
 export function touchProject(project: BriefProject, now = new Date().toISOString()): BriefProject {
   return bump(project, now, "Agent pack regenerated", {}, "pack_regenerated");
 }
@@ -293,6 +300,7 @@ function normaliseProject(project: BriefProject): BriefProject {
     learning: project.learning ?? [],
     clientReading: project.clientReading ?? null,
     watch: normaliseWatch(project.watch, project.updatedAt),
+    marketDiscovery: project.marketDiscovery ?? emptyMarketDiscovery(project.updatedAt),
   };
 }
 

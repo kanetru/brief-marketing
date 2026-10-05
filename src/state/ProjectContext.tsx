@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { SEED_KEY, seedDemoWorkspace } from "../domain/project/demoWorkspace";
 import type { StoredClientReading } from "../types/clientRead";
-import type { ManagerReaction } from "../types/intelligence";
+import type { MarketDiscoveryRecord } from "../types/marketDiscovery";
 import type { AssetStatus, BriefProject, CompetitorInput, FollowUp, LearningResponse, LibraryAsset, StatementOverride, StoredResearch } from "../types/project";
 import type { DiscoverySession } from "../types/discovery";
 import {
@@ -29,7 +29,9 @@ import {
   withProjectDetails,
   withWebsiteResearch,
   withoutCompetitor,
+  withMarketDiscovery,
 } from "./projectStore";
+import type { ManagerReaction } from "../types/intelligence";
 
 interface ProjectApi {
   projects: BriefProject[];
@@ -54,6 +56,7 @@ interface ProjectApi {
   setLearning: (projectId: string, response: LearningResponse) => void;
   setClientReading: (projectId: string, reading: StoredClientReading) => void;
   setReaction: (projectId: string, reaction: ManagerReaction) => void;
+  setMarketDiscovery: (projectId: string, record: MarketDiscoveryRecord) => void;
 }
 
 const ProjectContext = createContext<ProjectApi | null>(null);
@@ -110,6 +113,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setLearning: (projectId, response) => mutate(projectId, (project) => withLearning(project, response)),
     setClientReading: (projectId, reading) => mutate(projectId, (project) => withClientReading(project, reading)),
     setReaction: (projectId, reaction) => mutate(projectId, (project) => withReaction(project, reaction)),
+    setMarketDiscovery: (projectId, record) => mutate(projectId, (project) => withMarketDiscovery(project, record)),
   }), [mutate, projects]);
 
   return <ProjectContext.Provider value={api}>{children}</ProjectContext.Provider>;
