@@ -93,9 +93,9 @@ describe("onboarding experience", () => {
       discoveryStatus: "submitted",
       now: AT,
     });
-    const card = clientCardModel(project);
-    expect(card.status).toBe("Discovery complete");
-    expect(card.watch).toMatch(/mentioned during discovery/);
+    const card = clientCardModel(project, new Date(AT));
+    expect(card.competitors).toMatch(/named/);
+    expect(card.updated).toBe("Updated today");
     const intelligence = buildProjectIntelligence(project);
     const html = renderToStaticMarkup(
       <MemoryRouter>

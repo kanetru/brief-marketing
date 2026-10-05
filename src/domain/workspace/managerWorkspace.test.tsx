@@ -13,7 +13,8 @@ import { resolveExperience } from "../agency/experience";
 import { readEnsembleToken } from "../../../server/ensembleData";
 import { SOCIAL_INTELLIGENCE_PROVIDER } from "../intelligence/providers";
 import { clientCardModel } from "./clientCard";
-import { DEFAULT_PANEL, MANAGER_NAV } from "./managerNav";
+import { DEFAULT_PANEL, MORE_NAV, PRIMARY_NAV } from "./managerNav";
+import { relativeUpdate } from "./clientCard";
 import { competitorCards } from "./marketCards";
 import { ClientCard } from "../../screens/studio/ProjectList";
 import { BrandBrainPanel, HistoryPanel, IntelligenceDesk } from "../../screens/studio/IntelligenceDesk";
@@ -32,9 +33,9 @@ describe("manager workspace", () => {
     const project = north();
     const card = clientCardModel(project);
     expect(card.name).toBe("North Workshop");
-    expect(card.status).toMatch(/new insights/);
-    expect(card.updated).toBe("Updated 7:10 am");
-    expect(card.watch).toMatch(/5 competitors/);
+    expect(card.competitors).toMatch(/5 competitors/);
+    expect(card.opportunities).toMatch(/opportunit/);
+    expect(relativeUpdate(AT, new Date(AT))).toBe("Updated today");
     expect(card.watch).toMatch(/Instagram \+ TikTok/);
     const html = renderToStaticMarkup(
       <MemoryRouter>
@@ -42,18 +43,22 @@ describe("manager workspace", () => {
       </MemoryRouter>,
     );
     expect(html).toContain("client-card");
+    expect(html).toContain("surface-card");
     expect(html).toContain("North Workshop");
-    expect(html).toContain(card.status);
-    expect(DEFAULT_PANEL).toBe("intelligence");
-    expect(MANAGER_NAV.map((item) => item.label)).toEqual([
-      "Intelligence",
-      "Brand",
-      "Market",
-      "Strategy",
+    expect(html).toContain(card.competitors);
+    expect(html).not.toContain(card.status);
+    expect(DEFAULT_PANEL).toBe("overview");
+    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Overview", "Competitors", "Market", "Opportunities"]);
+    expect(MORE_NAV.map((item) => item.label)).toEqual([
+      "Brand details",
+      "Strategy detail",
       "Content",
+      "Original responses",
+      "Site research",
       "Assets",
       "History",
       "Use in AI",
+      "Client settings",
     ]);
   });
 

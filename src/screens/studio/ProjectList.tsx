@@ -12,6 +12,7 @@ import type { BriefProject } from "../../types/project";
 export function ProjectList() {
   const { projects, create } = useProjects();
   const navigate = useNavigate();
+  const [creating, setCreating] = useState(false);
   const [clientName, setClientName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [website, setWebsite] = useState("");
@@ -20,7 +21,6 @@ export function ProjectList() {
     const order = new Map(workspaceAttention(projects).map((item, index) => [item.projectId, index]));
     return [...projects].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   }, [projects]);
-  const attention = workspaceAttention(projects).filter((item) => item.kind !== "quiet" && item.kind !== "onboarding").length;
 
   function openNew(event: FormEvent) {
     event.preventDefault();
@@ -49,15 +49,14 @@ export function ProjectList() {
           <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
           <p className="studio-kicker">{DEMO_ACCOUNT.workspaceName}</p>
           <h1>Clients</h1>
-          <p className="studio-meta">{projects.length} {projects.length === 1 ? "client" : "clients"} · {attention} to open</p>
         </div>
         <div className="studio-links">
+          <button type="button" className="studio-button" onClick={() => setCreating((open) => !open)}>+ New client</button>
           <Link to="/studio/look">Client experience</Link>
-          <Link to="/demo/start">Preview discovery</Link>
         </div>
       </header>
-      <div className="studio-split">
-        <form className="studio-create" onSubmit={openNew}>
+      {creating ? (
+        <form className="studio-create surface-card" onSubmit={openNew}>
           <h2>New client</h2>
           <label>
             Client
@@ -80,13 +79,13 @@ export function ProjectList() {
             Worked example
           </button>
         </form>
-        <ul className="studio-project-list" data-screen="client-cards">
+      ) : null}
+      <ul className="client-grid" data-screen="client-cards">
           {ranked.length === 0 ? <li className="studio-empty">No clients yet.</li> : null}
           {ranked.map((project) => (
             <ClientCard key={project.id} project={project} />
           ))}
         </ul>
-      </div>
     </div>
   );
 }
@@ -96,12 +95,12 @@ export function ClientCard({ project }: { project: BriefProject }) {
   const selected = typeof sessionStorage !== "undefined" && sessionStorage.getItem(LAST_CLIENT_KEY) === project.id;
   return (
     <li data-screen="attention-row">
-      <Link to={`/studio/${project.id}`} className="client-card" data-selected={selected ? "true" : "false"} data-tone={card.tone}>
+      <Link to={`/studio/${project.id}`} className="surface-card client-card" data-selected={selected ? "true" : "false"} data-tone={card.tone}>
         <strong>{card.name}</strong>
         <span>{card.subtitle}</span>
-        <p className="studio-attention">{card.status}</p>
+        <span>{card.competitors}</span>
+        <span>{card.opportunities}</span>
         <em>{card.updated}</em>
-        <span>{card.watch}</span>
       </Link>
     </li>
   );

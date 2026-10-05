@@ -1,3 +1,7 @@
+body:has(.studio) {
+  background: var(--paper-deep);
+}
+
 .studio {
   min-height: 100dvh;
   padding: 1.4rem 1.25rem 4rem;
@@ -157,11 +161,14 @@
 .client-card {
   display: grid;
   gap: 0.28rem;
-  padding: 1.05rem 1.1rem 1.1rem;
-  border: 1px solid color-mix(in srgb, var(--ink) 32%, transparent);
-  background: var(--paper);
+  min-height: 13.5rem;
+  align-content: start;
   color: inherit;
   text-decoration: none;
+}
+
+.client-card span:first-of-type {
+  margin-bottom: 1.15rem;
 }
 
 .client-card:hover {
@@ -738,6 +745,200 @@
   align-items: start;
 }
 
+.surface-card {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: inherit;
+}
+
+.surface-card:hover {
+  background: color-mix(in srgb, var(--ink) 4%, var(--paper));
+}
+
+.surface-card:focus-visible,
+.competitor-card:focus-within,
+.client-card:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.surface-card[data-selected="true"],
+.surface-card[data-saved="true"] {
+  background: color-mix(in srgb, var(--ink) 7%, var(--paper));
+}
+
+.client-grid,
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.card-kicker,
+.card-badge {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.card-badge {
+  justify-self: start;
+  border: 1px solid var(--ink);
+  padding: 0.2rem 0.4rem;
+}
+
+.card-kicker {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.surface-card h3,
+.client-card strong {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.7rem;
+  font-weight: 520;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.manager-stack h2,
+.board-head h2,
+[data-screen="market"] > h2,
+[data-screen="opportunities"] > h2,
+[data-screen="market-empty"] h2,
+[data-screen="opportunities-empty"] h2,
+[data-screen="competitors-empty"] h2 {
+  font-family: var(--serif);
+  font-weight: 520;
+  letter-spacing: -0.03em;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1;
+  margin: 0.2rem 0 0.2rem;
+}
+
+.manager-stack,
+.board-head,
+.more-menu {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.board-head {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.more-menu {
+  gap: 0;
+  width: min(16rem, 100%);
+  margin: -0.7rem 0 1.2rem auto;
+  padding: 0.3rem;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.more-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  min-height: 44px;
+  padding: 0.45rem 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: var(--ink);
+}
+
+.competitor-card {
+  cursor: pointer;
+}
+
+.surface-drawer h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 520;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.surface-drawer h3 {
+  margin: 1.1rem 0 0.25rem;
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.studio-nav button:focus-visible,
+.more-menu button:focus-visible,
+.competitor-card:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.surface-drawer {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 1.2rem;
+  overflow: auto;
+}
+
+.surface-inset {
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+}
+
+.share-bar {
+  height: 0.35rem;
+  border: 1px solid var(--ink);
+}
+
+.share-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+
+.studio-nav {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+@media (min-width: 720px) {
+  .card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 800px) {
+  .client-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1100px) {
+  .cards-competitors {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
 @media (max-width: 800px) {
   .studio-top,
   .studio-split,
@@ -761,5 +962,19 @@
 
   .studio-project-list {
     order: -1;
+  }
+
+  .board-head {
+    grid-template-columns: 1fr;
+  }
+
+  .layer-backdrop[data-layer="drawer"] {
+    padding: 0;
+    justify-items: stretch;
+  }
+
+  .layer-drawer {
+    width: 100%;
+    border: 0;
   }
 }

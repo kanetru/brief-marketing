@@ -26,13 +26,13 @@ export function CompleteScreen() {
   if (project) {
     return (
       <DiscoveryLayout section="complete" step={step} width="hero" footer={<NavigationControls showBack={false} showForward={false} onBack={goBack} onForward={() => activate("complete")} forwardLabel="Continue" />}>
-        <QuestionScreen size="hero" kicker={brand?.name || "Handoff"} title={message.title} supporting={message.body}>
-          {message.next ? (
+        <QuestionScreen size="hero" kicker={brand?.name || "Handoff"} title={managerPresent() ? `${project.businessName || "This client"} is ready.` : message.title} supporting={managerPresent() ? "Brief understands the client. Market research has not run yet." : message.body}>
+          {!managerPresent() && message.next ? (
             <aside className="statement">
               <p className="statement-lead">{message.next}</p>
             </aside>
           ) : null}
-          {managerPresent() ? <p className="handover-link"><Link to={`/studio/${project.id}`}>Open this client</Link></p> : null}
+          {managerPresent() ? <p className="handover-link"><Link to={`/studio/${project.id}`}>Open client</Link></p> : null}
           {experience?.signature ? <p>{experience.signature}</p> : null}
           {experience && helpVisible(experience) ? (
             <aside data-screen="client-help">
