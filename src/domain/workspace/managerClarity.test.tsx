@@ -91,6 +91,7 @@ describe("manager clarity", () => {
     expect(competitors.map((item) => item.name)).toEqual(expect.arrayContaining(["Kiln & Co", "North & Sons", "Late Timber"]));
     const late = competitors.find((item) => item.name === "Late Timber");
     expect(late?.metrics.join(" ")).toMatch(/demo/i);
+    expect(late?.themes).not.toMatch(/followers|headline/i);
     const detail = competitors[0];
     expect(detail).toBeTruthy();
     const drawer = renderToStaticMarkup(<CompetitorDetail view={detail!} onClose={() => undefined} />);

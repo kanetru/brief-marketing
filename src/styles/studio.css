@@ -964,6 +964,11 @@ body:has(.studio) {
     order: -1;
   }
 
+  .studio-nav {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
   .board-head {
     grid-template-columns: 1fr;
   }

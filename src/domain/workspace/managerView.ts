@@ -185,7 +185,8 @@ function fromWatched(competitor: MonitoredCompetitor, profiles: ProjectIntellige
   const researched = (project.watch?.competitors ?? []).find((item) => item.id === competitor.id) ?? competitor;
   const signals = (project.watch?.signals ?? []).filter((signal) => signal.entityId === researched.id || signal.entity === researched.name);
   const ordered = [...signals].sort((a, b) => Date.parse(b.observedAt) - Date.parse(a.observedAt));
-  const themes = [...new Set(ordered.flatMap((signal) => (signal.metadata.themes ?? "").split(/[,·]/).map((item) => item.trim()).filter(Boolean)))].slice(0, 4);
+  const themeSkip = new Set(["followers", "follower", "headline", "demo", "sample", "metric"]);
+  const themes = [...new Set(ordered.flatMap((signal) => (signal.metadata.themes ?? "").split(/[,·]/).map((item) => item.trim()).filter((item) => item && !themeSkip.has(item.toLowerCase()))))].slice(0, 4);
   const latest = researched.snapshots[researched.snapshots.length - 1];
   const handles = researched.socialHandles.map(platformName).filter(Boolean);
   const platforms = [...new Set(handles)];
