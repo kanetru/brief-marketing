@@ -1,4 +1,3 @@
-import { poleCount } from "../domain/personality";
 import { VOICE_ROUNDS } from "../domain/voice";
 import type { DiscoverySession, SectionId } from "../types/discovery";
 import { desiredReady, hasText } from "./textEvidence";
@@ -9,9 +8,9 @@ export function canAdvance(session: DiscoverySession, section: SectionId, step: 
     case "welcome:0":
       return true;
     case "business:0":
-      return hasText(session.business.name);
-    case "business:1":
       return hasText(session.business.description);
+    case "business:1":
+      return true;
     case "business:2":
       return hasText(session.business.peopleComeFor);
     case "business:3":
@@ -40,9 +39,8 @@ export function canAdvance(session: DiscoverySession, section: SectionId, step: 
     case "reality:5":
       return true;
     case "personality:0":
-      return poleCount(session.personality.attract) > 0;
     case "personality:1":
-      return poleCount(session.personality.avoid) > 0;
+      return true;
     case "spectrum:0":
     case "spectrum:1":
     case "spectrum:2":
@@ -67,7 +65,7 @@ export function canAdvance(session: DiscoverySession, section: SectionId, step: 
     case "type:0":
       return session.typographyPreferences.preferredDirectionIds.length > 0 || session.typographyPreferences.worldIds.length > 0;
     case "type:2":
-      return session.typographyPreferences.avoidedDirectionIds.length > 0;
+      return true;
     case "imagery:0":
       return session.imageryPreferences.preferredDirectionIds.length > 0
         || session.imageryPreferences.interestIds.length > 0

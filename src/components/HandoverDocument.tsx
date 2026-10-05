@@ -1,6 +1,7 @@
 import { EvidenceNote } from "./EvidenceNote";
 import { TerritoryStage } from "./TerritoryStage";
 import { strengthLabel } from "../domain/brandSignals";
+import { clientFacingCopy } from "../domain/languageGuard";
 import type { DiscoveryEvidence } from "../domain/evidence";
 import { describeEvidence } from "../domain/evidenceLabels";
 import type { BrandIntelligence } from "../types/brandIntelligence";
@@ -299,7 +300,7 @@ function TerritoryBrief({
               {chapter ? (
                 <>
                   <h3>{chapter.name}</h3>
-                  <p className="territory-idea">{chapter.idea}</p>
+                  <p className="territory-idea">{clientFacingCopy(chapter.idea)}</p>
                   <p>{chapter.whyThisBusiness}</p>
                   <p>Borrowed from {chapter.borrowedWorld}. {chapter.distinctive}</p>
                   <h3>Risk</h3>

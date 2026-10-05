@@ -1,3 +1,4 @@
+import { splitNames } from "../market/context";
 import type { BriefProject } from "../../types/project";
 
 export type CardTone = "insights" | "review" | "stale" | "paused" | "waiting" | "quiet" | "empty";
@@ -85,9 +86,19 @@ export function clientCardModel(project: BriefProject): ClientCardModel {
 
   const platforms = platformsFor(project);
   const count = competitorCount(project);
-  const watch = count === 0
-    ? "No competitors yet"
-    : `${count} ${count === 1 ? "competitor" : "competitors"}${platforms.length ? ` · ${platforms.join(" + ")}` : ""}`;
+  const mentioned = splitNames(project.discovery?.strategyInputs?.neighbours?.state === "evidence" ? project.discovery.strategyInputs.neighbours.evidence.raw : "");
+  const submitted = project.discoveryStatus === "submitted" || project.discoveryStatus === "follow_up_complete";
+  if (submitted && insights === 0 && challenges === 0 && !paused && !stale) {
+    status = "Discovery complete";
+    tone = "review";
+  }
+  const watch = count > 0
+    ? `${count} ${count === 1 ? "competitor" : "competitors"}${platforms.length ? ` · ${platforms.join(" + ")}` : ""}`
+    : mentioned.length > 0
+      ? `${mentioned.length} mentioned during discovery`
+      : submitted
+        ? "Ready for review"
+        : "No competitors yet";
   const when = project.watch?.updatedAt || project.updatedAt;
 
   return {

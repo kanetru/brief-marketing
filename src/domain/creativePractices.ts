@@ -266,24 +266,23 @@ function matchesPractice(practice: PracticeProfile, blob: string): boolean {
 
 function genericPractice(description: string): PracticeProfile {
   const noun = distinctiveNoun(description);
-  const titled = noun.charAt(0).toUpperCase() + noun.slice(1);
   return {
     id: "general",
     tokens: [noun],
-    material: noun,
+    material: "the work",
     place: "where the work happens",
     maker: "the person doing the work",
     customer: "the person it is actually for",
     cliche: "a category look that could belong to anyone in the trade",
-    activity: description.replace(/\.$/, "") || `working with ${noun}`,
+    activity: "the work they described",
     nouns: [noun, "work", "place", "material"],
     names: {
-      editorial: [`The ${titled} Journal`, `${titled} Notes`, `A ${titled} Catalogue`],
-      raw: [`Working ${titled}`, `The ${titled} Bench`, `Unfinished ${titled}`],
-      precise: [`Measured ${titled}`, `The ${titled} Index`, `Clear ${titled}`],
-      expressive: [`Loud ${titled}`, `${titled}, Plainly`, `The ${titled} Mark`],
-      classic: [`The ${titled}`, `Quiet ${titled}`, `A Serious ${titled}`],
-      warm: [`Everyday ${titled}`, `Open ${titled}`, `${titled} for People`],
+      editorial: ["Field Notes", "The Working Journal", "A Plain Catalogue"],
+      raw: ["Unfinished", "The Bench", "As It Is"],
+      precise: ["The Index", "Measured", "Clear"],
+      expressive: ["Said Once", "A Plain Mark", "The Working Name"],
+      classic: ["The Practice", "Quiet Work", "Serious"],
+      warm: ["Everyday", "Open", "For People"],
     },
     references: [
       { world: "Independent publishing", take: "Explain the work in sequence, with a point of view." },
@@ -326,7 +325,7 @@ function genericPractice(description: string): PracticeProfile {
 }
 
 function distinctiveNoun(description: string): string {
-  const stop = new Set(["small", "making", "people", "their", "with", "from", "that", "this", "work", "business", "about", "which", "where", "there", "would", "could", "being", "using"]);
+  const stop = new Set(["small", "making", "people", "their", "with", "from", "that", "this", "work", "business", "about", "which", "where", "there", "would", "could", "being", "using", "provide", "provides", "provided", "providing", "through", "these", "those", "other", "because", "should", "without", "within", "across", "after", "before", "under", "over"]);
   const words = description
     .toLowerCase()
     .replace(/[^a-z\s]/g, " ")

@@ -3,6 +3,7 @@ import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { TransitionWrapper } from "../components/TransitionWrapper";
+import { parseEntries } from "../domain/multiEntry";
 import { LIMITS } from "../domain/options";
 import type { InspirationReference } from "../types/discovery";
 import { canAdvance } from "../state/guards";
@@ -79,8 +80,9 @@ function ReferenceStep({
   const [message, setMessage] = useState<string | null>(null);
   const full = references.length >= limit;
 
-  function add() {
-    if (!name.trim()) {
+  function add(raw = name) {
+    const names = parseEntries(raw);
+    if (names.length === 0) {
       setMessage("A name is the only required bit.");
       return;
     }
@@ -88,7 +90,7 @@ function ReferenceStep({
       setMessage(limit === 5 ? "Five is plenty." : "Three is plenty.");
       return;
     }
-    onAdd(name, url, note);
+    names.slice(0, limit - references.length).forEach((item, index) => onAdd(item, index === 0 ? url : "", index === 0 ? note : ""));
     setName("");
     setUrl("");
     setNote("");
@@ -110,7 +112,17 @@ function ReferenceStep({
             aria-label="Name"
             placeholder="Name"
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (/[,;\n]/.test(next)) add(next);
+              else setName(next);
+            }}
+            onPaste={(event) => {
+              const text = event.clipboardData.getData("text");
+              if (!/[,;\n]/.test(text)) return;
+              event.preventDefault();
+              add(`${name}${text}`);
+            }}
           />
           <input
             className="reference-optional"

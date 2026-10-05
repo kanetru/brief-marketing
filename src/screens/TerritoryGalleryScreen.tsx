@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { TerritoryStage } from "../components/TerritoryStage";
 import { buildBrandIntelligence } from "../domain/brandIntelligence";
+import { clientFacingCopy } from "../domain/languageGuard";
 import { clearImageryCache } from "../services/territoryImageCache";
 import { formalVoiceFixture, geometricFixture, humanVoiceFixture, organicFixture } from "../fixtures/brandFixtures";
 import type { DiscoverySession } from "../types/discovery";
@@ -47,7 +48,7 @@ export function TerritoryGalleryScreen() {
           return (
             <div key={spec.territoryId}>
               <TerritoryStage spec={spec} index={index} label={chapter?.name ?? intelligence.territories[index]?.name} mode="immersive" />
-              {chapter ? <p className="territory-idea">{chapter.idea}</p> : null}
+              {chapter ? <p className="territory-idea">{clientFacingCopy(chapter.idea)}</p> : null}
               {chapter ? <p className="territory-why">{chapter.risk}</p> : null}
             </div>
           );

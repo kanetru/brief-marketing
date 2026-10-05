@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { DEFAULT_PANEL, LAST_CLIENT_KEY, MANAGER_NAV, type ManagerPanel } from "../../domain/workspace/managerNav";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { buildBrandIntelligence } from "../../domain/brandIntelligence";
+import { clientFacingCopy } from "../../domain/languageGuard";
 import { STARTER_WORKFLOWS, starterPrompt } from "../../domain/project/agentPack";
 import { adaptiveFollowUps } from "../../domain/project/adaptiveQuestions";
 import { buildProjectIntelligence } from "../../domain/project/assemble";
@@ -149,6 +150,7 @@ export function ProjectWorkspace() {
             api.setReaction(project.id, reaction);
             setNotice(reaction.action === "save" ? "Saved." : reaction.action === "dismiss" ? "Dismissed." : "Noted.");
           }}
+          onFindCompetitors={() => setPanel("market")}
         />
       ) : null}
       {panel === "strategy" ? (
@@ -689,7 +691,7 @@ function Creative({
           return (
             <article key={territory.archetypeId} className="studio-card">
               <h3>{territory.name}</h3>
-              <p>{territory.idea}</p>
+              <p>{clientFacingCopy(territory.idea)}</p>
               <p className="studio-meta">Risk · {territory.risk}</p>
               <p className="studio-meta">Voice · {territory.voice.idea}</p>
               {reaction ? <p className="studio-meta">Client · {reaction.response}{reaction.note ? ` — ${reaction.note}` : ""}</p> : null}

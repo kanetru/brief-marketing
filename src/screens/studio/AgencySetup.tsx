@@ -169,7 +169,7 @@ export function AgencySetup() {
 
           <div>
             <h2>Completion</h2>
-            <label>Heading<input value={experience.completionHeading ?? "That's it."} onChange={(event) => patchExperience({ completionHeading: event.target.value })} /></label>
+            <label>Heading<input value={experience.completionHeading ?? "Thanks — you're done."} onChange={(event) => patchExperience({ completionHeading: event.target.value })} /></label>
             <label>Message<textarea rows={3} value={experience.completionBody ?? resolved.completionBody} onChange={(event) => patchExperience({ completionBody: event.target.value })} /></label>
             <label>Next step<textarea rows={2} value={experience.completionNext ?? ""} onChange={(event) => patchExperience({ completionNext: event.target.value })} /></label>
             <label>Signature<input value={experience.signature ?? ""} onChange={(event) => patchExperience({ signature: event.target.value })} /></label>

@@ -127,15 +127,15 @@ export function imagePromptsForChapter(
   posture: CreativePosture,
   colours: ReadingColour[],
 ): { prompts: ReadingImagePrompt[]; sharedArtDirection: string } {
-  const clause = clauseOf(description, name);
   const colourNames = colours.map((colour) => colour.name).join(", ");
-  const sharedArtDirection = `One art-directed set for ${name}: ${practice.place}, subject is ${practice.material}, palette leaning ${colourNames}. The same light runs through every frame. ${clause} Do not become ${practice.cliche}.`;
+  const noted = notedWork(description);
+  const sharedArtDirection = `One art-directed set for ${name}: ${practice.place}, subject is ${practice.material}, palette leaning ${colourNames}. The same light runs through every frame. ${noted ? `They said: ${noted}.` : ""} Do not become ${practice.cliche}.`;
   const roles: ReadingImagePrompt["role"][] = ["hero", "detail", "context", "texture"];
   return {
     sharedArtDirection,
     prompts: roles.map((role) => ({
       role,
-      prompt: promptFor(role, name, clause, practice, posture, colourNames, sharedArtDirection),
+      prompt: promptFor(role, name, practice.activity, practice, posture, colourNames, sharedArtDirection),
     })),
   };
 }
@@ -149,7 +149,7 @@ function chapter(
   archetypeId: string,
   temperature: "warm" | "cool",
 ): ReadingTerritory {
-  const clause = clauseOf(description, name);
+  const noted = notedWork(description);
   const territoryName = stablePick(practice.names[posture], `${name}:${archetypeId}`);
   const reference = practice.references[postureIndex(posture) % practice.references.length] ?? practice.references[0];
   const colours = pushed(practice.palettes[temperature], session.colourPreferences.colourPush ?? null);
@@ -160,8 +160,13 @@ function chapter(
     archetypeId,
     posture,
     name: territoryName,
-    idea: `${territoryName}: treat ${practice.activity} the way ${borrowed.toLowerCase()} would, so that “${clause}” is visible in the work itself.`,
-    whyThisBusiness: `${name} described the work as “${clause}”. The customer is ${practice.customer}. ${practice.voiceIdea}`,
+    idea: [
+      territoryName,
+      practice.activity,
+      noted ? `They put it this way: ${noted}` : "What they wrote is kept as they wrote it.",
+      `The manners come from ${borrowed.toLowerCase()}, not from a category costume.`,
+    ].join(". "),
+    whyThisBusiness: `${name}. The customer is ${practice.customer}. ${practice.voiceIdea}`,
     borrowedWorld: borrowed,
     distinctive: `The ${practice.tokens[0]} stays in the frame. It refuses ${practice.cliche}.`,
     feel: FEEL[posture],
@@ -169,7 +174,7 @@ function chapter(
     colour: {
       name: `${practice.material} — ${temperature === "cool" ? "cooler" : "warmer"} cut`,
       colours,
-      why: paletteWhy(practice, temperature, session.colourPreferences.colourPush ?? null, clause),
+      why: paletteWhy(practice, temperature, session.colourPreferences.colourPush ?? null),
       contrast: "Ink against a paper ground, so the work reads before any accent does.",
       accent: `The accent is a working mark — ${colours.find((colour) => colour.possibleRole === "Accent")?.name ?? "one strong colour"} — used once, not as a theme.`,
     },
@@ -216,18 +221,18 @@ function hypothesis(
   session: DiscoverySession,
   lead: ReadingTerritory | undefined,
 ): BrandHypothesis {
-  const clause = clauseOf(description, name);
   const comeFor = textValue(session.business.peopleComeFor);
+  const original = description.replace(/\s+/g, " ").trim();
   return {
     centralIdea: centralIdea(practice),
-    strategicOpportunity: `Around ${practice.activity}, the usual picture is ${practice.cliche}. ${name} — “${clause}” — has more room in ${practice.references[0]?.world.toLowerCase() ?? "a neighbouring practice"} than in the category costume.`,
+    strategicOpportunity: `The usual picture is ${practice.cliche}. ${name} has more room in ${practice.references[0]?.world.toLowerCase() ?? "a neighbouring practice"} than in that costume.`,
     desiredFeeling: lead ? lead.feel.join(", ") : "specific and useful",
     culturalTerritory: practice.references.map((item) => item.world).slice(0, 3).join(", "),
     visualOpportunity: `Borrow from ${practice.references[0]?.world.toLowerCase() ?? "publishing"} : ${practice.references[0]?.take ?? "show the work."}`,
     verbalOpportunity: practice.voiceIdea,
     tensionsToUse: [`${practice.material} versus ${practice.cliche}`, "clarity versus costume"],
     conventionsToAvoid: [practice.cliche, "language that could describe a hundred other businesses"],
-    evidence: [clause, comeFor, textValue(session.audience.bestCustomers)].filter((line) => line.trim().length > 0).slice(0, 4),
+    evidence: [original, comeFor, textValue(session.audience.bestCustomers)].filter((line) => line.trim().length > 0).slice(0, 4),
   };
 }
 
@@ -242,7 +247,7 @@ function centralIdea(practice: PracticeProfile): string {
     case "food":
       return "The plate, named, rather than the room, mood-lit.";
     default:
-      return `${practice.material.charAt(0).toUpperCase()}${practice.material.slice(1)}, explained by the person doing it.`;
+      return "The work, explained by the person doing it.";
   }
 }
 
@@ -301,12 +306,18 @@ function promptFor(
   ].join(" ");
 }
 
-function paletteWhy(practice: PracticeProfile, temperature: "warm" | "cool", push: ColourPush | null, clause: string): string {
+function paletteWhy(practice: PracticeProfile, temperature: "warm" | "cool", push: ColourPush | null): string {
   const pushLine = push ? ` Pushed ${push}, because a flatter version of this palette would ignore that lean.` : "";
   const technical = temperature === "cool"
     ? `${practice.material} kept technical: paper, ink, and one working accent rather than a rustic range.`
     : `${practice.material} kept warm without becoming costume: bone, a deep ink, and an accent that belongs to the work.`;
-  return `${technical} It supports “${clause}”.${pushLine}`;
+  return `${technical} It follows the work they described, not a category costume.${pushLine}`;
+}
+
+function notedWork(description: string): string {
+  const sentence = description.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0] ?? "";
+  if (!sentence || sentence.length > 90) return "";
+  return sentence.replace(/\.$/, "");
 }
 
 function pushed(colours: ReadingColour[], push: ColourPush | null): ReadingColour[] {
@@ -368,12 +379,6 @@ function postureFor(archetypeId: string): CreativePosture {
 
 function postureIndex(posture: CreativePosture): number {
   return ["editorial", "raw", "precise", "expressive", "classic", "warm"].indexOf(posture);
-}
-
-function clauseOf(description: string, name: string): string {
-  const trimmed = description.replace(/\s+/g, " ").trim();
-  if (!trimmed) return name;
-  return trimmed.length > 160 ? `${trimmed.slice(0, 157)}…` : trimmed;
 }
 
 function emptyTomorrow(): TomorrowBrief {

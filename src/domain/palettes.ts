@@ -81,6 +81,52 @@ export function paletteById(id: string): PaletteDefinition | undefined {
   return COLOUR_PALETTES.find((palette) => palette.id === id) ?? CLOSER_BOARDS.find((palette) => palette.id === id);
 }
 
+function channel(hex: string): [number, number, number] {
+  const raw = hex.replace("#", "");
+  return [parseInt(raw.slice(0, 2), 16), parseInt(raw.slice(2, 4), 16), parseInt(raw.slice(4, 6), 16)];
+}
+
+function paint(red: number, green: number, blue: number): string {
+  const clamp = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
+  return `#${[clamp(red), clamp(green), clamp(blue)].map((value) => value.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+}
+
+function mix(hex: string, toward: string, amount: number): string {
+  const [red, green, blue] = channel(hex);
+  const [towardRed, towardGreen, towardBlue] = channel(toward);
+  return paint(red + (towardRed - red) * amount, green + (towardGreen - green) * amount, blue + (towardBlue - blue) * amount);
+}
+
+function tint(hex: string, redShift: number, greenShift: number, blueShift: number): string {
+  const [red, green, blue] = channel(hex);
+  return paint(red + redShift, green + greenShift, blue + blueShift);
+}
+
+/** Round-three colour cuts. Same structure, shifted so the client reacts to colour, not a word. */
+export function nuanceBoards(base: PaletteDefinition): PaletteDefinition[] {
+  const shift = (apply: (hex: string, index: number) => string): PaletteDefinition["swatches"] =>
+    base.swatches.map(apply) as unknown as PaletteDefinition["swatches"];
+  return [
+    { id: "warmer", name: "Warmer", swatches: shift((hex) => tint(hex, 36, 10, -22)) },
+    { id: "cooler", name: "Cooler", swatches: shift((hex) => tint(hex, -22, 8, 34)) },
+    { id: "quieter", name: "Quieter", swatches: shift((hex) => mix(hex, "#C8C2B8", 0.45)) },
+    { id: "richer", name: "Richer", swatches: shift((hex, index) => (index === 4 ? hex : mix(hex, "#000000", 0.2))) },
+    { id: "softer", name: "Softer contrast", swatches: shift((hex) => mix(hex, "#E7E2DA", 0.38)) },
+    { id: "sharper", name: "Sharper contrast", swatches: shift((hex, index) => (index === 0 || index === 3 ? mix(hex, "#111111", 0.55) : mix(hex, "#F7F4EF", 0.28))) },
+    { id: "light", name: "Mostly light", swatches: shift((hex) => mix(hex, "#F7F4EF", 0.55)) },
+    { id: "dark", name: "Mostly dark", swatches: shift((hex, index) => (index === 4 ? hex : mix(hex, "#1A1614", 0.62))) },
+  ];
+}
+
+export function nuanceStem(id: string): string {
+  const parts = id.split(":");
+  return parts.length > 1 ? parts.slice(1).join(":") : id;
+}
+
+export function nuanceHeld(ids: readonly string[], stem: string): boolean {
+  return ids.some((id) => id !== `not:${stem}` && (id === stem || id === `love:${stem}` || id === `interesting:${stem}`));
+}
+
 export function closerBoardsFor(preferredIds: readonly string[]): readonly CloserBoard[] {
   const chosen = new Set(preferredIds);
   const matched = CLOSER_BOARDS.filter((board) => board.parents.some((parent) => chosen.has(parent)));
@@ -98,4 +144,25 @@ export function normaliseHex(input: string): string | null {
   }
   if (/^[0-9a-fA-F]{6}$/.test(raw)) return `#${raw.toUpperCase()}`;
   return null;
+}
+
+export interface ColourPreferenceProfile {
+  worlds: string[];
+  nuance: string[];
+  summary: string;
+}
+
+export function colourPreferenceProfile(worldIds: readonly string[], nuanceIds: readonly string[]): ColourPreferenceProfile {
+  const worlds = worldIds.map((id) => paletteById(id)?.name ?? id);
+  const nuance = nuanceIds.map((id) => {
+    const stem = nuanceStem(id);
+    const name = COLOUR_NUANCE.find(([key]) => key === stem)?.[1] ?? stem;
+    if (id.startsWith("not:")) return `not ${name}`;
+    if (id.startsWith("interesting:")) return `interesting ${name}`;
+    return name;
+  });
+  const summary = worlds.length
+    ? `Colour leaning ${worlds.join(", ")}${nuance.length ? `, pushed ${nuance.join(", ")}` : ""}. Not a finished palette.`
+    : "Colour taste is still open.";
+  return { worlds, nuance, summary };
 }

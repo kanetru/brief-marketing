@@ -1,4 +1,5 @@
 import { creativeFork } from "./archetypes";
+import { clientFacingCopy } from "./languageGuard";
 import { buildBrandSignalModel } from "./brandSignals";
 import { buildCreativeReading, strategistEvidenceHash } from "./creativeReading";
 import { buildCreativeTerritories } from "./creativeTerritories";
@@ -63,7 +64,7 @@ function applyReading(spec: TerritoryVisualSpec, reading: CreativeReading): Terr
     headingTypeface: faceOf(pairing?.headingId, spec.headingTypeface),
     bodyTypeface: faceOf(pairing?.bodyId, spec.bodyTypeface),
     examplePhrase: chapter.voice.examples[0] || spec.examplePhrase,
-    supportingLine: chapter.idea,
+    supportingLine: clientFacingCopy(chapter.idea),
     versionKey: `${spec.versionKey}:${chapter.name}`,
     imageAssets: spec.imageAssets.map((asset) => {
       const prompt = chapter.imagePrompts.find((item) => item.role === asset.role);

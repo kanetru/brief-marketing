@@ -49,7 +49,7 @@ export const DEFAULT_OPENING_SUPPORT = "We'll ask a few questions about what you
 export const DEFAULT_OPENING_BUTTON = "Begin";
 export const DEFAULT_EXPECTATION_HEADING = "What happens next";
 export const DEFAULT_EXPECTATION_BODY = "Take your time. There are no perfect answers. We're interested in how you see the business.";
-export const DEFAULT_COMPLETION_HEADING = "That's it.";
+export const DEFAULT_COMPLETION_HEADING = "Thanks — you're done.";
 
 const DEFAULT_TERMS: Terms = {
   client: "client",

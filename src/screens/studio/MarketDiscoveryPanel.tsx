@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Overlay } from "../../components/Overlay";
-import { discoveryContext, addSearch, removeSearch } from "../../domain/market/context";
+import { discoveryContext, addSearch, removeSearch, splitNames } from "../../domain/market/context";
 import { formatFollowers } from "../../domain/workspace/marketCards";
 import { emptyMarketDiscovery, groupedReview, MARKET_GROUP_LABEL, prominentAssessments, storeRun, watchingSummary, approveAccount, dismissAccount, reclassifyAccount, confirmIdentity } from "../../domain/market/review";
 import { requestMarketDiscovery } from "../../services/marketClient";
@@ -48,7 +48,13 @@ export function MarketDiscoveryPanel({ project, intelligence }: { project: Brief
         {record.origin === "live" ? <p className="provenance" data-origin="live">Live</p> : null}
         {record.origin === "cached" ? <p className="provenance" data-origin="cached">Cached</p> : null}
       </div>
-      {record.origin === "idle" ? <p>Brief can look for who is actually worth watching. The client does not need a complete list.</p> : null}
+      {record.origin === "idle" ? (
+        <>
+          <h3 className="intel-bucket">Competitors & market</h3>
+          <p>Brief can use what it learned about this client to find businesses and accounts worth watching.</p>
+        </>
+      ) : null}
+      <Mentioned project={project} />
       {record.message ? <p data-discovery-message="">{record.message}</p> : null}
       {worth > 0 ? <p>Brief found {worth} {worth === 1 ? "account" : "accounts"} worth reviewing.</p> : null}
       {record.candidates.length > 0 ? <p className="studio-meta">Showing the saved result.</p> : null}
@@ -140,6 +146,20 @@ export function MarketDiscoveryPanel({ project, intelligence }: { project: Brief
         </Overlay>
       ) : null}
     </section>
+  );
+}
+
+function Mentioned({ project }: { project: BriefProject }) {
+  const raw = project.discovery?.strategyInputs?.neighbours;
+  const names = splitNames(raw?.state === "evidence" ? raw.evidence.raw : "");
+  if (names.length === 0) return null;
+  return (
+    <div data-screen="mentioned-during-discovery">
+      <h3 className="intel-bucket">Mentioned during discovery</h3>
+      <p className="studio-meta">Client-provided. Not yet checked.</p>
+      {names.map((name) => <p key={name}>{name}</p>)}
+      <h3 className="intel-bucket">Find others</h3>
+    </div>
   );
 }
 

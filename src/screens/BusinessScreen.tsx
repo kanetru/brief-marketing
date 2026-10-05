@@ -34,20 +34,9 @@ export function BusinessScreen() {
     >
       <TransitionWrapper transitionKey={`business-${step}`}>
         {step === 0 ? (
-          <QuestionScreen kicker="Business" title="What's your business called?">
-            <TextResponse
-              labelledBy="question-title"
-              length="short"
-              placeholder="As your customers say it"
-              value={textValue(business.name)}
-              onChange={(value) => setBusinessText("name", value)}
-            />
-          </QuestionScreen>
-        ) : null}
-        {step === 1 ? (
           <QuestionScreen
             kicker="Business"
-            title="What do you actually do?"
+            title="What does the business do?"
             supporting="Say it the way you would to someone across a table. Polish can wait."
           >
             <TextResponse
@@ -57,8 +46,17 @@ export function BusinessScreen() {
               value={textValue(business.description)}
               onChange={(value) => setBusinessText("description", value)}
             />
+            <p className="field-label">What do people call it?</p>
+            <TextResponse
+              labelledBy="question-title"
+              length="short"
+              placeholder="The name, if it isn't already obvious"
+              value={textValue(business.name)}
+              onChange={(value) => setBusinessText("name", value)}
+            />
           </QuestionScreen>
         ) : null}
+        {step === 1 ? <OffersStep /> : null}
         {step === 2 ? (
           <QuestionScreen
             kicker="Business"
@@ -74,10 +72,10 @@ export function BusinessScreen() {
             />
           </QuestionScreen>
         ) : null}
-        {step === 4 ? <OffersStep /> : null}
-        {step === 5 ? <WantStep /> : null}
-        {step === 6 ? <PurposeStep /> : null}
-        {step === 7 ? <ValuesStep /> : null}
+        {step === 4 ? <WantStep /> : null}
+        {step === 5 ? <PurposeStep /> : null}
+        {step === 6 ? <ValuesStep /> : null}
+        {step === 7 ? <ValuesStep rest /> : null}
         {step === 3 ? (
           <DifferentiationStep
             answer={business.differentiation}

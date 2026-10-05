@@ -1,4 +1,4 @@
-import { COLOUR_PALETTES, paletteById } from "./palettes";
+import { COLOUR_PALETTES, nuanceHeld, paletteById } from "./palettes";
 import type { ColourPreferences } from "../types/discovery";
 
 export interface ColourPreferenceProfile {
@@ -25,11 +25,11 @@ export function colourProfile(preferences: ColourPreferences): ColourPreferenceP
   const names = selected.map((id) => paletteById(id)?.name ?? id);
   const warm = selected.filter((id) => WARM.has(id)).length;
   const cool = selected.filter((id) => COOL.has(id)).length;
-  const nuance = new Set(preferences.nuanceIds);
-  const warmth = nuance.has("warmer") ? "warm" : nuance.has("cooler") ? "cool" : warm > cool ? "warm" : cool > warm ? "cool" : "unsettled";
-  const saturation = nuance.has("richer") ? "richer" : nuance.has("quieter") ? "quiet" : "unset";
-  const contrast = nuance.has("sharper") ? "sharper" : nuance.has("softer") ? "soft" : "unset";
-  const brightness = nuance.has("dark") ? "dark" : nuance.has("light") ? "light" : preferences.colourPush === "darker" ? "dark" : preferences.colourPush === "brighter" ? "light" : "unset";
+  const nuance = preferences.nuanceIds;
+  const warmth = nuanceHeld(nuance, "warmer") ? "warm" : nuanceHeld(nuance, "cooler") ? "cool" : warm > cool ? "warm" : cool > warm ? "cool" : "unsettled";
+  const saturation = nuanceHeld(nuance, "richer") ? "richer" : nuanceHeld(nuance, "quieter") ? "quiet" : "unset";
+  const contrast = nuanceHeld(nuance, "sharper") ? "sharper" : nuanceHeld(nuance, "softer") ? "soft" : "unset";
+  const brightness = nuanceHeld(nuance, "dark") ? "dark" : nuanceHeld(nuance, "light") ? "light" : preferences.colourPush === "darker" ? "dark" : preferences.colourPush === "brighter" ? "light" : "unset";
   const summary = names.length
     ? `Drawn toward ${names.join(", ")}. Warmth ${warmth}, saturation ${saturation}, contrast ${contrast}, brightness ${brightness}. These are taste signals. They are not the brand colours.`
     : "Colour taste is still unknown. No hex has been chosen as a brand colour.";
@@ -42,8 +42,8 @@ export function colourProfile(preferences: ColourPreferences): ColourPreferenceP
     avoidedFamilies: COLOUR_PALETTES.filter((item) => preferences.avoidedPaletteIds.includes(item.id)).map((item) => item.name),
     selectedBoards: names,
     earthiness: selected.some((id) => WARM.has(id)) ? "earthy" : "unset",
-    softness: nuance.has("softer") ? "soft" : "unset",
-    accentAppetite: nuance.has("accent-strong") ? "strong" : nuance.has("accent-quiet") ? "quiet" : "unset",
+    softness: nuanceHeld(nuance, "softer") ? "soft" : "unset",
+    accentAppetite: nuanceHeld(nuance, "accent-strong") ? "strong" : nuanceHeld(nuance, "accent-quiet") ? "quiet" : "unset",
     rejectedBoards: preferences.avoidedPaletteIds.map((id) => paletteById(id)?.name ?? id),
     summary,
   };

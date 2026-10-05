@@ -141,6 +141,22 @@ describe("creative reading", () => {
     expect(good?.territories[0]?.imagePrompts).toHaveLength(4);
     expect(good?.territories[0]?.pairings[0]?.heading).toBe("Fraunces");
   });
+
+  it("does not turn a long description into a branded instruction", () => {
+    const session = styledBusiness(
+      "Field Signal",
+      "We provide the most careful soil reading to small farms for a low cost through a membership. They can look back across a season and change how they work the way a local paper would explain a town.",
+      "Farmers who already keep records.",
+      "A year of useful history.",
+    );
+    const reading = buildBrandIntelligence(session).reading;
+    const blob = readingText(session);
+    expect(blob.toLowerCase()).not.toContain("provide mark");
+    expect(blob.toLowerCase()).not.toContain("visible in the work itself");
+    expect(blob.toLowerCase()).not.toMatch(/\btreat\b[\s\S]{0,160}\bthe way\b/);
+    expect(reading.hypothesis.evidence[0]).toMatch(/soil reading/);
+    expect(reading.territories[0]?.idea).not.toMatch(/Th…/);
+  });
 });
 
 function chapter(archetypeId: string, posture: string, name: string) {

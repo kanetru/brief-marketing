@@ -59,6 +59,7 @@ interface SessionApi {
   togglePreferredPalette: (paletteId: string) => void;
   toggleCloserBoard: (paletteId: string) => void;
   toggleColourNuance: (nuanceId: string) => void;
+  setColourNuance: (nuanceId: string, reaction: "love" | "interesting" | "not_me") => void;
   toggleAvoidedPalette: (paletteId: string) => void;
   setColourPush: (push: import("../types/creativeReading").ColourPush | null) => void;
   setColourRelationship: (value: ColourRelationship) => void;
@@ -191,6 +192,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
   const toggleColourNuance = useCallback(
     (nuanceId: string) => send({ type: "toggle-colour-nuance", nuanceId }),
+    [send],
+  );
+  const setColourNuance = useCallback(
+    (nuanceId: string, reaction: "love" | "interesting" | "not_me") => send({ type: "set-colour-nuance", nuanceId, reaction }),
     [send],
   );
   const toggleAvoidedPalette = useCallback(
@@ -344,6 +349,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       togglePreferredPalette,
       toggleCloserBoard,
       toggleColourNuance,
+      setColourNuance,
       toggleAvoidedPalette,
       setColourPush,
       setColourRelationship,
@@ -408,6 +414,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       togglePreferredPalette,
       toggleCloserBoard,
       toggleColourNuance,
+      setColourNuance,
       toggleAvoidedPalette,
       setColourPush,
       setColourRelationship,

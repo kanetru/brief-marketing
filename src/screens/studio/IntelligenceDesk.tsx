@@ -38,10 +38,12 @@ function readingItems(reading: BriefProject["watch"]["readings"][number] | null)
 export function IntelligenceDesk({
   project,
   onReact,
+  onFindCompetitors,
 }: {
   project: BriefProject;
   intelligence: ProjectIntelligence;
   onReact: (reaction: ManagerReaction) => void;
+  onFindCompetitors?: () => void;
 }) {
   const [view, setView] = useState<"feed" | "morning" | "week">("feed");
   const [notice, setNotice] = useState("");
@@ -74,7 +76,7 @@ export function IntelligenceDesk({
       {view === "morning" ? <DailyBriefView project={project} /> : null}
       {view === "week" ? <WeeklyReadView project={project} /> : null}
       {view === "feed" ? (
-        empty ? <EmptyWatch /> : (
+        empty ? <EmptyWatch submitted={project.discoveryStatus === "submitted"} onFindCompetitors={onFindCompetitors} /> : (
           <>
             {quiet ? <QuietState /> : null}
             <Feed title="Latest" items={groups.latest} reactions={watch.reactions} signals={watch.signals} onReact={onReact} />
@@ -87,10 +89,22 @@ export function IntelligenceDesk({
   );
 }
 
-function EmptyWatch() {
+function EmptyWatch({ submitted, onFindCompetitors }: { submitted: boolean; onFindCompetitors?: () => void }) {
+  if (!submitted) {
+    return (
+      <div className="intel-quiet" data-screen="nothing-to-watch">
+        <h3>Nothing to watch</h3>
+      </div>
+    );
+  }
   return (
-    <div className="intel-quiet" data-screen="nothing-to-watch">
-      <h3>Nothing to watch</h3>
+    <div className="intel-quiet" data-screen="first-read">
+      <h3>Discovery complete.</h3>
+      <p>Brief is building the first read.</p>
+      <p>Brand holds what they told us. Market is where the competitors go.</p>
+      <p>Market not researched yet.</p>
+      <p>Find competitors and accounts worth watching.</p>
+      {onFindCompetitors ? <button type="button" className="studio-button" onClick={onFindCompetitors}>Find competitors</button> : null}
     </div>
   );
 }

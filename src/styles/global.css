@@ -1725,11 +1725,21 @@ button {
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 420px) {
   .palette-grid,
   .imagery-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.nuance-board {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.nuance-board .palette-world {
+  aspect-ratio: 4 / 5;
 }
 
 .voice-stack,

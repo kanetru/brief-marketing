@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { TerritoryImageAsset, TerritoryVisualSpec } from "../types/brandIntelligence";
 import { readImageryCache, writeImageryCache } from "../services/territoryImageCache";
 import { requestTerritoryImages } from "../services/territoryImages";
+import { clientFacingCopy } from "../domain/languageGuard";
 import { FallbackImagery } from "./FallbackImagery";
 
 export function TerritoryStage({
@@ -86,7 +87,7 @@ export function TerritoryStage({
           </h2>
           <div className="stage-rule" aria-hidden="true" />
           <p className="stage-support" style={{ fontFamily: spec.bodyTypeface.fontFamily }}>
-            {spec.supportingLine}
+            {clientFacingCopy(spec.supportingLine)}
           </p>
           <p className="stage-example">Example line</p>
           <button type="button" className="text-button stage-expand" onClick={() => setExpanded((value) => !value)}>

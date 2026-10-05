@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { managerPresent } from "../state/projectStore";
 import { LoverLoverLogo } from "../components/LoverLoverLogo";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
@@ -31,6 +32,7 @@ export function CompleteScreen() {
               <p className="statement-lead">{message.next}</p>
             </aside>
           ) : null}
+          {managerPresent() ? <p className="handover-link"><Link to={`/studio/${project.id}`}>Open this client</Link></p> : null}
           {experience?.signature ? <p>{experience.signature}</p> : null}
           {experience && helpVisible(experience) ? (
             <aside data-screen="client-help">
@@ -65,7 +67,7 @@ export function CompleteScreen() {
       <QuestionScreen
         size="hero"
         kicker="Handoff"
-        title="That's it."
+        title="Thanks — you're done."
         supporting="Your answers are with your manager. You can leave this here."
       >
         <LoverLoverLogo kind="icon" color="orange" className="brand-star" alt="" />

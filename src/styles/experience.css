@@ -148,6 +148,62 @@
   margin-top: 1.4rem;
 }
 
+.type-system {
+  min-height: 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.type-kicker,
+.type-deck,
+.type-body {
+  display: block;
+}
+
+.type-heading {
+  display: block;
+  font-size: clamp(1.8rem, 4vw, 3.1rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.type-body {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  max-width: 34rem;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.8rem;
+}
+
+.chip-list li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  border: 1px solid rgba(26, 22, 20, 0.18);
+  padding: 0.25rem 0.55rem;
+}
+
+.art-photo-board {
+  padding: 0;
+  overflow: hidden;
+  min-height: 16rem;
+}
+
+.art-photo-board img {
+  display: block;
+  width: 100%;
+  height: 16rem;
+  object-fit: cover;
+}
+
 @media (max-width: 720px) {
   .push-grid,
   .type-worlds {
@@ -157,6 +213,22 @@
   .push-card,
   .type-world {
     min-height: 18vh;
+  }
+
+  .type-system {
+    min-height: 0;
+  }
+
+  .compare-pair {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 0.8rem;
+  }
+
+  .compare-panel {
+    min-width: 86%;
+    scroll-snap-align: center;
   }
 }
 

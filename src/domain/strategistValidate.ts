@@ -16,6 +16,14 @@ const BANNED = [
   "captivate",
   "your brand is",
   "the correct direction",
+  "visible in the work itself",
+  "provide mark",
+  "evidence object",
+  "epistemic status",
+  "decision status",
+  "brandbrain",
+  "strategist instruction",
+  "candidate rule",
 ];
 
 const MATRIX_NAMES = ["grounded editorial", "raw humanism", "precise structure", "warm precision", "playful signal", "quiet authority"];
@@ -225,7 +233,8 @@ function readingText(reading: CreativeReading): string {
 
 function banned(value: string): boolean {
   const text = value.toLowerCase();
-  return BANNED.some((phrase) => text.includes(phrase));
+  if (BANNED.some((phrase) => text.includes(phrase))) return true;
+  return /\btreat\b[\s\S]{0,160}\bthe way\b/.test(text);
 }
 
 function text(record: object, key: string): string {

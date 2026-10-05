@@ -82,7 +82,10 @@ function block(session: DiscoverySession): string {
   const inputs = session.strategyInputs;
   const said = (label: string, value: string) => (value.trim() ? `${label}: ${value.trim()}` : `${label}: unknown`);
   const offers = inputs.offers.length
-    ? inputs.offers.map((offer) => `${offer.name} (${offer.role}, ${offer.importance}${offer.buyer ? `, bought by ${offer.buyer}` : ""})`).join("; ")
+    ? inputs.offers.map((offer) => {
+      const price = [offer.priceLabel, offer.priceModel].filter(Boolean).join(" ");
+      return [offer.name, offer.description, price, offer.buyer ? `bought by ${offer.buyer}` : ""].filter(Boolean).join(" — ");
+    }).join("; ")
     : "unknown";
   return [
     said("What they do", textValue(session.business.description)),

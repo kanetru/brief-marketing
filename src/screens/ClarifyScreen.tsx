@@ -75,17 +75,20 @@ export function ClarifyScreen() {
     navigate(sectionPath("profile"));
   }
 
+  const finishStep = (status === "ready" ? questions.length : 0) + 1;
+  const showingFinish = (status === "ready" || status === "failed") && step >= finishStep;
+
   function forward() {
     if (status === "running" || status === "not_generated") return;
-    if (status === "failed" || questions.length === 0 || step >= questions.length) {
+    if (showingFinish) {
       finish();
       return;
     }
     goForward();
   }
 
-  const question = step > 0 ? questions[step - 1] : undefined;
-  const totalSteps = status === "ready" ? Math.max(1, 1 + questions.length) : 1;
+  const question = step > 0 && step <= questions.length ? questions[step - 1] : undefined;
+  const totalSteps = status === "ready" || status === "failed" ? finishStep + 1 : 1;
 
   return (
     <DiscoveryLayout
@@ -98,8 +101,8 @@ export function ClarifyScreen() {
           showForward={status === "ready" || status === "failed"}
           onBack={goBack}
           onForward={forward}
-          forwardLabel="Continue"
-          forwardDisabled={!canAdvance(session, "clarify", step)}
+          forwardLabel={showingFinish ? "Finish" : "Continue"}
+          forwardDisabled={!showingFinish && !canAdvance(session, "clarify", step)}
         />
       }
     >
@@ -107,6 +110,14 @@ export function ClarifyScreen() {
         {step === 0 ? <Intro status={status} questionCount={questions.length} onRetry={retry} /> : null}
         {step === 0 ? <AdaptiveFollowUps /> : null}
         {step === 0 ? <LearningBeat /> : null}
+        {showingFinish ? (
+          <QuestionScreen
+            kicker="Finish"
+            size="hero"
+            title="That's everything."
+            supporting="Brief has what it needs for now."
+          />
+        ) : null}
         {question ? (
           <QuestionScreen kicker="Clarify" size="conversation" title={question.question}>
             {question.answerMode === "single_choice" ? (

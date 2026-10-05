@@ -25,7 +25,7 @@ describe("lover lover experience", () => {
 
   it("still ends discovery without handing the client the intelligence", () => {
     const message = completionMessage("Jane Smith");
-    expect(message.title).toMatch(/that's it/i);
+    expect(message.title).toMatch(/you're done/i);
     expect(message.body).toContain("Jane Smith");
     expect(`${message.title} ${message.body} ${message.next}`).not.toMatch(/opportunit|competitor|agent pack|territor/i);
     expect(clientCanSeeIntelligence("strategy")).toBe(false);

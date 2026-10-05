@@ -1,54 +1,23 @@
 import { useState } from "react";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ChoiceGrid } from "../components/ChoiceGrid";
+import { MultiEntry } from "../components/MultiEntry";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { QuietChoice } from "../components/QuietChoice";
 import { TextResponse } from "../components/TextResponse";
-import type { OfferInput, OfferRole, StrategyInputs, StrategyListField, StrategyTextField } from "../types/strategy";
+import { parseEntries } from "../domain/multiEntry";
+import type { OfferInput, PriceModel, StrategyInputs, StrategyListField, StrategyTextField } from "../types/strategy";
 import { textValue } from "../state/textEvidence";
 import { useSession } from "../state/SessionContext";
 
-const WANTS: Array<[StrategyInputs["want"][number], string]> = [
-  ["more_volume", "More volume"],
-  ["higher_value", "Higher-value work"],
-  ["more_repeat", "More repeat business"],
-  ["particular_offer", "A particular offer"],
-  ["new_audience", "A new audience"],
-  ["new_market", "A new market"],
-  ["better_fit", "Better-fit customers"],
-  ["something_else", "Something else"],
-];
-
-const ROLES: Array<[OfferRole, string]> = [
-  ["core", "Core"],
-  ["growth", "Growth"],
-  ["secondary", "Secondary"],
-  ["legacy", "Legacy"],
-];
-
-const PRICE: Array<[OfferInput["priceBand"], string]> = [
-  ["under_500", "Under 500"],
-  ["500_5k", "500 to 5k"],
-  ["5k_25k", "5k to 25k"],
-  ["25k_plus", "25k and up"],
-  ["prefer_not", "Rather not say"],
-];
-
-const LEANS: Array<[StrategyInputs["lean"][number], string]> = [
-  ["expertise", "Expertise"],
-  ["personality", "Personality"],
-  ["aesthetics", "Aesthetics"],
-  ["results", "Results"],
-  ["proof", "Proof"],
-  ["trust", "Trust"],
-  ["convenience", "Convenience"],
-  ["status", "Status"],
-  ["shared_values", "Shared values"],
-  ["price", "Price"],
-  ["community", "Community"],
-  ["technical_depth", "Technical depth"],
-  ["speed", "Speed"],
-  ["other", "Other"],
+const PRICE_MODELS: Array<[PriceModel, string]> = [
+  ["fixed", "Fixed price"],
+  ["from", "From a price"],
+  ["range", "A range"],
+  ["subscription", "Subscription"],
+  ["quote", "Quote / custom"],
+  ["free", "Free"],
+  ["unknown", "Not sure"],
 ];
 
 const AWARE: Array<[NonNullable<StrategyInputs["awareness"]>, string, string]> = [
@@ -135,15 +104,6 @@ const PROOF: Array<[StrategyInputs["proofKinds"][number], string]> = [
   ["founder", "The founder's record"],
 ];
 
-const NEIGHBOURS: Array<[StrategyInputs["neighbourKinds"][number], string]> = [
-  ["brands", "Brands"],
-  ["people", "People"],
-  ["publications", "Publications"],
-  ["places", "Places"],
-  ["events", "Events"],
-  ["communities", "Communities"],
-];
-
 function useStrategy() {
   const api = useSession();
   return { inputs: api.session.strategyInputs, ...api };
@@ -171,9 +131,9 @@ function Cards<T extends string>({
 export function OffersStep() {
   const { inputs, saveOffer, removeOffer } = useStrategy();
   const [name, setName] = useState("");
-  const [role, setRole] = useState<OfferRole>("core");
-  const [buyer, setBuyer] = useState("");
-  const [priceBand, setPriceBand] = useState<OfferInput["priceBand"]>("");
+  const [description, setDescription] = useState("");
+  const [priceLabel, setPriceLabel] = useState("");
+  const [priceModel, setPriceModel] = useState<PriceModel>("");
 
   function add() {
     const trimmed = name.trim();
@@ -181,44 +141,43 @@ export function OffersStep() {
     const offer: OfferInput = {
       id: crypto.randomUUID(),
       name: trimmed,
-      role,
-      importance: role === "growth" || role === "core" ? "primary" : "occasional",
-      priceBand,
-      buyer: buyer.trim(),
+      role: "core",
+      importance: "primary",
+      priceBand: "",
+      buyer: "",
       context: "",
+      description: description.trim(),
+      priceLabel: priceLabel.trim(),
+      priceModel,
     };
     saveOffer(offer);
     setName("");
-    setBuyer("");
-    setPriceBand("");
+    setDescription("");
+    setPriceLabel("");
+    setPriceModel("");
   }
 
   return (
     <QuestionScreen
       kicker="Business"
-      title="What can someone pay you for?"
-      supporting="The important ones. Price can wait. Skip this if one sentence already covers it."
+      title="What do you sell?"
+      supporting="One offer at a time is fine. Price is optional, and it can be a range, a subscription, or a quote."
     >
       <ul className="offer-list">
         {inputs.offers.map((offer) => (
           <li key={offer.id}>
             <span>{offer.name}</span>
-            <span className="meta">{offer.role}{offer.buyer ? ` · ${offer.buyer}` : ""}</span>
+            <span className="meta">{[offer.description, offer.priceLabel, priceModelLabel(offer.priceModel)].filter(Boolean).join(" · ")}</span>
             <button type="button" className="text-button" onClick={() => removeOffer(offer.id)}>Remove</button>
           </li>
         ))}
       </ul>
       <TextResponse labelledBy="question-title" length="short" placeholder="Name of the offer" value={name} onChange={setName} />
-      <ChoiceGrid columns={2}>
-        {ROLES.map(([id, label]) => (
-          <ChoiceCard key={id} label={label} pressed={role === id} onClick={() => setRole(id)} />
-        ))}
-      </ChoiceGrid>
-      <TextResponse labelledBy="question-title" length="short" placeholder="Who buys it, if you want to say" value={buyer} onChange={setBuyer} />
-      <p className="field-label">A rough value, only if you want to say.</p>
+      <TextResponse labelledBy="question-title" length="short" placeholder="A short description, if you want" value={description} onChange={setDescription} />
+      <TextResponse labelledBy="question-title" length="short" placeholder="Price, if you have one — $49/month, from $1,500" value={priceLabel} onChange={setPriceLabel} />
       <div className="quiet-row">
-        {PRICE.map(([id, label]) => (
-          <QuietChoice key={id} label={label} pressed={priceBand === id} onClick={() => setPriceBand(priceBand === id ? "" : id)} />
+        {PRICE_MODELS.map(([id, label]) => (
+          <QuietChoice key={id} label={label} pressed={priceModel === id} onClick={() => setPriceModel(priceModel === id ? "" : id)} />
         ))}
       </div>
       <button type="button" className="text-button" onClick={add}>Add this offer</button>
@@ -226,14 +185,15 @@ export function OffersStep() {
   );
 }
 
+function priceModelLabel(model: PriceModel | undefined): string {
+  return PRICE_MODELS.find(([id]) => id === model)?.[1] ?? "";
+}
+
 export function WantStep() {
   const { inputs, setStrategyText } = useStrategy();
   return (
-    <QuestionScreen kicker="Business" title="Which part of the business do you want more of?" supporting="Not a channel. The work.">
-      <Cards field="want" options={WANTS} selected={inputs.want} />
-      {inputs.want.includes("something_else") ? (
-        <TextResponse labelledBy="question-title" length="short" placeholder="Say it plainly" value={textValue(inputs.wantNote)} onChange={(value) => setStrategyText("wantNote", value)} />
-      ) : null}
+    <QuestionScreen kicker="Business" title="What do you want more of?" supporting="The work, not a channel. Say it in your own words. You can skip it.">
+      <TextResponse labelledBy="question-title" length="long" placeholder="The part of the business you want more of" value={textValue(inputs.wantNote)} onChange={(value) => setStrategyText("wantNote", value)} />
     </QuestionScreen>
   );
 }
@@ -254,15 +214,20 @@ export function PurposeStep() {
   );
 }
 
-export function ValuesStep() {
+export function ValuesStep({ rest = false }: { rest?: boolean }) {
   const { inputs, setStrategyText } = useStrategy();
+  if (rest) {
+    return (
+      <QuestionScreen kicker="Business" title="What would embarrass you to put your name on?" supporting="Optional. Behaviour, not a values poster.">
+        <TextResponse labelledBy="question-title" length="long" placeholder="Optional" value={textValue(inputs.embarrassed)} onChange={(value) => setStrategyText("embarrassed", value)} />
+        <p className="field-label">What do you do differently because you care?</p>
+        <TextResponse labelledBy="question-title" length="short" placeholder="Optional" value={textValue(inputs.differently)} onChange={(value) => setStrategyText("differently", value)} />
+      </QuestionScreen>
+    );
+  }
   return (
-    <QuestionScreen kicker="Business" title="What would you refuse to compromise on, even if it cost you money?" supporting="Behaviour, not a values poster. The other two lines are optional.">
+    <QuestionScreen kicker="Business" title="What would you refuse to compromise on, even if it cost you money?" supporting="Behaviour, not a values poster. You can skip it.">
       <TextResponse labelledBy="question-title" length="long" placeholder="The thing you would not drop" value={textValue(inputs.refuse)} onChange={(value) => setStrategyText("refuse", value)} />
-      <p className="field-label">What do you do differently because you care?</p>
-      <TextResponse labelledBy="question-title" length="short" placeholder="Optional" value={textValue(inputs.differently)} onChange={(value) => setStrategyText("differently", value)} />
-      <p className="field-label">What would embarrass you to put your name on?</p>
-      <TextResponse labelledBy="question-title" length="short" placeholder="Optional" value={textValue(inputs.embarrassed)} onChange={(value) => setStrategyText("embarrassed", value)} />
     </QuestionScreen>
   );
 }
@@ -285,8 +250,6 @@ export function HesitateStep() {
       <TextResponse labelledBy="question-title" length="long" placeholder="The hesitation" value={textValue(inputs.hesitate)} onChange={(value) => setStrategyText("hesitate", value)} />
       <p className="field-label">What do they hate about the alternatives?</p>
       <TextResponse labelledBy="question-title" length="short" placeholder="Optional" value={textValue(inputs.hateAlternatives)} onChange={(value) => setStrategyText("hateAlternatives", value)} />
-      <p className="field-label">What makes them lean in?</p>
-      <Cards field="lean" options={LEANS} selected={inputs.lean} />
     </QuestionScreen>
   );
 }
@@ -406,10 +369,15 @@ export function ProofStep() {
 
 export function NeighbourStep() {
   const { inputs, setStrategyText } = useStrategy();
+  const names = parseEntries(textValue(inputs.neighbours));
   return (
-    <QuestionScreen kicker="Conditions" title="Who do you think you're compared with?" supporting="Add anyone that comes to mind. One is enough. None is fine too — Brief can help find the others.">
-      <Cards field="neighbourKinds" options={NEIGHBOURS} selected={inputs.neighbourKinds} />
-      <TextResponse labelledBy="question-title" length="short" placeholder="Names, if you have them" value={textValue(inputs.neighbours)} onChange={(value) => setStrategyText("neighbours", value)} />
+    <QuestionScreen kicker="Conditions" title="Who do you think you're compared with?" supporting="Add anyone that comes to mind. One is enough. None is fine too — Brief can help find the others. Commas, line breaks, and pasting a list all work.">
+      <MultiEntry
+        labelledBy="question-title"
+        placeholder="Farm names, studios, whoever comes to mind"
+        values={names}
+        onChange={(next) => setStrategyText("neighbours", next.join("\n"))}
+      />
       <p className="field-label">Who would feel completely wrong?</p>
       <TextResponse labelledBy="question-title" length="short" placeholder="Optional" value={textValue(inputs.wrongCompany)} onChange={(value) => setStrategyText("wrongCompany", value)} />
     </QuestionScreen>

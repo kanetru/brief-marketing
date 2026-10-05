@@ -47,6 +47,28 @@ export const TYPE_REFINEMENTS: readonly TypeRefinement[] = [
   { id: "syne", label: "Display", note: "Large, and then stop", fontFamily: "Syne, Futura, sans-serif", directions: ["expressive_display", "bold_grotesk"] },
 ];
 
+export interface TypographyPreferenceProfile {
+  worlds: string[];
+  closer: string[];
+  avoided: string[];
+  summary: string;
+}
+
+const FINE_CUTS: Record<string, string> = {
+  "fine-quieter": "Quieter",
+  "fine-as-it-was": "As it was",
+  "fine-more-character": "More character",
+};
+
+export function typographyProfile(preferences: { worldIds: readonly string[]; refinementIds: readonly string[]; avoidedDirectionIds: readonly string[] }): TypographyPreferenceProfile {
+  const worlds = preferences.worldIds.map((id) => TYPE_WORLDS.find((world) => world.id === id)?.label ?? id);
+  const closer = preferences.refinementIds.map((id) => TYPE_REFINEMENTS.find((face) => face.id === id)?.label ?? FINE_CUTS[id] ?? id);
+  const summary = worlds.length
+    ? `Leaning toward ${worlds.join(", ")}${closer.length ? `, closer to ${closer.join(", ")}` : ""}. Not a chosen font.`
+    : "Typography taste is still open.";
+  return { worlds, closer, avoided: [...preferences.avoidedDirectionIds], summary };
+}
+
 export function worldsForDirections(directionIds: readonly string[]): TypeRefinement[] {
   const picked = TYPE_REFINEMENTS.filter((item) => item.directions.some((direction) => directionIds.includes(direction)));
   return (picked.length >= 4 ? picked : TYPE_REFINEMENTS).slice(0, 8);

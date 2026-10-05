@@ -6,6 +6,28 @@ interface VisualBoardProps {
  * Original CSS compositions. No third-party brand artwork.
  * The client sees a mini art-direction board. The system knows the dimension id.
  */
+const PHOTO: Record<string, string> = {
+  "editorial-organic": "/mood/mood-editorial.jpg",
+  "expressive-editorial": "/mood/mood-editorial.jpg",
+  "warm-editorial": "/mood/mood-editorial-documentary.jpg",
+  "strict-minimal": "/mood/mood-polished.jpg",
+  "classic-polished": "/mood/mood-polished.jpg",
+  "geometric-clean": "/mood/mood-polished.jpg",
+  "technical-cool": "/mood/mood-architectural.jpg",
+  "quiet-grid": "/mood/mood-architectural.jpg",
+  "raw-expressive": "/mood/mood-documentary.jpg",
+  "documentary-human": "/mood/mood-documentary.jpg",
+  "playful-warm": "/mood/mood-people.jpg",
+  "lively-craft": "/mood/mood-people.jpg",
+  "contemporary-bold": "/mood/mood-flash.jpg",
+  "loud-grid": "/mood/mood-flash.jpg",
+  "restrained-warm": "/mood/mood-atmospheric.jpg",
+  "cool-quiet": "/mood/mood-atmospheric.jpg",
+  "tactile-craft": "/mood/mood-material.jpg",
+  "quiet-craft": "/mood/mood-intimate-documentary.jpg",
+  "art-directed": "/mood/mood-editorial-documentary.jpg",
+};
+
 const BOARD_RECIPES: Record<string, { tone: string; word: string; detail: string }> = {
   "documentary-human": { tone: "tone-documentary", word: "field", detail: "35mm" },
   "art-directed": { tone: "tone-directed", word: "set", detail: "01" },
@@ -21,6 +43,14 @@ const BOARD_RECIPES: Record<string, { tone: string; word: string; detail: string
 
 /** Miniature art-direction boards. Decorative; the parent control names them. */
 export function VisualBoard({ id }: VisualBoardProps) {
+  const photo = PHOTO[id];
+  if (photo) {
+    return (
+      <div className="artboard art-photo-board" aria-hidden="true">
+        <img src={photo} alt="" />
+      </div>
+    );
+  }
   const recipe = BOARD_RECIPES[id];
   if (recipe) {
     return (

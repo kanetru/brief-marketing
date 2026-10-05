@@ -59,6 +59,7 @@ export type Action =
   | { type: "toggle-preferred-palette"; paletteId: string }
   | { type: "toggle-closer-board"; paletteId: string }
   | { type: "toggle-colour-nuance"; nuanceId: string }
+  | { type: "set-colour-nuance"; nuanceId: string; reaction: "love" | "interesting" | "not_me" }
   | { type: "toggle-avoided-palette"; paletteId: string }
   | { type: "set-colour-push"; push: import("../types/creativeReading").ColourPush | null }
   | { type: "set-colour-relationship"; value: ColourRelationship }
@@ -455,6 +456,14 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
         : [...current, action.nuanceId];
       return { ...state, updatedAt: timestamp, colourPreferences: { ...state.colourPreferences, nuanceIds } };
     }
+    case "set-colour-nuance": {
+      const timestamp = new Date().toISOString();
+      const stem = action.nuanceId;
+      const tag = action.reaction === "not_me" ? `not:${stem}` : `${action.reaction}:${stem}`;
+      const rest = state.colourPreferences.nuanceIds.filter((id) => id !== stem && id !== `love:${stem}` && id !== `interesting:${stem}` && id !== `not:${stem}`);
+      const nuanceIds = state.colourPreferences.nuanceIds.includes(tag) ? rest : [...rest, tag];
+      return { ...state, updatedAt: timestamp, colourPreferences: { ...state.colourPreferences, nuanceIds } };
+    }
     case "toggle-avoided-palette": {
       const timestamp = new Date().toISOString();
       if (state.colourPreferences.preferredPaletteIds.includes(action.paletteId)) return state;
@@ -561,13 +570,20 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
     case "toggle-type-refinement": {
       const timestamp = new Date().toISOString();
       const current = state.typographyPreferences.refinementIds;
-      const has = current.includes(action.faceId);
-      if (!has && current.length >= 2) return state;
-      const refinementIds = has ? current.filter((id) => id !== action.faceId) : [...current, action.faceId];
+      const isFine = action.faceId.startsWith("fine-");
+      const faces = current.filter((id) => !id.startsWith("fine-"));
+      const fines = current.filter((id) => id.startsWith("fine-"));
+      if (isFine) {
+        const refinementIds = fines.includes(action.faceId) ? faces : [...faces, action.faceId];
+        return { ...state, updatedAt: timestamp, typographyPreferences: { ...state.typographyPreferences, refinementIds } };
+      }
+      const has = faces.includes(action.faceId);
+      if (!has && faces.length >= 2) return state;
+      const nextFaces = has ? faces.filter((id) => id !== action.faceId) : [...faces, action.faceId];
       return {
         ...state,
         updatedAt: timestamp,
-        typographyPreferences: { ...state.typographyPreferences, refinementIds },
+        typographyPreferences: { ...state.typographyPreferences, refinementIds: [...nextFaces, ...fines] },
       };
     }
     case "toggle-avoided-type": {
@@ -740,8 +756,8 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
             if (action.optionId) {
               return { ...question, response: { state: "selected", optionId: action.optionId, capturedAt: timestamp } };
             }
-            const text = action.text?.trim() ?? "";
-            if (!text) return { ...question, response: { state: "unanswered" } };
+            const text = action.text ?? "";
+            if (!text.trim()) return { ...question, response: { state: "unanswered" } };
             const capturedAt = question.response.state === "evidence" ? question.response.capturedAt : timestamp;
             return { ...question, response: { state: "evidence", text, capturedAt } };
           }),

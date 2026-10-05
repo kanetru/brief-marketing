@@ -37,7 +37,7 @@ export function clientDestination(status: DiscoveryStatus): "discovery" | "compl
 export function completionMessage(managerName: string): { title: string; body: string; next: string } {
   const name = managerName.trim() || "your manager";
   return {
-    title: "That's it.",
+    title: "Thanks — you're done.",
     body: `Your answers have been sent to ${name}.`,
     next: "You can leave this here.",
   };

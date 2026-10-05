@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { CreativeTerritory, TerritoryVisualSpec } from "../types/brandIntelligence";
 import type { CreativeReading } from "../types/creativeReading";
 import type { TerritoryReactionResponse } from "../types/discovery";
+import { clientFacingCopy } from "../domain/languageGuard";
 import { visualForkIsClear } from "../domain/territoryVisual";
 import { TerritoryStage } from "./TerritoryStage";
 
@@ -123,7 +124,7 @@ function TerritoryBeat({
   return (
     <div className="reveal-beat">
       <TerritoryStage spec={spec} index={index} label={chapter?.name ?? territory.name} mode="immersive" />
-      {chapter ? <p className="territory-idea">{chapter.idea}</p> : null}
+      {chapter ? <p className="territory-idea">{clientFacingCopy(chapter.idea)}</p> : null}
       <Reaction
         territoryId={territory.id}
         response={reaction?.response ?? null}

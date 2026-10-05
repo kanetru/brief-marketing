@@ -103,7 +103,7 @@ export function PersonalityScreen() {
           <QuestionScreen
             kicker="Personality"
             title="How should it feel to encounter you?"
-            supporting="Pick up to five. These are clues, not the brand. A strategist is allowed to disagree."
+            supporting="Only if a word is actually useful. Otherwise keep going — the looking comes next. These are clues, not the brand."
           >
             <PersonalityPicker
               pole={pole}
@@ -123,8 +123,8 @@ export function PersonalityScreen() {
         {step === 1 ? (
           <QuestionScreen
             kicker="Personality"
-            title="And what should you absolutely NOT feel like?"
-            supporting="Same list. If a word is already doing a job on the other side, we'll leave it there."
+            title="And what should you absolutely not feel like?"
+            supporting="Skip this if nothing fits. The visual work is where the preference actually gets specific."
           >
             <PersonalityPicker
               pole={pole}

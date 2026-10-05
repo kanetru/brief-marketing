@@ -256,9 +256,17 @@ export function readRole(): "manager" | "client" | null {
   return value === "manager" || value === "client" ? value : null;
 }
 
+const MANAGER_PRESENT_KEY = "lover-lover.manager-present";
+
 export function writeRole(role: "manager" | "client"): void {
   if (typeof sessionStorage === "undefined") return;
   sessionStorage.setItem(ROLE_KEY, role);
+  if (role === "manager") sessionStorage.setItem(MANAGER_PRESENT_KEY, "1");
+}
+
+export function managerPresent(): boolean {
+  if (typeof sessionStorage === "undefined") return false;
+  return sessionStorage.getItem(MANAGER_PRESENT_KEY) === "1";
 }
 
 function bump(

@@ -12,8 +12,11 @@ import { useConversation } from "../state/useConversation";
 export function VisualScreen() {
   const { session, chooseVisual } = useSession();
   const { step, goBack, goForward, showBack, showForward } = useConversation("visual");
-  const comparison = step > 0 ? session.visualPreferences.comparisons[step - 1] : undefined;
+  const comparisons = session.visualPreferences.comparisons;
+  const comparison = step > 0 ? comparisons[step - 1] : undefined;
   const choice = comparison?.choice.state === "selected" ? comparison.choice.value : null;
+  const late = step > Math.ceil(comparisons.length / 2);
+  const compareTitle = step >= comparisons.length ? "This, or this?" : late ? "Let's push it." : "Which way do you lean?";
 
   return (
     <DiscoveryLayout
@@ -53,7 +56,7 @@ export function VisualScreen() {
           <div className="compare">
             <p className="kicker">Visual</p>
             <h1 id="question-title" className="display compare-title">
-              Which way do you lean?
+              {compareTitle}
             </h1>
             <div className="compare-pair">
               <ComparePanel

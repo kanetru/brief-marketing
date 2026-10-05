@@ -15,6 +15,27 @@ export function genericFillerIn(text: string): string | null {
   return GENERIC_FILLER.find((phrase) => value.includes(phrase)) ?? null;
 }
 
+const INTERNAL_LANGUAGE = [
+  /provide mark/i,
+  /visible in the work itself/i,
+  /\btreat\b[\s\S]{0,180}\bthe way\b/i,
+  /evidence object/i,
+  /epistemic status/i,
+  /decision status/i,
+  /brandbrain/i,
+  /strategist instruction/i,
+  /candidate rule/i,
+  /schema label/i,
+];
+
+/** Client-facing copy. Internal instructions stay in the model; they never reach a screen. */
+export function clientFacingCopy(text: string): string {
+  if (INTERNAL_LANGUAGE.some((pattern) => pattern.test(text))) {
+    return "What they wrote is kept as they wrote it.";
+  }
+  return text;
+}
+
 export function textsContainFiller(texts: string[]): string | null {
   for (const text of texts) {
     const found = genericFillerIn(text);

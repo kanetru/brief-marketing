@@ -4,10 +4,10 @@ import { ChoiceCard } from "../components/ChoiceCard";
 import { ChoiceGrid } from "../components/ChoiceGrid";
 import { DiscoveryLayout } from "../components/DiscoveryLayout";
 import { NavigationControls } from "../components/NavigationControls";
-import { PaletteCard } from "../components/PaletteCard";
+import { PaletteCard, PaletteWorld } from "../components/PaletteCard";
 import { QuestionScreen } from "../components/QuestionScreen";
 import { TransitionWrapper } from "../components/TransitionWrapper";
-import { COLOUR_NUANCE, COLOUR_PALETTES, closerBoardsFor, normaliseHex, paletteById, type PaletteDefinition } from "../domain/palettes";
+import { COLOUR_PALETTES, closerBoardsFor, normaliseHex, nuanceBoards, paletteById, type PaletteDefinition } from "../domain/palettes";
 import { useSectionPath } from "../state/routeBase";
 import { LIMITS } from "../domain/options";
 import type { ColourRelationship } from "../types/discovery";
@@ -23,7 +23,7 @@ const RELATIONSHIPS: ReadonlyArray<{ id: ColourRelationship; label: string }> = 
 
 export function ColourScreen() {
   const navigate = useNavigate();
-  const { session, activate, togglePreferredPalette, toggleCloserBoard, toggleColourNuance, toggleAvoidedPalette, setColourRelationship, addExistingColour, removeExistingColour } =
+  const { session, activate, togglePreferredPalette, toggleCloserBoard, setColourNuance, toggleAvoidedPalette, setColourRelationship, addExistingColour, removeExistingColour } =
     useSession();
   const { step, goBack, goForward, showBack, showForward } = useConversation("colour");
   const sectionPath = useSectionPath();
@@ -60,7 +60,7 @@ export function ColourScreen() {
         {step === 0 ? (
           <PaletteStep
             title="Where does your eye go?"
-            prompt="Choose the colour worlds you're naturally drawn toward."
+            prompt="Broad colour worlds. Love the ones that feel near."
             supporting="These aren't recommendations — we're looking for patterns. Up to three."
             palettes={COLOUR_PALETTES}
             selected={colour.preferredPaletteIds}
@@ -72,7 +72,7 @@ export function ColourScreen() {
         ) : null}
         {step === 1 ? (
           <PaletteStep
-            title="Somewhere around here?"
+            title="You seem to be leaning this way."
             prompt="A closer look inside what you already chose."
             supporting="Still not a brand palette. Pick the distinctions that feel nearer."
             palettes={closer}
@@ -84,15 +84,11 @@ export function ColourScreen() {
           />
         ) : null}
         {step === 2 ? (
-          <QuestionScreen kicker="Colour" title="How should it feel?" supporting="Choose as many as are true. This is taste, not a finished palette.">
-            <div className="nuance-grid">
-              {COLOUR_NUANCE.map(([id, label]) => (
-                <button key={id} type="button" className="nuance-card" aria-pressed={colour.nuanceIds.includes(id)} onClick={() => toggleColourNuance(id)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </QuestionScreen>
+          <NuanceStep
+            base={paletteById(colour.closerBoardIds[0] ?? colour.preferredPaletteIds[0] ?? "") ?? COLOUR_PALETTES[0]}
+            nuanceIds={colour.nuanceIds}
+            onReact={setColourNuance}
+          />
         ) : null}
         {step === 3 ? (
           <PaletteStep
@@ -128,6 +124,49 @@ export function ColourScreen() {
         ) : null}
       </TransitionWrapper>
     </DiscoveryLayout>
+  );
+}
+
+function reactionFor(ids: readonly string[], stem: string): "love" | "interesting" | "not_me" | null {
+  if (ids.includes(`love:${stem}`) || ids.includes(stem)) return "love";
+  if (ids.includes(`interesting:${stem}`)) return "interesting";
+  if (ids.includes(`not:${stem}`)) return "not_me";
+  return null;
+}
+
+function NuanceStep({
+  base,
+  nuanceIds,
+  onReact,
+}: {
+  base: PaletteDefinition;
+  nuanceIds: readonly string[];
+  onReact: (id: string, reaction: "love" | "interesting" | "not_me") => void;
+}) {
+  const boards = nuanceBoards(base);
+  return (
+    <QuestionScreen
+      kicker="Colour"
+      title="Let's push it."
+      supporting="The same world, pushed warmer, quieter, lighter, darker. Love it, find it interesting, or set it aside. This is still not a finished palette."
+    >
+      <div className="nuance-grid">
+        {boards.map((board) => {
+          const reaction = reactionFor(nuanceIds, board.id);
+          return (
+            <article key={board.id} className={`nuance-board${reaction ? ` is-${reaction}` : ""}`}>
+              <PaletteWorld palette={board} />
+              <p className="type-world-note">{board.name}</p>
+              <div className="mood-reactions" role="group" aria-label={board.name}>
+                <button type="button" aria-pressed={reaction === "love"} onClick={() => onReact(board.id, "love")}>Love this</button>
+                <button type="button" aria-pressed={reaction === "interesting"} onClick={() => onReact(board.id, "interesting")}>Interesting</button>
+                <button type="button" aria-pressed={reaction === "not_me"} onClick={() => onReact(board.id, "not_me")}>Not me</button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </QuestionScreen>
   );
 }
 

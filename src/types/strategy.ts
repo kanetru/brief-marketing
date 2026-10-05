@@ -5,6 +5,8 @@ export type OfferRole = "core" | "growth" | "secondary" | "legacy";
 export type OfferImportance = "primary" | "meaningful" | "occasional";
 export type PriceBand = "" | "under_500" | "500_5k" | "5k_25k" | "25k_plus" | "prefer_not";
 
+export type PriceModel = "" | "fixed" | "from" | "range" | "subscription" | "quote" | "free" | "unknown";
+
 export interface OfferInput {
   id: string;
   name: string;
@@ -13,6 +15,9 @@ export interface OfferInput {
   priceBand: PriceBand;
   buyer: string;
   context: string;
+  description?: string;
+  priceLabel?: string;
+  priceModel?: PriceModel;
 }
 
 export type CommercialWant =
