@@ -10,5 +10,17 @@ export function useAgencyBrand(): WorkspaceBrand | null {
   if (!project) return null;
   const brand = agency.brandFor(project.workspaceId);
   if (!brand) return null;
-  return { ...brand, theme: { ...brand.theme, ...correctTheme(brand.theme), logo: brand.theme.logo, mark: brand.theme.mark, headingFont: brand.theme.headingFont, bodyFont: brand.theme.bodyFont } };
+  return {
+    ...brand,
+    theme: {
+      ...brand.theme,
+      ...correctTheme(brand.theme),
+      logo: brand.theme.logo,
+      logoDark: brand.theme.logoDark,
+      mark: brand.theme.mark,
+      headingFont: brand.theme.headingFont,
+      bodyFont: brand.theme.bodyFont,
+      buttonStyle: brand.theme.buttonStyle,
+    },
+  };
 }

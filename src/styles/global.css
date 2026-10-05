@@ -2452,9 +2452,28 @@ button {
   overflow-wrap: anywhere;
 }
 
-.shell.is-dark[data-agency] .opening-mark,
-.shell.is-dark[data-agency] .mark-logo {
+.shell.is-dark[data-agency]:not([data-logo-dark="true"]) .opening-mark,
+.shell.is-dark[data-agency]:not([data-logo-dark="true"]) .mark-logo {
   filter: brightness(0) invert(1);
+}
+
+.shell[data-button="outline"] .primary-button {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+}
+
+.shell.is-dark[data-button="outline"] .primary-button {
+  color: var(--pearl);
+  border-color: var(--pearl);
+}
+
+.manager-photo {
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: cover;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 }
 
 .opening-line {

@@ -70,3 +70,14 @@ export function capabilityFor(provider: string): ProviderCapability | null {
 export function emptyBatch(): ProviderBatch {
   return { signals: [], error: "" };
 }
+
+/**
+ * Live social configuration.
+ * The token is read on the server from ENSEMBLEDATA_API_TOKEN.
+ * It must never be a VITE_ variable or sent to the browser.
+ * This pass does not call EnsembleData.
+ */
+export const SOCIAL_INTELLIGENCE_PROVIDER = {
+  id: "ensembledata",
+  tokenEnv: "ENSEMBLEDATA_API_TOKEN",
+} as const;
