@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { DEFAULT_PANEL, LAST_CLIENT_KEY, MANAGER_NAV, type ManagerPanel } from "../../domain/workspace/managerNav";
+import { DEFAULT_PANEL, LAST_CLIENT_KEY, MORE_NAV, PRIMARY_NAV, type ManagerPanel } from "../../domain/workspace/managerNav";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { buildBrandIntelligence } from "../../domain/brandIntelligence";
 import { clientFacingCopy } from "../../domain/languageGuard";
@@ -15,7 +15,13 @@ import { useProjects } from "../../state/ProjectContext";
 import type { AgentFile, AssetCategory, AssetItem, BriefProject, CategoryPattern, DiscoveryStatus, ProjectIntelligence, ResearchTension, SourceQuote, UnderstandingField } from "../../types/project";
 import { StrategyView } from "./StrategyView";
 import { ContentDesk, StrategySummary, savedIdeas } from "./WorkSurfaces";
-import { BrandBrainPanel, HistoryPanel, IntelligenceDesk, MarketWatch } from "./IntelligenceDesk";
+import { BrandBrainPanel, HistoryPanel, MarketWatch } from "./IntelligenceDesk";
+import { CompetitorBoard, MarketBoard, OpportunityBoard, OverviewBoard, ResponseBoard } from "./ManagerBoards";
+import { competitorViews, marketCards, matterCards, opportunityViews, originalResponses, overviewNeedsResearch, researchFailed, theRead } from "../../domain/workspace/managerView";
+import { clientCardModel } from "../../domain/workspace/clientCard";
+import { discoveryContext } from "../../domain/market/context";
+import { emptyMarketDiscovery, storeRun } from "../../domain/market/review";
+import { requestMarketDiscovery } from "../../services/marketClient";
 import { buildStrategistPacket } from "../../domain/project/strategist/packet";
 import { requestClientReading } from "../../services/ai/clientStrategistClient";
 import { CHANNEL_LABEL } from "../../domain/project/strategy/channels";
@@ -86,6 +92,8 @@ export function ProjectWorkspace() {
   const api = useProjects();
   const project = api.projects.find((item) => item.id === projectId) ?? null;
   const [panel, setPanel] = useState<Panel>(DEFAULT_PANEL);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [researching, setResearching] = useState(false);
   const [strategyArea, setStrategyArea] = useState<(typeof STRATEGY_AREAS)[number][0]>("matters");
   const [notice, setNotice] = useState("");
   const [researchRun, setResearchRun] = useState<ResearchRun | null>(null);
@@ -113,6 +121,44 @@ export function ProjectWorkspace() {
   }
 
   const link = `${window.location.origin}${sharePath(project.shareToken)}`;
+  const card = clientCardModel(project);
+  const competitors = competitorViews(project, intelligence);
+  const matters = matterCards(project, intelligence);
+  const themes = marketCards(intelligence);
+  const opportunities = opportunityViews(project, intelligence);
+
+  function choose(next: Panel) {
+    setPanel(next);
+    setMoreOpen(false);
+    setNotice("");
+  }
+
+  async function findCompetitors() {
+    if (!project || !intelligence) return;
+    setResearching(true);
+    setNotice("");
+    const record = project.marketDiscovery ?? emptyMarketDiscovery(project.updatedAt);
+    const result = await requestMarketDiscovery({
+      context: discoveryContext(project, intelligence),
+      queries: record.set?.queries,
+    });
+    api.setMarketDiscovery(project.id, storeRun(record, result, "replace", new Date().toISOString()));
+    setResearching(false);
+    setPanel("competitors");
+  }
+
+  function reactTo(id: string, action: "save" | "dismiss") {
+    if (!project) return;
+    api.setReaction(project.id, {
+      id: crypto.randomUUID(),
+      targetType: "opportunity",
+      targetId: id,
+      action,
+      note: "",
+      at: new Date().toISOString(),
+    });
+    setNotice(action === "save" ? "Saved." : "Dismissed.");
+  }
 
   async function copy(text: string, label: string) {
     try {
@@ -128,31 +174,52 @@ export function ProjectWorkspace() {
       <header className="studio-top">
         <div>
           <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
-          <p className="studio-kicker"><Link to="/studio">Clients</Link> · {DISCOVERY_LABEL[project.discoveryStatus]}</p>
+          <p className="studio-kicker"><Link to="/studio">Clients</Link></p>
           <h1>{project.businessName || "Untitled project"}</h1>
-          <p className="studio-lead">{project.clientName || "Client not named"}{project.category ? ` · ${project.category}` : ""}</p>
+          <p className="studio-lead">{project.category || project.clientName}</p>
+          {card.updated ? <p className="studio-meta">{card.updated}</p> : null}
         </div>
-        <p className="studio-version">Version {project.version}</p>
       </header>
       <nav className="studio-nav" aria-label="Project">
-        {MANAGER_NAV.map(({ id, label }) => (
-          <button key={id} type="button" aria-current={panel === id ? "page" : undefined} onClick={() => { setPanel(id); setNotice(""); }}>
+        {PRIMARY_NAV.map(({ id, label }) => (
+          <button key={id} type="button" aria-current={panel === id ? "page" : undefined} onClick={() => choose(id)}>
             {label}
           </button>
         ))}
+        <button type="button" aria-expanded={moreOpen} aria-controls="more-menu" onClick={() => setMoreOpen((open) => !open)}>More</button>
       </nav>
+      {moreOpen ? (
+        <div id="more-menu" className="more-menu" role="menu">
+          {MORE_NAV.map(({ id, label }) => (
+            <button key={id} type="button" role="menuitem" aria-current={panel === id ? "page" : undefined} onClick={() => choose(id)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {notice ? <p className="studio-notice">{notice}</p> : null}
-      {panel === "intelligence" ? (
-        <IntelligenceDesk
-          project={project}
-          intelligence={intelligence}
-          onReact={(reaction) => {
-            api.setReaction(project.id, reaction);
-            setNotice(reaction.action === "save" ? "Saved." : reaction.action === "dismiss" ? "Dismissed." : "Noted.");
-          }}
-          onFindCompetitors={() => setPanel("market")}
+      {panel === "overview" ? (
+        <OverviewBoard
+          read={theRead(intelligence)}
+          matters={matters}
+          needsResearch={overviewNeedsResearch(project)}
+          onFindCompetitors={() => void findCompetitors()}
         />
       ) : null}
+      {panel === "competitors" ? (
+        <CompetitorBoard
+          views={competitors}
+          busy={researching}
+          failed={researchFailed(project)}
+          onFind={() => void findCompetitors()}
+          onAdd={(name) => api.setCompetitor(project.id, { id: crypto.randomUUID(), name, website: "", notes: "" })}
+        />
+      ) : null}
+      {panel === "market" ? <MarketBoard cards={themes} /> : null}
+      {panel === "opportunities" ? (
+        <OpportunityBoard items={opportunities} onSave={(id) => reactTo(id, "save")} onDismiss={(id) => reactTo(id, "dismiss")} />
+      ) : null}
+      {panel === "responses" ? <ResponseBoard lines={originalResponses(project)} /> : null}
       {panel === "strategy" ? (
         <>
           <StrategySummary plan={intelligence.strategy} questions={intelligence.openQuestions.map((item) => item.prompt)} />
@@ -263,7 +330,7 @@ export function ProjectWorkspace() {
           )}
         />
       ) : null}
-      {panel === "market" ? (
+      {panel === "websites" ? (
         <>
         <MarketWatch project={project} intelligence={intelligence} />
         <Market
@@ -326,7 +393,7 @@ export function ProjectWorkspace() {
           onAddLibrary={(asset) => api.addLibraryAsset(project.id, asset)}
         />
       ) : null}
-      {panel === "brand" ? (
+      {panel === "settings" ? (
         <DiscoveryPanel
           project={project}
           link={link}

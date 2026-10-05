@@ -1,3 +1,4 @@
+import { buildProjectIntelligence } from "../project/assemble";
 import { splitNames } from "../market/context";
 import type { BriefProject } from "../../types/project";
 
@@ -10,6 +11,19 @@ export interface ClientCardModel {
   tone: CardTone;
   updated: string;
   watch: string;
+  competitors: string;
+  opportunities: string;
+}
+
+/** Calendar label. Pass `now` in tests so the phrase does not depend on the clock. */
+export function relativeUpdate(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const start = (value: Date) => Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate());
+  const days = Math.round((start(now) - start(date)) / 86_400_000);
+  if (days <= 0) return "Updated today";
+  if (days === 1) return "Updated yesterday";
+  return `Updated ${days} days ago`;
 }
 
 export function formatChecked(iso: string): string {
@@ -47,7 +61,16 @@ export function competitorCount(project: BriefProject): number {
   return Math.max(project.competitors?.length ?? 0, project.watch?.competitors?.length ?? 0);
 }
 
-export function clientCardModel(project: BriefProject): ClientCardModel {
+function visibleOpportunities(project: BriefProject): number {
+  const hidden = new Set(
+    (project.watch?.reactions ?? [])
+      .filter((item) => item.action === "dismiss" || item.action === "not_relevant" || item.action === "reject")
+      .map((item) => item.targetId),
+  );
+  return buildProjectIntelligence(project).opportunities.filter((item) => !hidden.has(item.id)).length;
+}
+
+export function clientCardModel(project: BriefProject, now = new Date()): ClientCardModel {
   const reading = project.watch?.readings[0] ?? null;
   const insights = (reading?.importantChanges.length ?? 0) + (reading?.opportunities.length ?? 0);
   const challenges = reading?.challengedDecisions.length ?? 0;
@@ -100,13 +123,21 @@ export function clientCardModel(project: BriefProject): ClientCardModel {
         ? "Ready for review"
         : "No competitors yet";
   const when = project.watch?.updatedAt || project.updatedAt;
+  const opportunities = visibleOpportunities(project);
+  const competitors = count > 0
+    ? `${count} ${count === 1 ? "competitor" : "competitors"}`
+    : mentioned.length > 0
+      ? `${mentioned.length} named`
+      : "No competitors yet";
 
   return {
     name: project.businessName || "Untitled",
     subtitle: project.category?.trim() || "Client",
     status,
     tone,
-    updated: when ? `Updated ${formatChecked(when)}` : "",
+    updated: when ? relativeUpdate(when, now) : "",
     watch,
+    competitors,
+    opportunities: `${opportunities} ${opportunities === 1 ? "opportunity" : "opportunities"}`,
   };
 }
