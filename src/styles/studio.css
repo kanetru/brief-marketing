@@ -110,6 +110,15 @@
   align-items: start;
 }
 
+.studio-create {
+  grid-column: 1;
+}
+
+.studio-project-list {
+  grid-column: 2;
+  grid-row: 1;
+}
+
 .studio-create,
 .studio-card,
 .studio-share,
@@ -742,5 +751,15 @@
 
   .studio-links {
     justify-items: start;
+  }
+
+  .studio-create,
+  .studio-project-list {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .studio-project-list {
+    order: -1;
   }
 }
