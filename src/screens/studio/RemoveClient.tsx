@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ActionGroup } from "../../components/ActionGroup";
 import { nameMatches } from "../../domain/project/removeClient";
 
 export function RemoveClientSection({ name, onRemove }: { name: string; onRemove: () => void }) {
@@ -51,17 +52,19 @@ export function RemoveClientDialog({
   return (
     <div className="layer-backdrop" data-layer="modal" role="presentation" onClick={onCancel}>
       <div className="layer-modal" role="dialog" aria-modal="true" aria-labelledby="remove-client-title" data-screen="remove-client-dialog" onClick={(event) => event.stopPropagation()}>
-        <h2 id="remove-client-title">Remove {name}?</h2>
-        <p>This will permanently remove this client from Brief, including their discovery, brand understanding, market research, competitors and opportunities.</p>
-        <p>This cannot be undone.</p>
-        <label>
-          Type {name} to confirm
-          <input ref={inputRef} value={value} autoComplete="off" onChange={(event) => setValue(event.target.value)} />
-        </label>
-        <div className="studio-row">
+        <div className="layer-body">
+          <h2 id="remove-client-title">Remove {name}?</h2>
+          <p>This will permanently remove this client from Brief, including their discovery, brand understanding, market research, competitors and opportunities.</p>
+          <p>This cannot be undone.</p>
+          <label>
+            Type {name} to confirm
+            <input ref={inputRef} value={value} autoComplete="off" onChange={(event) => setValue(event.target.value)} />
+          </label>
+        </div>
+        <ActionGroup footer>
           <button type="button" className="studio-button remove-client" disabled={!matched} onClick={onConfirm}>Remove client</button>
           <button type="button" className="studio-text-button" onClick={onCancel}>Cancel</button>
-        </div>
+        </ActionGroup>
       </div>
     </div>
   );

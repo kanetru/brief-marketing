@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { ActionGroup } from "../../components/ActionGroup";
 import { CHANNEL_LABEL } from "../../domain/project/strategy/channels";
 import type { ClientBrain } from "../../types/clientRead";
 import type { StrategicPlan } from "../../types/strategy";
@@ -38,7 +39,9 @@ export function StrategyView({
           <p className="read-prose">{output.clientRead}</p>
           {live && output.clientReadEvidenceIds.length > 0 ? <p className="studio-meta">Tied to {output.clientReadEvidenceIds.join(", ")}</p> : null}
           {brain.challenges.map((line) => <p key={line} className="studio-meta">{line}</p>)}
-          <button type="button" className="studio-button" onClick={() => void onReread()}>Read this client</button>
+          <ActionGroup>
+            <button type="button" className="studio-button" onClick={() => void onReread()}>Read this client</button>
+          </ActionGroup>
           {insight ? <p className="studio-meta">From the market: {insight}</p> : null}
         </>
       ) : null}
@@ -51,7 +54,9 @@ export function StrategyView({
               <h3>{item.title}</h3>
               <p>{item.body}</p>
               <p className="studio-meta">{item.evidenceIds.join(", ")}</p>
-              <button type="button" className="studio-text-button" onClick={() => onSave(`client.observation.${item.id}`, item.body, "rejected")}>Set aside</button>
+              <ActionGroup className="card-actions">
+                <button type="button" className="studio-text-button" onClick={() => onSave(`client.observation.${item.id}`, item.body, "rejected")}>Set aside</button>
+              </ActionGroup>
             </article>
           ))}
           {output.tensions.length > 0 ? <h3>Things that don't quite line up</h3> : null}
@@ -62,21 +67,21 @@ export function StrategyView({
               <p>{item.sideB}</p>
               <p className="studio-meta">{item.whyItMatters}</p>
               <p className="studio-meta">Hypothesis · {item.managerDecision}</p>
-              <div className="studio-row">
+              <ActionGroup className="card-actions">
                 <button type="button" className="studio-button" onClick={() => onSave(`client.tension.${item.id}`, item.observation, "approved")}>Approve</button>
                 <button type="button" className="studio-text-button" onClick={() => onSave(`client.tension.${item.id}`, item.observation, "rejected")}>Reject</button>
                 <button type="button" className="studio-text-button" onClick={() => onSave(`client.tension.${item.id}`, `${item.observation}\n\nInvestigate.`, "edited")}>Investigate</button>
-              </div>
+              </ActionGroup>
             </article>
           ))}
           {output.hypotheses.filter((item) => item.managerDecision !== "rejected").map((item) => (
             <article key={item.id} className="studio-card">
               <p className="studio-kicker">Hypothesis · approving this does not make it a fact</p>
               <p>{item.statement}</p>
-              <div className="studio-row">
+              <ActionGroup className="card-actions">
                 <button type="button" className="studio-button" onClick={() => onSave(`client.hypothesis.${item.id}`, item.statement, "approved")}>Approve direction</button>
                 <button type="button" className="studio-text-button" onClick={() => onSave(`client.hypothesis.${item.id}`, item.statement, "rejected")}>Reject</button>
-              </div>
+              </ActionGroup>
             </article>
           ))}
         </>
@@ -281,9 +286,11 @@ function Editable({
       <p className="studio-kicker">{kicker}</p>
       <textarea value={text} onChange={(event) => setText(event.target.value)} rows={4} />
       {children}
-      <button type="button" className="studio-button" onClick={() => onSave(text, same ? "approved" : "edited")}>
-        {same ? "Approve direction" : "Save edit"}
-      </button>
+      <ActionGroup className="card-actions">
+        <button type="button" className="studio-button" onClick={() => onSave(text, same ? "approved" : "edited")}>
+          {same ? "Approve direction" : "Save edit"}
+        </button>
+      </ActionGroup>
     </article>
   );
 }

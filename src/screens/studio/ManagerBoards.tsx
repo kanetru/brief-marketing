@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ActionGroup, BadgeRow } from "../../components/ActionGroup";
 import type { CompetitorView, MarketCardView, MatterCard, OpportunityView, OriginalResponse, ResearchPartial } from "../../domain/workspace/managerView";
 import type { TechnicalDetail } from "../../types/marketDiscovery";
 
@@ -36,7 +37,9 @@ export function OverviewBoard({
         <section className="surface-card" data-screen="find-competitors">
           <h2>Market research hasn't run yet.</h2>
           <p>Brief can find competitors and accounts worth watching.</p>
-          <button type="button" className="studio-button" onClick={onFindCompetitors}>Find competitors</button>
+          <ActionGroup>
+            <button type="button" className="studio-button" onClick={onFindCompetitors}>Find competitors</button>
+          </ActionGroup>
         </section>
       ) : null}
     </div>
@@ -79,10 +82,10 @@ export function CompetitorBoard({
           <h2>Competitors</h2>
           <p className="studio-meta">{views.length === 0 ? "No accounts yet" : `${views.length} ${views.length === 1 ? "account" : "accounts"} worth watching`}</p>
         </div>
-        <div className="studio-row">
+        <ActionGroup>
           <button type="button" className="studio-button" disabled={busy} onClick={onFind}>{busy ? "Researching…" : "Find more"}</button>
           <button type="button" className="studio-text-button" onClick={() => setAdding((value) => !value)}>+ Add</button>
-        </div>
+        </ActionGroup>
       </header>
       {adding ? (
         <form className="studio-row" onSubmit={(event) => {
@@ -108,7 +111,9 @@ export function CompetitorBoard({
       {failed && !busy ? (
         <div className="surface-card" data-screen="research-error">
           <p>Market research couldn't finish.</p>
-          <button type="button" className="studio-button" onClick={onFind}>Try again</button>
+          <ActionGroup>
+            <button type="button" className="studio-button" onClick={onFind}>Try again</button>
+          </ActionGroup>
           {devDetails ? <TechnicalDetails items={technical} /> : null}
         </div>
       ) : null}
@@ -118,9 +123,11 @@ export function CompetitorBoard({
           {partial.instagramFailed ? <p>Instagram research couldn't finish.</p> : null}
           {partial.tiktokFailed ? <p>TikTok research couldn't finish.</p> : null}
           {partial.classificationFailed ? <p>Brief couldn't analyse them yet.</p> : null}
-          {partial.instagramFailed ? <button type="button" className="studio-button" onClick={onRetryInstagram}>Retry Instagram</button> : null}
-          {partial.tiktokFailed ? <button type="button" className="studio-button" onClick={onRetryTikTok}>Retry TikTok</button> : null}
-          {partial.classificationFailed ? <button type="button" className="studio-button" onClick={onRetryAnalysis}>Retry analysis</button> : null}
+          <ActionGroup>
+            {partial.instagramFailed ? <button type="button" className="studio-button" onClick={onRetryInstagram}>Retry Instagram</button> : null}
+            {partial.tiktokFailed ? <button type="button" className="studio-button" onClick={onRetryTikTok}>Retry TikTok</button> : null}
+            {partial.classificationFailed ? <button type="button" className="studio-button" onClick={onRetryAnalysis}>Retry analysis</button> : null}
+          </ActionGroup>
           {devDetails ? <TechnicalDetails items={technical} /> : null}
         </div>
       ) : null}
@@ -128,7 +135,9 @@ export function CompetitorBoard({
         <div className="surface-card" data-screen="competitors-empty">
           <h2>No market research yet.</h2>
           <p>Brief can use what it learned about this client to find competitors and accounts worth watching.</p>
-          <button type="button" className="studio-button" onClick={onFind}>Find competitors</button>
+          <ActionGroup>
+            <button type="button" className="studio-button" onClick={onFind}>Find competitors</button>
+          </ActionGroup>
         </div>
       ) : views.length > 0 ? (
         <div className="card-grid cards-competitors">
@@ -149,14 +158,20 @@ export function CompetitorBoard({
                 }
               }}
             >
-              <h3>{item.name}</h3>
-              <p className="card-badge">{item.badge}</p>
+              <div className="card-identity">
+                <h3>{item.name}</h3>
+                <BadgeRow>
+                  <p className="card-badge">{item.badge}</p>
+                </BadgeRow>
+              </div>
               {item.platforms ? <p>{item.platforms}</p> : null}
               {item.owns ? <p><span className="card-kicker">What they appear to own</span>{item.owns}</p> : null}
               {item.themes ? <p><span className="card-kicker">Current themes</span>{item.themes}</p> : null}
               {item.change ? <p><span className="card-kicker">Recent change</span>{item.change}</p> : null}
               {item.metrics.map((metric) => <p key={metric} className="studio-meta">{metric}</p>)}
-              <span className="studio-text-button">View</span>
+              <div className="action-group card-actions">
+                <span className="studio-text-button">View</span>
+              </div>
             </article>
           ))}
         </div>
@@ -208,15 +223,19 @@ export function CompetitorDetail({ view, onClose }: { view: CompetitorView; onCl
           <h2>{view.name}</h2>
           <button ref={closeRef} type="button" className="layer-close" onClick={onClose}>Close</button>
         </header>
-        <p className="card-badge">{view.badge}</p>
-        {view.summary ? <section><h3>Summary</h3><p>{view.summary}</p></section> : null}
-        {view.why ? <section><h3>Why they matter</h3><p>{view.why}</p></section> : null}
-        {view.positioning ? <section><h3>Positioning</h3><p>{view.positioning}</p></section> : null}
-        {view.themes ? <section><h3>Current themes</h3><p>{view.themes}</p></section> : null}
-        {view.posts.length > 0 ? <section><h3>Recent posts</h3>{view.posts.map((post) => <p key={post}>{post}</p>)}</section> : null}
-        {view.language ? <section><h3>Language</h3><p>{view.language}</p></section> : null}
-        {view.social ? <section><h3>Social activity</h3><p>{view.social}</p></section> : null}
-        {view.evidence ? <section className="surface-inset"><h3>Evidence</h3><p>{view.evidence}</p></section> : null}
+        <div className="layer-body">
+          <BadgeRow>
+            <p className="card-badge">{view.badge}</p>
+          </BadgeRow>
+          {view.summary ? <section><h3>Summary</h3><p>{view.summary}</p></section> : null}
+          {view.why ? <section><h3>Why they matter</h3><p>{view.why}</p></section> : null}
+          {view.positioning ? <section><h3>Positioning</h3><p>{view.positioning}</p></section> : null}
+          {view.themes ? <section><h3>Current themes</h3><p>{view.themes}</p></section> : null}
+          {view.posts.length > 0 ? <section><h3>Recent posts</h3>{view.posts.map((post) => <p key={post}>{post}</p>)}</section> : null}
+          {view.language ? <section><h3>Language</h3><p>{view.language}</p></section> : null}
+          {view.social ? <section><h3>Social activity</h3><p>{view.social}</p></section> : null}
+          {view.evidence ? <section className="surface-inset"><h3>Evidence</h3><p>{view.evidence}</p></section> : null}
+        </div>
       </aside>
     </div>
   );
@@ -280,10 +299,10 @@ export function OpportunityBoard({
             <p><span className="card-kicker">Why</span>{item.why}</p>
             <p><span className="card-kicker">Opportunity</span>{item.move}</p>
             <p><span className="card-kicker">Could become</span>{item.could}</p>
-            <div className="studio-row">
+            <ActionGroup className="card-actions">
               <button type="button" className="studio-button" data-testid="save-opportunity" onClick={() => onSave(item.id)}>{item.saved ? "Saved" : "Save"}</button>
               <button type="button" className="studio-text-button" onClick={() => onDismiss(item.id)}>Dismiss</button>
-            </div>
+            </ActionGroup>
           </article>
         ))}
       </div>

@@ -1,9 +1,11 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ActionGroup } from "../../components/ActionGroup";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { DEMO_ACCOUNT } from "../../domain/project/account";
 import { workspaceAttention } from "../../domain/intelligence/attention";
 import { clientCardModel } from "../../domain/workspace/clientCard";
+import { clientInitials, clientLogo } from "../../domain/workspace/clientLogo";
 import { LAST_CLIENT_KEY } from "../../domain/workspace/managerNav";
 import { organicFixture } from "../../fixtures/brandFixtures";
 import { useProjects } from "../../state/ProjectContext";
@@ -52,8 +54,10 @@ export function ProjectList() {
           <h1>Clients</h1>
         </div>
         <div className="studio-links">
-          <button type="button" className="studio-button" onClick={() => setCreating((open) => !open)}>+ New client</button>
-          <Link to="/studio/look">Client experience</Link>
+          <ActionGroup>
+            <button type="button" className="studio-button" onClick={() => setCreating((open) => !open)}>+ New client</button>
+            <Link to="/studio/look">Client experience</Link>
+          </ActionGroup>
         </div>
       </header>
       {removed ? <p className="studio-notice" role="status">{removed} removed.</p> : null}
@@ -76,10 +80,12 @@ export function ProjectList() {
             Category
             <input value={category} onChange={(event) => setCategory(event.target.value)} placeholder="What kind of business" />
           </label>
-          <button type="submit" className="studio-button">Create project</button>
-          <button type="button" className="studio-text-button" onClick={openExample}>
-            Worked example
-          </button>
+          <ActionGroup>
+            <button type="submit" className="studio-button">Create project</button>
+            <button type="button" className="studio-text-button" onClick={openExample}>
+              Worked example
+            </button>
+          </ActionGroup>
         </form>
       ) : null}
       <ul className="client-grid" data-screen="client-cards">
@@ -104,12 +110,34 @@ export function ClientCard({ project }: { project: BriefProject }) {
   return (
     <li data-screen="attention-row">
       <Link to={`/studio/${project.id}`} className="surface-card client-card" data-selected={selected ? "true" : "false"} data-tone={card.tone}>
-        <strong>{card.name}</strong>
-        <span>{card.subtitle}</span>
+        <span className="client-identity">
+          <ClientMark name={card.name} project={project} />
+          <span className="client-name">
+            <strong>{card.name}</strong>
+            <span>{card.subtitle}</span>
+          </span>
+        </span>
         <span>{card.competitors}</span>
         <span>{card.opportunities}</span>
         <em>{card.updated}</em>
       </Link>
     </li>
+  );
+}
+
+function ClientMark({ name, project }: { name: string; project: BriefProject }) {
+  const logo = clientLogo(project, "light");
+  const [failed, setFailed] = useState(false);
+  if (!logo || failed) {
+    return (
+      <span className="client-mark" data-logo="fallback" aria-hidden="true">
+        <span>{clientInitials(name)}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="client-mark" data-logo="image">
+      <img src={logo.src} alt="" onError={() => setFailed(true)} />
+    </span>
   );
 }

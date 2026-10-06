@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ActionGroup, BadgeRow } from "../../components/ActionGroup";
 import { Overlay } from "../../components/Overlay";
 import { discoveryContext, addSearch, removeSearch, splitNames } from "../../domain/market/context";
 import { formatFollowers } from "../../domain/workspace/marketCards";
@@ -43,11 +44,11 @@ export function MarketDiscoveryPanel({ project, intelligence }: { project: Brief
 
   return (
     <section className="studio-panel" data-screen="market-discovery">
-      <div className="studio-row">
+      <BadgeRow>
         <h3 className="intel-bucket">Accounts worth watching</h3>
-        {record.origin === "live" ? <p className="provenance" data-origin="live">Live</p> : null}
-        {record.origin === "cached" ? <p className="provenance" data-origin="cached">Cached</p> : null}
-      </div>
+        {record.origin === "live" ? <p className="card-badge" data-origin="live">Live</p> : null}
+        {record.origin === "cached" ? <p className="card-badge" data-origin="cached">Cached</p> : null}
+      </BadgeRow>
       {record.origin === "idle" ? (
         <>
           <h3 className="intel-bucket">Competitors & market</h3>
@@ -88,25 +89,27 @@ export function MarketDiscoveryPanel({ project, intelligence }: { project: Brief
         </div>
       ))}
       {record.proposals.filter((item) => item.confidence === "proposed").map((item) => (
-        <p key={item.id}>
-          {item.name} may be the same business on both platforms. {item.reason}
-          <button type="button" className="studio-text-button" onClick={() => save(confirmIdentity(record, item.id, new Date().toISOString()))}>Confirm same business</button>
-        </p>
+        <div key={item.id}>
+          <p>{item.name} may be the same business on both platforms. {item.reason}</p>
+          <ActionGroup>
+            <button type="button" className="studio-text-button" onClick={() => save(confirmIdentity(record, item.id, new Date().toISOString()))}>Confirm same business</button>
+          </ActionGroup>
+        </div>
       ))}
-      <div className="studio-row">
+      <ActionGroup>
         <button type="button" className="studio-button" disabled={busy} onClick={() => void run(record.candidates.length > 0)}>
           {busy ? "Looking" : record.candidates.length > 0 ? "Refresh live" : "Find competitors"}
         </button>
         {record.set ? <button type="button" className="studio-text-button" onClick={() => setSearches((open) => !open)}>View searches</button> : null}
-      </div>
+      </ActionGroup>
       {searches && record.set ? (
         <div data-screen="discovery-searches">
           {record.set.queries.map((query) => (
-            <p key={query.id}>
-              {query.platform} · {query.query}
+            <ActionGroup key={query.id}>
+              <span>{query.platform} · {query.query}</span>
               <button type="button" className="studio-text-button" onClick={() => save({ ...record, set: record.set ? { ...record.set, queries: removeSearch(record.set.queries, query.id) } : record.set })}>Remove</button>
               <button type="button" className="studio-text-button" disabled={busy} onClick={() => void run(false, [query.id])}>Run</button>
-            </p>
+            </ActionGroup>
           ))}
           <form className="studio-row" onSubmit={(event) => {
             event.preventDefault();
@@ -190,11 +193,11 @@ function CandidateCard({
       {followers ? <p className="studio-meta">{followers}</p> : null}
       {themes.length > 0 ? <p><span className="intel-label">Recent themes</span> {themes.join(" · ")}</p> : null}
       {assessment.clientClaim ? <p className="studio-meta">{assessment.clientClaim}</p> : null}
-      <div className="studio-row">
+      <ActionGroup className="card-actions">
         <button type="button" className="studio-text-button" onClick={onApprove}>Add to watchlist</button>
         <button type="button" className="studio-text-button" onClick={onDismiss}>Not a competitor</button>
         <button type="button" className="studio-text-button" onClick={onEvidence}>View evidence</button>
-      </div>
+      </ActionGroup>
       <label className="studio-meta">
         Classify differently
         <select aria-label={`Classify ${candidate.handle}`} value={assessment.classification} onChange={(event) => onClassify(event.target.value as MarketAccountType)}>

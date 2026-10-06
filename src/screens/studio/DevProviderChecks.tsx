@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ActionGroup } from "../../components/ActionGroup";
 
 interface EnsembleProbeResult {
   configured: boolean;
@@ -39,10 +40,10 @@ export function DevProviderChecks() {
     <section className="studio-panel" data-screen="dev-provider-checks">
       <h2>Development checks</h2>
       <p className="studio-meta">One request each. These do not run during discovery.</p>
-      <div className="studio-row">
+      <ActionGroup>
         <button type="button" className="studio-button" disabled={busy !== null} onClick={() => void runEnsemble()}>{busy === "ensemble" ? "Testing…" : "Test EnsembleData"}</button>
         <button type="button" className="studio-button" disabled={busy !== null} onClick={() => void runOpenAI()}>{busy === "openai" ? "Testing…" : "Test OpenAI"}</button>
-      </div>
+      </ActionGroup>
       {ensemble ? <EnsembleReport result={ensemble} /> : null}
       {openai ? <OpenAIReport result={openai} /> : null}
     </section>

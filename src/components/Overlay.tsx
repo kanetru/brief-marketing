@@ -26,7 +26,7 @@ export function Overlay({
           <h3 id="layer-title">{title}</h3>
           <button type="button" className="layer-close" onClick={onClose}>Close</button>
         </header>
-        {children}
+        <div className="layer-body">{children}</div>
       </div>
     </div>
   );

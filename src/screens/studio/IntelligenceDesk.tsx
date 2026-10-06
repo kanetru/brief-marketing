@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ActionGroup, BadgeRow } from "../../components/ActionGroup";
 import { Overlay } from "../../components/Overlay";
 import { assembleBrandBrain } from "../../domain/intelligence/brain";
 import { runDueJobs } from "../../domain/intelligence/jobs";
@@ -104,7 +105,11 @@ function EmptyWatch({ submitted, onFindCompetitors }: { submitted: boolean; onFi
       <p>Brand holds what they told us. Market is where the competitors go.</p>
       <p>Market not researched yet.</p>
       <p>Find competitors and accounts worth watching.</p>
-      {onFindCompetitors ? <button type="button" className="studio-button" onClick={onFindCompetitors}>Find competitors</button> : null}
+      {onFindCompetitors ? (
+        <ActionGroup>
+          <button type="button" className="studio-button" onClick={onFindCompetitors}>Find competitors</button>
+        </ActionGroup>
+      ) : null}
     </div>
   );
 }
@@ -160,20 +165,24 @@ function IntelligenceCard({
   return (
     <article className="intel-card" data-testid="intel-card" data-kind={item.kind}>
       <p className="studio-kicker">{item.eyebrow} · {when}</p>
-      <h3>{item.headline}</h3>
-      <p className="provenance" data-origin={item.origin}>{ORIGIN[item.origin]}</p>
+      <div className="card-identity">
+        <h3>{item.headline}</h3>
+        <BadgeRow>
+          <p className="provenance card-badge" data-origin={item.origin}>{ORIGIN[item.origin]}</p>
+        </BadgeRow>
+      </div>
       <p>{item.evidence}</p>
       {item.whyItMatters ? <><p className="intel-label">Why it matters</p><p>{item.whyItMatters}</p></> : null}
       {item.possibleMove ? <><p className="intel-label">Brief suggests</p><p>{item.possibleMove}</p></> : null}
       {item.epistemicStatus === "hypothesis" ? <p className="studio-meta">Hypothesis</p> : null}
       {saved ? <p className="studio-notice">Saved</p> : null}
       {aside ? <p className="studio-notice">{aside.action === "investigate" ? "Investigate" : "Dismissed"}</p> : null}
-      <div className="intel-actions">
+      <ActionGroup className="intel-actions card-actions">
         {actionable ? <button type="button" className="studio-button" data-testid="save-opportunity" onClick={() => onReact(reaction(item.id, "save"))}>Save</button> : null}
         {actionable ? <button type="button" className="studio-text-button" onClick={() => onReact(reaction(item.id, "investigate"))}>Investigate</button> : null}
         <button type="button" className="studio-text-button" data-testid="dismiss-signal" onClick={() => onReact(reaction(item.id, "dismiss"))}>Dismiss</button>
         <button type="button" className="studio-text-button" data-testid="view-evidence" onClick={() => setOpen(true)}>Evidence</button>
-      </div>
+      </ActionGroup>
       {open ? (
         <Overlay variant="drawer" title="Evidence" testId="evidence-drawer" onClose={() => setOpen(false)}>
           {signals.length === 0 ? <p>No signal attached.</p> : null}
@@ -315,8 +324,10 @@ export function MarketWatch({ project, intelligence }: { project: BriefProject; 
   return (
     <div data-screen="market-watch">
       <MarketDiscoveryPanel project={project} intelligence={intelligence} />
-      <h3 className="intel-bucket">Competitors</h3>
-      {demo ? <p className="provenance" data-origin="demo">Demo</p> : null}
+      <BadgeRow>
+        <h3 className="intel-bucket">Competitors</h3>
+        {demo ? <p className="provenance card-badge" data-origin="demo">Demo</p> : null}
+      </BadgeRow>
       {cards.length === 0 ? <p>None</p> : null}
       {cards.map((card) => (
         <article key={card.id} className="intel-card" data-screen="competitor">
@@ -325,7 +336,9 @@ export function MarketWatch({ project, intelligence }: { project: BriefProject; 
           {card.followers ? <p className="studio-meta">{card.followers}</p> : null}
           {card.recentChange ? <p><span className="intel-label">Recent change</span> {card.recentChange}</p> : null}
           {card.themes ? <p><span className="intel-label">Themes</span> {card.themes}</p> : null}
-          <button type="button" className="studio-text-button" onClick={() => setOpenId(card.id)}>Open competitor</button>
+          <ActionGroup className="card-actions">
+            <button type="button" className="studio-text-button" onClick={() => setOpenId(card.id)}>Open competitor</button>
+          </ActionGroup>
         </article>
       ))}
       <h3 className="intel-bucket">Trends</h3>

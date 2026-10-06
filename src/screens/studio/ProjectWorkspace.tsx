@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { DEFAULT_PANEL, LAST_CLIENT_KEY, PRIMARY_NAV, type ManagerPanel } from "../../domain/workspace/managerNav";
+import { ActionGroup } from "../../components/ActionGroup";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { buildBrandIntelligence } from "../../domain/brandIntelligence";
 import { clientFacingCopy } from "../../domain/languageGuard";
@@ -506,18 +507,18 @@ function FieldCard({
     <article className="studio-card">
       <p className="studio-kicker">{field.label} · {fieldMark(field)} · {field.confidence}</p>
       <textarea value={text} onChange={(event) => setText(event.target.value)} rows={3} />
-      <div className="studio-row">
+      {field.epistemicStatus !== "fact" ? <p className="studio-meta">Approving keeps this as a {field.epistemicStatus}. It does not become a fact.</p> : null}
+      <ActionGroup className="card-actions">
         <button type="button" className="studio-button" onClick={() => onSave(field.id, text, text.trim() === field.text.trim() ? "approved" : "edited")}>
           {text.trim() === field.text.trim() ? "Approve direction" : "Save edit"}
         </button>
-        {field.epistemicStatus !== "fact" ? <p className="studio-meta">Approving keeps this as a {field.epistemicStatus}. It does not become a fact.</p> : null}
         <button type="button" className="studio-text-button" onClick={() => onSave(field.id, field.text, "rejected")}>
           Use Brief's version
         </button>
         <button type="button" className="studio-text-button" onClick={() => setOpen((value) => !value)}>
           {open ? "Hide evidence" : "Evidence"}
         </button>
-      </div>
+      </ActionGroup>
       {open ? (
         <ul className="studio-evidence">
           {evidence.length === 0 ? <li>No source is attached yet.</li> : null}
@@ -603,7 +604,9 @@ function Market({
             {" · "}{researchOpportunities} opportunities
           </p>
         ) : null}
-        <button type="button" className="studio-button" disabled={!canResearch || run?.status === "reading"} onClick={() => void onResearch()}>Research</button>
+        <ActionGroup>
+          <button type="button" className="studio-button" disabled={!canResearch || run?.status === "reading"} onClick={() => void onResearch()}>Research</button>
+        </ActionGroup>
       </article>
       <article className="studio-card">
         <p className="studio-kicker">Client website</p>
@@ -682,9 +685,9 @@ function Market({
               {profile.tone ? <p>{profile.tone}</p> : null}
               {profile.contentThemes ? <p>{profile.contentThemes}</p> : null}
               {profile.basis === "research" ? <p className="studio-meta">Visual research is limited. The pictures were not read.</p> : null}
-              <div className="studio-row">
+              <ActionGroup className="card-actions">
                 <button type="button" className="studio-text-button" onClick={() => onRemove(profile.id)}>Remove</button>
-              </div>
+              </ActionGroup>
             </article>
           );
         })}
@@ -741,7 +744,9 @@ function EvidenceToggle({
 }) {
   return (
     <>
-      <button type="button" className="studio-text-button" onClick={onToggle}>{open ? "Hide evidence" : "View evidence"}</button>
+      <ActionGroup>
+        <button type="button" className="studio-text-button" onClick={onToggle}>{open ? "Hide evidence" : "View evidence"}</button>
+      </ActionGroup>
       {open ? (
         <div className="studio-evidence">
           <p className="studio-kicker">{title}</p>
@@ -903,10 +908,10 @@ function DiscoveryPanel({
       <p className="studio-meta">{DISCOVERY_LABEL[project.discoveryStatus]}</p>
       <div className="studio-share">
         <p className="studio-link">{link}</p>
-        <div className="studio-row">
+        <ActionGroup>
           <button type="button" className="studio-button" onClick={onCopy}>Copy link</button>
           {project.discoveryStatus === "draft" ? <button type="button" className="studio-button" onClick={onSend}>Send discovery</button> : null}
-        </div>
+        </ActionGroup>
       </div>
       <form
         className="studio-form"
@@ -976,7 +981,7 @@ function AgentPackPanel({
     <section className="studio-panel" data-screen="agent-pack">
       <h2>Use this client in AI</h2>
       <p className="studio-meta">Version {version}</p>
-      <div className="studio-row">
+      <ActionGroup>
         <button type="button" className="studio-button" onClick={() => onCopy(master.markdown, "Full context copied.")}>Copy full context</button>
         <CopyChip label="Copy brand voice" file={named("04_voice.md")} onCopy={onCopy} />
         <CopyChip label="Copy audience" file={named("02_audience.md")} onCopy={onCopy} />
@@ -984,15 +989,15 @@ function AgentPackPanel({
         <CopyChip label="Copy market context" file={named("06_competitors.md")} onCopy={onCopy} />
         <button type="button" className="studio-button" onClick={() => downloadFile("agent-pack.md", [master, ...files].map((file) => `# ${file.name}\n\n${file.markdown}`).join("\n\n---\n\n"))}>Download agent pack</button>
         <button type="button" className="studio-text-button" onClick={onRegenerate}>Rebuild</button>
-      </div>
+      </ActionGroup>
       <h3>Start a task</h3>
-      <div className="studio-row">
+      <ActionGroup>
         {STARTER_WORKFLOWS.map((workflow) => (
           <button key={workflow.id} type="button" className="studio-text-button" onClick={() => onCopy(starterPrompt(workflow.id, { generatedAt, projectVersion: version, files, master }), `${workflow.label} prompt copied.`)}>
             {workflow.label}
           </button>
         ))}
-      </div>
+      </ActionGroup>
       <ul className="studio-files">
         {[master, ...files].map((file) => (
           <li key={file.name}>
