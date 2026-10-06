@@ -11,13 +11,34 @@ import { applyServerEnv, providerStatusLines } from "./env";
 import { readEnsembleToken } from "./ensembleData";
 import { runMarketDiscovery } from "./marketRun";
 import type { EnsembleCache } from "./ensembleClient";
-import type { CompetitorDiscoveryContext, SocialDiscoveryQuery } from "../src/types/marketDiscovery";
+import { probeEnsemble, probeOpenAI } from "./providerProbe";
+import type { CompetitorDiscoveryContext, CompletedSearch, MarketRetry, ResearchStages, SocialAccountCandidate, SocialDiscoveryQuery } from "../src/types/marketDiscovery";
+
+let devProbes = false;
 
 const ensembleCache: EnsembleCache = new Map();
 
 export function discoveryApiPlugin(): Plugin {
   const handle: Connect.NextHandleFunction = (req, res, next) => {
     const url = req.url?.split("?")[0];
+    if (devProbes && (url === "/api/dev/ensemble" || url === "/api/dev/openai")) {
+      if (req.method !== "POST") {
+        send(res, 405, { ok: false, message: "Provider request failed" });
+        return;
+      }
+      void readBody(req)
+        .then(async () => {
+          if (url === "/api/dev/ensemble") {
+            send(res, 200, await probeEnsemble({ fetchImpl: fetch, token: readEnsembleToken(), now: new Date().toISOString() }));
+            return;
+          }
+          send(res, 200, await probeOpenAI({ fetchImpl: fetch, apiKey: process.env.OPENAI_API_KEY?.trim() ?? "" }));
+        })
+        .catch(() => {
+          send(res, 200, { configured: true, ok: false, message: "Provider request failed" });
+        });
+      return;
+    }
     if (
       url !== "/api/discovery/analyze" &&
       url !== "/api/discovery/profile" &&
@@ -55,6 +76,11 @@ export function discoveryApiPlugin(): Plugin {
             queries?: SocialDiscoveryQuery[];
             executeQueryIds?: string[];
             refresh?: boolean;
+            retry?: MarketRetry;
+            previousCandidates?: SocialAccountCandidate[];
+            completedSearches?: CompletedSearch[];
+            previousStages?: ResearchStages;
+            previousOrigin?: "live" | "cached";
           };
           const context = request.context;
           if (!context || typeof context.clientId !== "string" || !context.clientId.trim()) {
@@ -66,6 +92,11 @@ export function discoveryApiPlugin(): Plugin {
             queries: Array.isArray(request.queries) ? request.queries : undefined,
             executeQueryIds: Array.isArray(request.executeQueryIds) ? request.executeQueryIds.filter((id) => typeof id === "string") : undefined,
             refresh: request.refresh === true,
+            retry: request.retry === "instagram" || request.retry === "tiktok" || request.retry === "enrichment" || request.retry === "classification" ? request.retry : undefined,
+            previousCandidates: Array.isArray(request.previousCandidates) ? request.previousCandidates : undefined,
+            completedSearches: Array.isArray(request.completedSearches) ? request.completedSearches : undefined,
+            previousStages: request.previousStages,
+            previousOrigin: request.previousOrigin === "live" || request.previousOrigin === "cached" ? request.previousOrigin : undefined,
             now: new Date().toISOString(),
           }, {
             fetchImpl: fetch,
@@ -132,7 +163,8 @@ function prepare(server: ViteDevServer | PreviewServer, report: boolean) {
   // Tests set their own fake env. Never load .env.local into a test process.
   if (process.env.VITEST) return;
   applyServerEnv(server.config.mode, server.config.envDir);
-  if (!report || server.config.mode !== "development") return;
+  devProbes = report && server.config.mode === "development";
+  if (!devProbes) return;
   for (const line of providerStatusLines()) console.info(line);
 }
 

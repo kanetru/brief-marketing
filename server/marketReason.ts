@@ -3,6 +3,13 @@ import { readResponsesText } from "./clientStrategist";
 import type { CompetitorDiscoveryContext, MarketAccountAssessment, SocialAccountCandidate, SocialDiscoveryQuery } from "../src/types/marketDiscovery";
 import { acceptQueries } from "../src/domain/market/context";
 import { acceptAssessment } from "../src/domain/market/review";
+import { marketLog } from "./marketLog";
+
+export interface ModelOutcome<T> {
+  value: T | null;
+  httpStatus?: number;
+  message: string;
+}
 
 const QUERY_SCHEMA = {
   type: "object",
@@ -60,7 +67,7 @@ export async function generateDiscoveryQueries(
   context: CompetitorDiscoveryContext,
   fetchImpl: typeof fetch,
   apiKey: string,
-): Promise<SocialDiscoveryQuery[] | null> {
+): Promise<ModelOutcome<SocialDiscoveryQuery[]>> {
   const packet = [
     "Write social searches for this client only. Do not import an example from another business.",
     "Return between 5 and 8 short search phrases for Instagram and the same for TikTok.",
@@ -70,15 +77,17 @@ export async function generateDiscoveryQueries(
     JSON.stringify(context),
   ].join("\n\n");
   const parsed = await respond(packet, QUERY_SCHEMA, "market_queries", "marketQueries", fetchImpl, apiKey);
-  if (!parsed || !Array.isArray((parsed as { queries?: unknown }).queries)) return null;
-  const queries = ((parsed as { queries: Array<Partial<SocialDiscoveryQuery>> }).queries).map((item, index) => ({
+  if (!parsed.value || !Array.isArray((parsed.value as { queries?: unknown }).queries)) {
+    return { value: null, httpStatus: parsed.httpStatus, message: parsed.message || "Structured response did not match schema" };
+  }
+  const queries = ((parsed.value as { queries: Array<Partial<SocialDiscoveryQuery>> }).queries).map((item, index) => ({
     id: `model-${item.platform ?? "instagram"}-${index + 1}`,
     query: typeof item.query === "string" ? item.query : "",
     platform: item.platform === "tiktok" ? "tiktok" as const : "instagram" as const,
     queryType: item.queryType ?? "category",
     rationale: typeof item.rationale === "string" ? item.rationale : "",
   }));
-  return acceptQueries(queries, context);
+  return { value: acceptQueries(queries, context), message: "" };
 }
 
 export async function classifyCandidates(
@@ -86,8 +95,8 @@ export async function classifyCandidates(
   candidates: readonly SocialAccountCandidate[],
   fetchImpl: typeof fetch,
   apiKey: string,
-): Promise<MarketAccountAssessment[] | null> {
-  if (candidates.length === 0) return [];
+): Promise<ModelOutcome<MarketAccountAssessment[]>> {
+  if (candidates.length === 0) return { value: [], message: "" };
   const packet = [
     "Classify each account for a marketing manager.",
     "Search appearance is not proof of competition.",
@@ -126,9 +135,11 @@ export async function classifyCandidates(
     }),
   ].join("\n\n");
   const parsed = await respond(packet, CLASS_SCHEMA, "market_accounts", "marketClassification", fetchImpl, apiKey);
-  if (!parsed || !Array.isArray((parsed as { assessments?: unknown }).assessments)) return null;
+  if (!parsed.value || !Array.isArray((parsed.value as { assessments?: unknown }).assessments)) {
+    return { value: null, httpStatus: parsed.httpStatus, message: parsed.message || "Structured response did not match schema" };
+  }
   const byId = new Map(candidates.map((item) => [item.id, item]));
-  const assessments = ((parsed as { assessments: Array<Record<string, unknown>> }).assessments).flatMap((item) => {
+  const assessments = ((parsed.value as { assessments: Array<Record<string, unknown>> }).assessments).flatMap((item) => {
     const candidate = byId.get(typeof item.candidateId === "string" ? item.candidateId : "");
     const accepted = acceptAssessment({
       candidateId: typeof item.candidateId === "string" ? item.candidateId : "",
@@ -155,7 +166,7 @@ export async function classifyCandidates(
     }, candidate);
     return accepted ? [accepted] : [];
   });
-  return assessments;
+  return { value: assessments, message: "" };
 }
 
 async function respond(
@@ -165,8 +176,8 @@ async function respond(
   taskId: "marketQueries" | "marketClassification",
   fetchImpl: typeof fetch,
   apiKey: string,
-): Promise<unknown | null> {
-  if (!apiKey.trim()) return null;
+): Promise<ModelOutcome<unknown>> {
+  if (!apiKey.trim()) return { value: null, message: "" };
   const task = resolveAiTask(taskId);
   try {
     const response = await fetchImpl("https://api.openai.com/v1/responses", {
@@ -182,14 +193,19 @@ async function respond(
       }),
     });
     if (!response.ok) {
-      console.error("Market discovery model failed", response.status);
-      return null;
+      marketLog(`[market-discovery] FAILED\nstage: ${taskId}\nstatus: ${response.status}\nmessage: Model request failed`, { secrets: [apiKey] });
+      return { value: null, httpStatus: response.status, message: "Model request failed" };
     }
     const content = readResponsesText(await response.json());
-    if (!content) return null;
-    return JSON.parse(content) as unknown;
+    if (!content) return { value: null, httpStatus: response.status, message: "Structured response could not be parsed" };
+    try {
+      return { value: JSON.parse(content) as unknown, message: "" };
+    } catch {
+      return { value: null, httpStatus: response.status, message: "Structured response did not match schema" };
+    }
   } catch (error) {
-    console.error("Market discovery model failed", error instanceof Error ? error.message : "request");
-    return null;
+    const message = error instanceof Error ? error.message : "request";
+    marketLog(`[market-discovery] FAILED\nstage: ${taskId}\nmessage: ${message}`, { secrets: [apiKey] });
+    return { value: null, message: "Model request failed" };
   }
 }

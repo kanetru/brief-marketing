@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { DEFAULT_PANEL, LAST_CLIENT_KEY, MORE_NAV, PRIMARY_NAV, type ManagerPanel } from "../../domain/workspace/managerNav";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { DEFAULT_PANEL, LAST_CLIENT_KEY, PRIMARY_NAV, type ManagerPanel } from "../../domain/workspace/managerNav";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { buildBrandIntelligence } from "../../domain/brandIntelligence";
 import { clientFacingCopy } from "../../domain/languageGuard";
@@ -17,7 +17,13 @@ import { StrategyView } from "./StrategyView";
 import { ContentDesk, StrategySummary, savedIdeas } from "./WorkSurfaces";
 import { BrandBrainPanel, HistoryPanel, MarketWatch } from "./IntelligenceDesk";
 import { CompetitorBoard, MarketBoard, OpportunityBoard, OverviewBoard, ResponseBoard } from "./ManagerBoards";
-import { competitorViews, marketCards, matterCards, opportunityViews, originalResponses, overviewNeedsResearch, researchFailed, theRead } from "../../domain/workspace/managerView";
+import { competitorViews, marketCards, matterCards, opportunityViews, originalResponses, overviewNeedsResearch, researchFailed, researchPartial, theRead } from "../../domain/workspace/managerView";
+import { researchRetry } from "../../domain/market/stages";
+import { clientRemovalName } from "../../domain/project/removeClient";
+import type { MarketRetry } from "../../types/marketDiscovery";
+import { MoreNav } from "./MoreNav";
+import { RemoveClientSection } from "./RemoveClient";
+import { DevProviderChecks } from "./DevProviderChecks";
 import { clientCardModel } from "../../domain/workspace/clientCard";
 import { discoveryContext } from "../../domain/market/context";
 import { emptyMarketDiscovery, storeRun } from "../../domain/market/review";
@@ -89,6 +95,7 @@ function fieldMark(field: UnderstandingField): string {
 
 export function ProjectWorkspace() {
   const { projectId = "" } = useParams();
+  const navigate = useNavigate();
   const api = useProjects();
   const project = api.projects.find((item) => item.id === projectId) ?? null;
   const [panel, setPanel] = useState<Panel>(DEFAULT_PANEL);
@@ -133,16 +140,22 @@ export function ProjectWorkspace() {
     setNotice("");
   }
 
-  async function findCompetitors() {
+  async function findCompetitors(requested?: MarketRetry) {
     if (!project || !intelligence) return;
     setResearching(true);
     setNotice("");
     const record = project.marketDiscovery ?? emptyMarketDiscovery(project.updatedAt);
+    const retry = requested ?? researchRetry(record);
     const result = await requestMarketDiscovery({
       context: discoveryContext(project, intelligence),
       queries: record.set?.queries,
+      retry,
+      previousCandidates: record.candidates,
+      completedSearches: record.completedSearches,
+      previousStages: record.stages,
+      previousOrigin: record.origin === "live" || record.origin === "cached" ? record.origin : undefined,
     });
-    api.setMarketDiscovery(project.id, storeRun(record, result, "replace", new Date().toISOString()));
+    api.setMarketDiscovery(project.id, storeRun(record, result, retry ? "merge" : "replace", new Date().toISOString()));
     setResearching(false);
     setPanel("competitors");
   }
@@ -186,17 +199,8 @@ export function ProjectWorkspace() {
             {label}
           </button>
         ))}
-        <button type="button" aria-expanded={moreOpen} aria-controls="more-menu" onClick={() => setMoreOpen((open) => !open)}>More</button>
+        <MoreNav panel={panel} open={moreOpen} onToggle={setMoreOpen} onChoose={choose} />
       </nav>
-      {moreOpen ? (
-        <div id="more-menu" className="more-menu" role="menu">
-          {MORE_NAV.map(({ id, label }) => (
-            <button key={id} type="button" role="menuitem" aria-current={panel === id ? "page" : undefined} onClick={() => choose(id)}>
-              {label}
-            </button>
-          ))}
-        </div>
-      ) : null}
       {notice ? <p className="studio-notice">{notice}</p> : null}
       {panel === "overview" ? (
         <OverviewBoard
@@ -211,7 +215,13 @@ export function ProjectWorkspace() {
           views={competitors}
           busy={researching}
           failed={researchFailed(project)}
+          partial={researchPartial(project)}
+          technical={project.marketDiscovery?.technical ?? []}
+          devDetails={import.meta.env.DEV}
           onFind={() => void findCompetitors()}
+          onRetryInstagram={() => void findCompetitors("instagram")}
+          onRetryTikTok={() => void findCompetitors("tiktok")}
+          onRetryAnalysis={() => void findCompetitors("classification")}
           onAdd={(name) => api.setCompetitor(project.id, { id: crypto.randomUUID(), name, website: "", notes: "" })}
         />
       ) : null}
@@ -394,21 +404,33 @@ export function ProjectWorkspace() {
         />
       ) : null}
       {panel === "settings" ? (
-        <DiscoveryPanel
-          project={project}
-          link={link}
-          onCopy={() => void copy(link, "Discovery link copied.")}
-          onSend={() => {
-            api.sendDiscovery(project.id);
-            setNotice("Link ready.");
-          }}
-          onFollowUp={(prompts) => {
-            api.requestFollowUp(project.id, prompts);
-            setNotice("Follow-up sent.");
-          }}
-          onDetails={(details) => api.setDetails(project.id, details)}
-          onNotes={(notes) => api.setNotes(project.id, notes)}
-        />
+        <>
+          <DiscoveryPanel
+            project={project}
+            link={link}
+            onCopy={() => void copy(link, "Discovery link copied.")}
+            onSend={() => {
+              api.sendDiscovery(project.id);
+              setNotice("Link ready.");
+            }}
+            onFollowUp={(prompts) => {
+              api.requestFollowUp(project.id, prompts);
+              setNotice("Follow-up sent.");
+            }}
+            onDetails={(details) => api.setDetails(project.id, details)}
+            onNotes={(notes) => api.setNotes(project.id, notes)}
+          />
+          {import.meta.env.DEV ? <DevProviderChecks /> : null}
+          <RemoveClientSection
+            name={clientRemovalName(project)}
+            onRemove={() => {
+              const label = clientRemovalName(project);
+              api.remove(project.id);
+              if (sessionStorage.getItem(LAST_CLIENT_KEY) === project.id) sessionStorage.removeItem(LAST_CLIENT_KEY);
+              navigate("/studio", { state: { removed: label } });
+            }}
+          />
+        </>
       ) : null}
       {panel === "history" ? <HistoryPanel project={project} /> : null}
       {panel === "pack" ? (

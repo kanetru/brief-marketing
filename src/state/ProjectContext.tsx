@@ -31,6 +31,7 @@ import {
   withoutCompetitor,
   withMarketDiscovery,
 } from "./projectStore";
+import { withoutProject } from "../domain/project/removeClient";
 import type { ManagerReaction } from "../types/intelligence";
 
 interface ProjectApi {
@@ -57,6 +58,7 @@ interface ProjectApi {
   setClientReading: (projectId: string, reading: StoredClientReading) => void;
   setReaction: (projectId: string, reaction: ManagerReaction) => void;
   setMarketDiscovery: (projectId: string, record: MarketDiscoveryRecord) => void;
+  remove: (projectId: string) => void;
 }
 
 const ProjectContext = createContext<ProjectApi | null>(null);
@@ -114,6 +116,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setClientReading: (projectId, reading) => mutate(projectId, (project) => withClientReading(project, reading)),
     setReaction: (projectId, reaction) => mutate(projectId, (project) => withReaction(project, reaction)),
     setMarketDiscovery: (projectId, record) => mutate(projectId, (project) => withMarketDiscovery(project, record)),
+    remove: (projectId) => setProjects((current) => withoutProject(current, projectId)),
   }), [mutate, projects]);
 
   return <ProjectContext.Provider value={api}>{children}</ProjectContext.Provider>;

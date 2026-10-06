@@ -307,6 +307,25 @@ export function originalResponses(project: BriefProject): OriginalResponse[] {
 
 export function researchFailed(project: BriefProject): boolean {
   const record = project.marketDiscovery;
-  if (!record) return false;
-  return record.origin === "unavailable" || (record.message.trim().length > 0 && record.candidates.length === 0 && record.origin !== "idle");
+  if (!record || record.candidates.length > 0) return false;
+  return record.origin === "unavailable" || (record.message.trim().length > 0 && record.origin !== "idle");
+}
+
+export interface ResearchPartial {
+  discovered: number;
+  instagramFailed: boolean;
+  tiktokFailed: boolean;
+  classificationFailed: boolean;
+}
+
+/** A run that kept accounts from a stage that did finish. */
+export function researchPartial(project: BriefProject): ResearchPartial | null {
+  const record = project.marketDiscovery;
+  const stages = record?.stages;
+  if (!record || !stages || record.candidates.length === 0) return null;
+  const instagramFailed = stages.instagram.status === "failed";
+  const tiktokFailed = stages.tiktok.status === "failed";
+  const classificationFailed = stages.classification.status === "failed";
+  if (!instagramFailed && !tiktokFailed && !classificationFailed) return null;
+  return { discovered: record.candidates.length, instagramFailed, tiktokFailed, classificationFailed };
 }

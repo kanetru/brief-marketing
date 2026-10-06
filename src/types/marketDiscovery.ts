@@ -179,6 +179,37 @@ export interface ProviderUsageRecord {
   cached: boolean;
 }
 
+export type ResearchStageStatus = "not_started" | "running" | "partial" | "complete" | "failed";
+
+export type MarketRetry = "instagram" | "tiktok" | "enrichment" | "classification";
+
+export interface ResearchStage {
+  status: ResearchStageStatus;
+  message?: string;
+  httpStatus?: number;
+}
+
+/** Internal pipeline state. Managers do not see this structure. */
+export interface ResearchStages {
+  queries: ResearchStage;
+  instagram: ResearchStage;
+  tiktok: ResearchStage;
+  enrichment: ResearchStage;
+  classification: ResearchStage;
+}
+
+export interface TechnicalDetail {
+  stage: string;
+  httpStatus?: number;
+  message: string;
+}
+
+export interface CompletedSearch {
+  platform: SocialPlatform;
+  query: string;
+  endpoint: string;
+}
+
 export interface MarketRunResult {
   ok: boolean;
   failure: "not_configured" | "authentication_failed" | "unavailable" | null;
@@ -189,6 +220,9 @@ export interface MarketRunResult {
   proposals: IdentityProposal[];
   usage: ProviderUsageRecord[];
   origin: SocialProviderStatus;
+  stages?: ResearchStages;
+  technical?: TechnicalDetail[];
+  completedSearches?: CompletedSearch[];
 }
 
 export interface MarketDiscoveryRecord {
@@ -201,4 +235,7 @@ export interface MarketDiscoveryRecord {
   origin: SocialProviderStatus | "idle";
   message: string;
   updatedAt: string;
+  stages?: ResearchStages;
+  technical?: TechnicalDetail[];
+  completedSearches?: CompletedSearch[];
 }

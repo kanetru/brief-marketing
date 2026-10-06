@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { CompetitorView, MarketCardView, MatterCard, OpportunityView, OriginalResponse } from "../../domain/workspace/managerView";
+import type { CompetitorView, MarketCardView, MatterCard, OpportunityView, OriginalResponse, ResearchPartial } from "../../domain/workspace/managerView";
+import type { TechnicalDetail } from "../../types/marketDiscovery";
 
 export function OverviewBoard({
   read,
@@ -48,12 +49,24 @@ export function CompetitorBoard({
   failed,
   onFind,
   onAdd,
+  partial = null,
+  technical = [],
+  devDetails = false,
+  onRetryInstagram,
+  onRetryTikTok,
+  onRetryAnalysis,
 }: {
   views: CompetitorView[];
   busy: boolean;
   failed: boolean;
   onFind: () => void;
   onAdd: (name: string) => void;
+  partial?: ResearchPartial | null;
+  technical?: TechnicalDetail[];
+  devDetails?: boolean;
+  onRetryInstagram?: () => void;
+  onRetryTikTok?: () => void;
+  onRetryAnalysis?: () => void;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -96,15 +109,28 @@ export function CompetitorBoard({
         <div className="surface-card" data-screen="research-error">
           <p>Market research couldn't finish.</p>
           <button type="button" className="studio-button" onClick={onFind}>Try again</button>
+          {devDetails ? <TechnicalDetails items={technical} /> : null}
         </div>
       ) : null}
-      {views.length === 0 && !busy ? (
+      {partial && !busy && !failed ? (
+        <div className="surface-card" data-screen="research-partial">
+          {partial.instagramFailed || partial.tiktokFailed ? <p>{partial.discovered === 1 ? "1 account found." : `${partial.discovered} accounts found.`}</p> : <p>Accounts found.</p>}
+          {partial.instagramFailed ? <p>Instagram research couldn't finish.</p> : null}
+          {partial.tiktokFailed ? <p>TikTok research couldn't finish.</p> : null}
+          {partial.classificationFailed ? <p>Brief couldn't analyse them yet.</p> : null}
+          {partial.instagramFailed ? <button type="button" className="studio-button" onClick={onRetryInstagram}>Retry Instagram</button> : null}
+          {partial.tiktokFailed ? <button type="button" className="studio-button" onClick={onRetryTikTok}>Retry TikTok</button> : null}
+          {partial.classificationFailed ? <button type="button" className="studio-button" onClick={onRetryAnalysis}>Retry analysis</button> : null}
+          {devDetails ? <TechnicalDetails items={technical} /> : null}
+        </div>
+      ) : null}
+      {views.length === 0 && !busy && !failed ? (
         <div className="surface-card" data-screen="competitors-empty">
           <h2>No market research yet.</h2>
           <p>Brief can use what it learned about this client to find competitors and accounts worth watching.</p>
           <button type="button" className="studio-button" onClick={onFind}>Find competitors</button>
         </div>
-      ) : (
+      ) : views.length > 0 ? (
         <div className="card-grid cards-competitors">
           {views.map((item) => (
             <article
@@ -134,9 +160,32 @@ export function CompetitorBoard({
             </article>
           ))}
         </div>
-      )}
+      ) : null}
       {selected ? <CompetitorDetail view={selected} onClose={() => setOpen(null)} /> : null}
     </section>
+  );
+}
+
+export function TechnicalDetails({ items }: { items: TechnicalDetail[] }) {
+  if (items.length === 0) return null;
+  return (
+    <details>
+      <summary>Technical details</summary>
+      {items.map((item) => (
+        <div key={`${item.stage}-${item.httpStatus ?? ""}-${item.message}`}>
+          <p>Stage</p>
+          <p>{item.stage}</p>
+          {item.httpStatus ? (
+            <>
+              <p>HTTP</p>
+              <p>{item.httpStatus}</p>
+            </>
+          ) : null}
+          <p>Message</p>
+          <p>{item.message}</p>
+        </div>
+      ))}
+    </details>
   );
 }
 

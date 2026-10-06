@@ -1,4 +1,5 @@
 import { dedupeCandidates } from "./rank";
+import { mergeCompleted } from "./stages";
 import type { MarketAccountAssessment, MarketAccountType, MarketDiscoveryRecord, MarketRunResult, MonitoredMarketEntity, SocialAccountCandidate } from "../../types/marketDiscovery";
 
 const TYPES = new Set<MarketAccountType>([
@@ -42,24 +43,46 @@ export function emptyMarketDiscovery(now: string): MarketDiscoveryRecord {
 
 export function storeRun(previous: MarketDiscoveryRecord, result: MarketRunResult, mode: "replace" | "merge", now: string): MarketDiscoveryRecord {
   const usage = [...(mode === "merge" ? previous.usage : []), ...result.usage].slice(-40);
+  const completedSearches = mergeCompleted(previous.completedSearches, result.completedSearches);
   if (!result.ok) {
     return {
       ...previous,
       set: result.set ?? previous.set,
       usage,
+      stages: previous.candidates.length > 0 ? previous.stages : result.stages ?? previous.stages,
+      technical: result.technical ?? [],
+      completedSearches,
       message: "Discovery unavailable",
       origin: previous.candidates.length > 0 ? previous.origin : "unavailable",
       updatedAt: now,
     };
   }
+  if (result.candidates.length === 0) {
+    return {
+      ...previous,
+      set: result.set ?? previous.set,
+      usage,
+      stages: result.stages ?? previous.stages,
+      technical: result.technical ?? [],
+      completedSearches,
+      message: previous.candidates.length > 0 ? previous.message : "",
+      origin: previous.candidates.length > 0 ? previous.origin : result.origin,
+      updatedAt: now,
+    };
+  }
   if (result.origin === "demo") return { ...previous, updatedAt: now };
   const candidates = mode === "merge" ? dedupeCandidates([...previous.candidates, ...result.candidates]) : result.candidates;
-  const assessments = carryDecisions(previous.assessments, mode === "merge" ? [...previous.assessments.filter((item) => !result.assessments.some((next) => next.candidateId === item.candidateId)), ...result.assessments] : result.assessments);
+  const keepAssessments = result.assessments.length === 0 && previous.assessments.length > 0;
+  const incoming = keepAssessments ? previous.assessments : result.assessments;
+  const assessments = carryDecisions(previous.assessments, mode === "merge" ? [...previous.assessments.filter((item) => !incoming.some((next) => next.candidateId === item.candidateId)), ...incoming] : incoming);
   return {
     ...previous,
     set: result.set ?? previous.set,
     candidates,
     assessments,
+    stages: result.stages ?? previous.stages,
+    technical: result.technical ?? [],
+    completedSearches,
     proposals: mode === "merge" ? mergeProposals(previous.proposals, result.proposals) : result.proposals.map((item) => previous.proposals.find((saved) => saved.id === item.id)?.confidence === "confirmed" ? { ...item, confidence: "confirmed" as const } : item),
     usage,
     origin: result.origin,

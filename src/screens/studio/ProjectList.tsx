@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { DEMO_ACCOUNT } from "../../domain/project/account";
 import { workspaceAttention } from "../../domain/intelligence/attention";
@@ -12,6 +12,7 @@ import type { BriefProject } from "../../types/project";
 export function ProjectList() {
   const { projects, create } = useProjects();
   const navigate = useNavigate();
+  const removed = removedNotice(useLocation().state);
   const [creating, setCreating] = useState(false);
   const [clientName, setClientName] = useState("");
   const [businessName, setBusinessName] = useState("");
@@ -55,6 +56,7 @@ export function ProjectList() {
           <Link to="/studio/look">Client experience</Link>
         </div>
       </header>
+      {removed ? <p className="studio-notice" role="status">{removed} removed.</p> : null}
       {creating ? (
         <form className="studio-create surface-card" onSubmit={openNew}>
           <h2>New client</h2>
@@ -88,6 +90,12 @@ export function ProjectList() {
         </ul>
     </div>
   );
+}
+
+function removedNotice(state: unknown): string {
+  if (!state || typeof state !== "object" || !("removed" in state)) return "";
+  const value = (state as { removed?: unknown }).removed;
+  return typeof value === "string" ? value.trim() : "";
 }
 
 export function ClientCard({ project }: { project: BriefProject }) {

@@ -54,7 +54,9 @@ export function parseTikTokKeywordAuthors(payload: unknown): ParsedSearchHit[] {
   const nested = record(data.data);
   const posts = arrayAt(data, "data").concat(arrayAt(data, "aweme_list"), arrayAt(nested, "aweme_list"));
   return posts.flatMap((item) => {
-    const author = record(record(item).author);
+    const node = record(item);
+    const aweme = record(node.aweme_info);
+    const author = record(aweme.author ?? node.author);
     const handle = text(author.unique_id) || text(author.uniqueId);
     if (!handle) return [];
     return [{
