@@ -83,6 +83,11 @@ export async function runMarketDiscovery(input: DiscoverInput, deps: DiscoverDep
 
   const queries = await resolveQueries(input, deps, stages, technical, log);
   if (queries.length === 0) {
+    if (technical.length === 0) {
+      const message = deps.openaiKey ? "No searches were produced" : "Not configured";
+      technical.push({ stage: deps.openaiKey ? "Market query generation" : "OpenAI", message });
+      stages.queries = stageOf("failed", message);
+    }
     log("[market-discovery] FAILED\nstage: query_generation\nmessage: no searches to run");
     return failed(input, null, deps.token ? "unavailable" : "not_configured", stages, technical, input.completedSearches ?? [], []);
   }

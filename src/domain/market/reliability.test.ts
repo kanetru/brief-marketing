@@ -298,6 +298,22 @@ describe("market research reliability", () => {
     expect(JSON.stringify(result)).not.toContain("sk-probe");
   });
 
+  it("names the stage when no search can be sent", async () => {
+    let calls = 0;
+    const result = await runMarketDiscovery({ context: context(), now: NOW }, {
+      fetchImpl: async () => {
+        calls += 1;
+        return jsonResponse({});
+      },
+      cache: new Map(),
+      token: "",
+      openaiKey: "",
+    });
+    expect(calls).toBe(0);
+    expect(result.failure).toBe("not_configured");
+    expect(result.technical).toEqual([{ stage: "OpenAI", message: "Not configured" }]);
+  });
+
   it("keeps production failure copy free of technical detail", () => {
     const source = readFileSync(new URL("../../screens/studio/ManagerBoards.tsx", import.meta.url), "utf8");
     expect(source).toContain("Market research couldn't finish.");
