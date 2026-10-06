@@ -39,5 +39,6 @@ export function blankStrategyInputs(): StrategyInputs {
     neighbourKinds: [],
     neighbours: unanswered(),
     wrongCompany: unanswered(),
+    presence: { instagram: "", tiktok: "", website: "", note: "" },
   };
 }

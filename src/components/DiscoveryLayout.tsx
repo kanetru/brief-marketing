@@ -4,7 +4,7 @@ import { actAlreadySeen, actFor, markActSeen } from "../design/acts";
 import { experienceMood } from "../design/mood";
 import { chapterAct, resolveExperience } from "../domain/agency/experience";
 import { POWERED_BY, themeVars } from "../domain/agency/theme";
-import { sectionById } from "../domain/sections";
+import { adjacentSection, isParked, sectionById } from "../domain/sections";
 import { useAgencyBrand } from "./useAgencyBrand";
 import { useSectionPath } from "../state/routeBase";
 import type { SectionId } from "../types/discovery";
@@ -43,10 +43,17 @@ export function DiscoveryLayout({
   const dark = section === "welcome" || section === "complete" || actOpen;
 
   useEffect(() => {
+    const clientFlow = location.pathname.startsWith("/c/") || location.pathname.includes("/preview");
+    if (clientFlow && isParked(section)) {
+      const next = adjacentSection(section, 1) ?? "complete";
+      activate(next);
+      navigate(sectionPath(next), { replace: true });
+      return;
+    }
     if (session.progress.section !== section) {
       activate(section);
     }
-  }, [activate, section, session.progress.section]);
+  }, [activate, location.pathname, navigate, section, sectionPath, session.progress.section]);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

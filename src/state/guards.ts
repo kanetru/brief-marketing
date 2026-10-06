@@ -37,6 +37,8 @@ export function canAdvance(session: DiscoverySession, section: SectionId, step: 
     case "reality:3":
     case "reality:4":
     case "reality:5":
+    case "reality:6":
+    case "reality:7":
       return true;
     case "personality:0":
     case "personality:1":

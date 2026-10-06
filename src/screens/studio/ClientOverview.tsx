@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { clientRecord, type ClientRecord } from "../../domain/workspace/clientRecord";
+import { positioningRead } from "../../domain/workspace/positioning";
 import { clientInitials, clientLogo } from "../../domain/workspace/clientLogo";
 import type { BriefProject, ClientOfferRecord, ClientProfile, ClientSocial } from "../../types/project";
 
@@ -15,6 +16,8 @@ export function ClientOverview({
   onProfile: (profile: ClientProfile) => void;
 }) {
   const record = clientRecord(project);
+  const position = positioningRead(project)[0];
+  const researched = (project.marketDiscovery?.candidates?.length ?? 0) > 0 || (project.watch?.competitors?.length ?? 0) > 0;
   const [editing, setEditing] = useState(false);
   if (editing) {
     return (
@@ -69,6 +72,13 @@ export function ClientOverview({
           <p>{record.goal}</p>
         </section>
       ) : null}
+      {position ? (
+        <section className="surface-card" data-screen="positioning-summary">
+          <h2>Positioning</h2>
+          <p>{position.body}</p>
+        </section>
+      ) : null}
+      <p className="studio-meta">{researched ? "Research collected" : "Market research has not run"} · Updated {project.updatedAt.slice(0, 10)}</p>
     </div>
   );
 }

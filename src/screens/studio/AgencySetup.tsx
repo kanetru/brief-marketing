@@ -141,7 +141,7 @@ export function AgencySetup() {
 
           <section className="look-section">
             <h2>Chapters</h2>
-            {CHAPTER_IDS.map((id) => {
+            {CHAPTER_IDS.filter((id) => id !== "personality" && id !== "colour").map((id) => {
               const fallback = resolved.chapters[id];
               const chapter = experience.chapters?.[id] ?? {};
               return (
@@ -216,10 +216,9 @@ export function AgencySetup() {
             {([
               ["opening", "Opening"],
               ["question", "Question"],
-              ["entries", "Entries"],
-              ["choices", "Choices"],
-              ["colour", "Colour"],
-              ["type", "Type"],
+              ["entries", "Offers"],
+              ["social", "Social"],
+              ["competitors", "Competitors"],
               ["final", "Final"],
               ["completion", "Completion"],
             ] as const).map(([id, label]) => (

@@ -24,12 +24,19 @@ import { VOICE_ROUNDS } from "./voice";
  * profile:      0 the client review
  * complete:     0 handover
  */
+/** Visual brand discovery stays in the model. It is not part of the active conversation. */
+export const PARKED_SECTIONS = ["personality", "spectrum", "visual", "colour", "type", "imagery", "voice"] as const satisfies readonly SectionId[];
+
+export function isParked(section: SectionId): boolean {
+  return (PARKED_SECTIONS as readonly string[]).includes(section);
+}
+
 export const SECTIONS = [
   { id: "welcome", label: "Intro", path: "/demo/start", steps: 1 },
   { id: "business", label: "Business", path: "/demo/business", steps: 8 },
   { id: "audience", label: "Audience", path: "/demo/audience", steps: 5 },
   { id: "goals", label: "Goals", path: "/demo/goals", steps: 3 },
-  { id: "reality", label: "Conditions", path: "/demo/reality", steps: 6 },
+  { id: "reality", label: "Conditions", path: "/demo/reality", steps: 8 },
   { id: "personality", label: "Personality", path: "/demo/personality", steps: 2 },
   { id: "spectrum", label: "Spectrum", path: "/demo/spectrum", steps: 1 + SPECTRUM_DIMENSIONS.length },
   { id: "visual", label: "Visual", path: "/demo/visual", steps: 1 + VISUAL_COMPARISON_PAIRS.length },
@@ -69,8 +76,13 @@ export function stepCount(section: SectionId): number {
 }
 
 export function adjacentSection(section: SectionId, direction: -1 | 1): SectionId | null {
-  const next = SECTIONS[sectionIndex(section) + direction];
-  return next ? next.id : null;
+  let index = sectionIndex(section);
+  for (;;) {
+    index += direction;
+    const next = SECTIONS[index];
+    if (!next) return null;
+    if (!isParked(next.id)) return next.id;
+  }
 }
 
 export function laterSection(a: SectionId, b: SectionId): SectionId {

@@ -6,6 +6,7 @@ import { QuestionScreen } from "../components/QuestionScreen";
 import { QuietChoice } from "../components/QuietChoice";
 import { TextResponse } from "../components/TextResponse";
 import { parseEntries } from "../domain/multiEntry";
+import { normaliseHandle } from "../domain/socialHandle";
 import type { OfferInput, PriceModel, StrategyInputs, StrategyListField, StrategyTextField } from "../types/strategy";
 import { textValue } from "../state/textEvidence";
 import { useSession } from "../state/SessionContext";
@@ -371,15 +372,69 @@ export function NeighbourStep() {
   const { inputs, setStrategyText } = useStrategy();
   const names = parseEntries(textValue(inputs.neighbours));
   return (
-    <QuestionScreen kicker="Conditions" title="Who do you think you're compared with?" supporting="Add anyone that comes to mind. One is enough. None is fine too — Brief can help find the others. Commas, line breaks, and pasting a list all work.">
+    <QuestionScreen kicker="Conditions" title="Who do you think you're compared with?" supporting="Add anyone that comes to mind. None is fine too — Brief can look for the others.">
       <MultiEntry
         labelledBy="question-title"
         placeholder="Farm names, studios, whoever comes to mind"
         values={names}
         onChange={(next) => setStrategyText("neighbours", next.join("\n"))}
       />
-      <p className="field-label">Who would feel completely wrong?</p>
+      <p className="field-label">Who would feel completely wrong? Optional.</p>
       <TextResponse labelledBy="question-title" length="short" placeholder="Optional" value={textValue(inputs.wrongCompany)} onChange={(value) => setStrategyText("wrongCompany", value)} />
+    </QuestionScreen>
+  );
+}
+
+function HandleField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const parsed = normaliseHandle(value);
+  const show = value.trim().length > 0;
+  return (
+    <div className="handle-field">
+      <p className="field-label">{label}</p>
+      <div className="handle-row">
+        <TextResponse labelledBy="question-title" length="short" placeholder="@handle, or a profile link" value={value} onChange={onChange} />
+        {show && parsed.valid && parsed.handle ? <span className="handle-ok" aria-label="Looks fine">✓</span> : null}
+      </div>
+      {show && !parsed.valid ? <p className="gentle">That doesn't look like a handle yet. Try @name or the profile link.</p> : null}
+    </div>
+  );
+}
+
+export function PresenceStep() {
+  const { inputs, setPresence } = useStrategy();
+  const presence = inputs.presence ?? { instagram: "", tiktok: "", website: "", note: "" };
+  return (
+    <QuestionScreen
+      kicker="Online"
+      title="Where can we find you?"
+      supporting="Add any accounts your business currently uses. Skip anything that doesn't apply."
+    >
+      <p className="field-label">Website</p>
+      <TextResponse labelledBy="question-title" length="short" placeholder="yoursite.com" value={presence.website} onChange={(value) => setPresence("website", value)} />
+      <HandleField label="Instagram" value={presence.instagram} onChange={(value) => setPresence("instagram", value)} />
+      <HandleField label="TikTok" value={presence.tiktok} onChange={(value) => setPresence("tiktok", value)} />
+    </QuestionScreen>
+  );
+}
+
+export function AnythingElseStep() {
+  const { inputs, setPresence } = useStrategy();
+  const presence = inputs.presence ?? { instagram: "", tiktok: "", website: "", note: "" };
+  return (
+    <QuestionScreen
+      kicker="Online"
+      title="What should Brief know that it hasn't asked?"
+      supporting="Skip it if nothing comes to mind."
+    >
+      <TextResponse labelledBy="question-title" length="long" placeholder="Anything useful" value={presence.note} onChange={(value) => setPresence("note", value)} />
     </QuestionScreen>
   );
 }

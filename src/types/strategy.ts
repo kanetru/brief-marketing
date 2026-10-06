@@ -153,6 +153,8 @@ export interface StrategyInputs {
   neighbourKinds: NeighbourKind[];
   neighbours: TextEvidenceAnswer;
   wrongCompany: TextEvidenceAnswer;
+  /** Instagram and TikTok handles, a website, and anything else the client wants Brief to know. Local only. */
+  presence: { instagram: string; tiktok: string; website: string; note: string };
 }
 
 export type StrategyTextField = {

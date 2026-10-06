@@ -2,7 +2,7 @@ import { previewExperience } from "../domain/agency/experience";
 import { contrastRatio, openingLogo, themeVars } from "../domain/agency/theme";
 import type { WorkspaceBrand } from "../types/agency";
 
-export type PreviewStage = "opening" | "question" | "entries" | "choices" | "colour" | "type" | "final" | "completion";
+export type PreviewStage = "opening" | "question" | "entries" | "social" | "competitors" | "choices" | "colour" | "type" | "final" | "completion";
 
 export function ExperiencePreview({
   brand,
@@ -28,6 +28,8 @@ export function ExperiencePreview({
       {logo ? <img src={logo} alt="" className="agency-preview-logo" /> : null}
       {view === "opening" ? <Opening experience={experience} button={brand.theme.buttonStyle || "solid"} /> : null}
       {view === "question" ? <Question prompt="What does the business do?" field="A short description" /> : null}
+      {view === "social" ? <Question prompt="Where can we find you?" field="@instagram  ·  @tiktok" /> : null}
+      {view === "competitors" ? <Question prompt="Who do you think you're compared with?" field="Names, separated however you like" /> : null}
       {view === "entries" ? (
         <div data-preview-entries="true">
           <p className="agency-preview-name">What do you sell?</p>

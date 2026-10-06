@@ -27,6 +27,7 @@ import {
   withProfile,
   withWorkNotes,
   withContentIdeas,
+  withBriefing,
   withClientReading,
   withReaction,
   withManagerNotes,
@@ -65,6 +66,7 @@ interface ProjectApi {
   setProfile: (projectId: string, profile: ClientProfile) => void;
   setWorkNotes: (projectId: string, notes: WorkNote[]) => void;
   setContentIdeas: (projectId: string, ideas: ContentIdea[]) => void;
+  setBriefing: (projectId: string, briefing: BriefProject["briefing"]) => void;
   setLearning: (projectId: string, response: LearningResponse) => void;
   setClientReading: (projectId: string, reading: StoredClientReading) => void;
   setReaction: (projectId: string, reaction: ManagerReaction) => void;
@@ -128,6 +130,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setProfile: (projectId, profile) => mutate(projectId, (project) => withProfile(project, profile)),
     setWorkNotes: (projectId, notes) => mutate(projectId, (project) => withWorkNotes(project, notes)),
     setContentIdeas: (projectId, ideas) => mutate(projectId, (project) => withContentIdeas(project, ideas)),
+    setBriefing: (projectId, briefing) => mutate(projectId, (project) => withBriefing(project, briefing)),
     setLearning: (projectId, response) => mutate(projectId, (project) => withLearning(project, response)),
     setClientReading: (projectId, reading) => mutate(projectId, (project) => withClientReading(project, reading)),
     setReaction: (projectId, reaction) => mutate(projectId, (project) => withReaction(project, reaction)),

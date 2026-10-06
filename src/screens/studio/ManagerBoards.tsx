@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActionGroup, BadgeRow } from "../../components/ActionGroup";
 import { badgeLabel, type CompetitorView, type OpportunityView, type OriginalResponse, type ResearchPartial } from "../../domain/workspace/managerView";
 import type { MarketFacts } from "../../domain/workspace/plainAnalytics";
+import type { PositioningCard } from "../../domain/workspace/positioning";
 import type { TechnicalDetail } from "../../types/marketDiscovery";
 
 export function CompetitorBoard({
@@ -16,6 +17,7 @@ export function CompetitorBoard({
   onRetryInstagram,
   onRetryTikTok,
   onRetryAnalysis,
+  onAsk,
 }: {
   views: CompetitorView[];
   busy: boolean;
@@ -28,6 +30,7 @@ export function CompetitorBoard({
   onRetryInstagram?: () => void;
   onRetryTikTok?: () => void;
   onRetryAnalysis?: () => void;
+  onAsk?: (name: string) => void;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -143,7 +146,7 @@ export function CompetitorBoard({
           ))}
         </div>
       ) : null}
-      {selected ? <CompetitorDetail view={selected} onClose={() => setOpen(null)} /> : null}
+      {selected ? <CompetitorDetail view={selected} onClose={() => setOpen(null)} onAsk={onAsk} /> : null}
     </section>
   );
 }
@@ -171,7 +174,7 @@ export function TechnicalDetails({ items }: { items: TechnicalDetail[] }) {
   );
 }
 
-export function CompetitorDetail({ view, onClose }: { view: CompetitorView; onClose: () => void }) {
+export function CompetitorDetail({ view, onClose, onAsk }: { view: CompetitorView; onClose: () => void; onAsk?: (name: string) => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const dismiss = useRef(onClose);
   dismiss.current = onClose;
@@ -190,6 +193,7 @@ export function CompetitorDetail({ view, onClose }: { view: CompetitorView; onCl
           <h2>{view.name}</h2>
           <button ref={closeRef} type="button" className="layer-close" onClick={onClose}>Close</button>
         </header>
+        {onAsk ? <button type="button" className="studio-text-button" onClick={() => onAsk(view.name)}>Ask Brief about {view.name}</button> : null}
         <div className="layer-body">
           <BadgeRow>
             <p className="card-badge">{badgeLabel(view.badge)}</p>
@@ -239,7 +243,7 @@ export function CompetitorDetail({ view, onClose }: { view: CompetitorView; onCl
   );
 }
 
-export function MarketBoard({ facts }: { facts: MarketFacts }) {
+export function MarketBoard({ facts, positioning = [], onAsk }: { facts: MarketFacts; positioning?: PositioningCard[]; onAsk?: () => void }) {
   if (facts.competitors === 0 && facts.posts === 0) {
     return (
       <section className="surface-card" data-screen="market-empty">
@@ -251,6 +255,24 @@ export function MarketBoard({ facts }: { facts: MarketFacts }) {
   return (
     <section data-screen="market" className="manager-stack">
       <h2>Market</h2>
+      <div className="stat-strip">
+        {facts.competitors > 0 ? <p><strong>{facts.competitors}</strong><span>{facts.competitors === 1 ? "Competitor" : "Competitors"}</span></p> : null}
+        {facts.posts > 0 ? <p><strong>{facts.posts}</strong><span>{facts.posts === 1 ? "Post" : "Posts"}</span></p> : null}
+      </div>
+      {positioning.length > 0 ? (
+        <section data-screen="positioning">
+          <h3>Positioning</h3>
+          <div className="card-grid">
+            {positioning.map((card) => (
+              <article key={card.title} className="surface-card">
+                <h3>{card.title}</h3>
+                <p>{card.body}</p>
+              </article>
+            ))}
+          </div>
+          {onAsk ? <button type="button" className="studio-text-button" onClick={onAsk}>Ask Brief</button> : null}
+        </section>
+      ) : null}
       <section className="surface-card">
         <h3>Market summary</h3>
         {facts.facts.map((fact) => <p key={fact}>{fact}</p>)}
@@ -290,10 +312,12 @@ export function OpportunityBoard({
   items,
   onSave,
   onDismiss,
+  onAsk,
 }: {
   items: OpportunityView[];
   onSave: (id: string) => void;
   onDismiss: (id: string) => void;
+  onAsk?: (title: string) => void;
 }) {
   if (items.length === 0) {
     return (
@@ -311,8 +335,8 @@ export function OpportunityBoard({
           <article key={item.id} className="surface-card" data-saved={item.saved ? "true" : "false"}>
             <p className="card-kicker">{item.index}</p>
             <h3>{item.title}</h3>
-            <p><span className="card-kicker">Why this looks promising</span>{item.why}</p>
-            <p><span className="card-kicker">What to make</span>{item.move}</p>
+            <p><span className="card-kicker">Why</span>{item.why}</p>
+            <p><span className="card-kicker">Opportunity</span>{item.move}</p>
             <p><span className="card-kicker">Could become</span>{item.could}</p>
             {(item.basis ?? []).length > 0 ? (
               <details>
@@ -322,6 +346,7 @@ export function OpportunityBoard({
             ) : null}
             <ActionGroup className="card-actions">
               <button type="button" className="studio-button" data-testid="save-opportunity" onClick={() => onSave(item.id)}>{item.saved ? "Saved" : "Save"}</button>
+              {onAsk ? <button type="button" className="studio-text-button" onClick={() => onAsk(item.title)}>Ask Brief</button> : null}
               <button type="button" className="studio-text-button" onClick={() => onDismiss(item.id)}>Dismiss</button>
             </ActionGroup>
           </article>

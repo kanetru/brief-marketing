@@ -5,7 +5,7 @@ import { TransitionWrapper } from "../components/TransitionWrapper";
 import { canAdvance } from "../state/guards";
 import { useSession } from "../state/SessionContext";
 import { useConversation } from "../state/useConversation";
-import { ActiveStep, CapabilityStep, JourneyStep, NeighbourStep, ProofStep, WorkingStep } from "./strategySteps";
+import { ActiveStep, AnythingElseStep, CapabilityStep, JourneyStep, NeighbourStep, PresenceStep, ProofStep, WorkingStep } from "./strategySteps";
 
 export function RealityScreen() {
   const { session } = useSession();
@@ -38,6 +38,8 @@ export function RealityScreen() {
         ) : null}
         {step === 4 ? <ProofStep /> : null}
         {step === 5 ? <NeighbourStep /> : null}
+        {step === 6 ? <PresenceStep /> : null}
+        {step === 7 ? <AnythingElseStep /> : null}
       </TransitionWrapper>
     </DiscoveryLayout>
   );

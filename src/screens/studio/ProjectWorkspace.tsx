@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { DEFAULT_PANEL, LAST_CLIENT_KEY, MANAGER_NAV, PRIMARY_NAV, type ManagerPanel } from "../../domain/workspace/managerNav";
 import { ActionGroup } from "../../components/ActionGroup";
-import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { buildBrandIntelligence } from "../../domain/brandIntelligence";
 import { buildProjectIntelligence } from "../../domain/project/assemble";
 import { nextAssetStatus } from "../../domain/project/assetRegister";
@@ -19,13 +18,16 @@ import { ClientOverview } from "./ClientOverview";
 import { BrandReference, FilesPanel, IdeasPanel, NotesPanel } from "./WorkPlaces";
 import { competitorViews, opportunityViews, originalResponses, researchFailed, researchPartial } from "../../domain/workspace/managerView";
 import { marketFacts } from "../../domain/workspace/plainAnalytics";
+import { positioningRead } from "../../domain/workspace/positioning";
+import { clientInitials, clientLogo } from "../../domain/workspace/clientLogo";
+import { AskBrief } from "./AskBrief";
+import type { BriefMessage } from "../../types/project";
 import { researchRetry } from "../../domain/market/stages";
 import { clientRemovalName } from "../../domain/project/removeClient";
 import type { MarketRetry } from "../../types/marketDiscovery";
 import { MoreNav } from "./MoreNav";
 import { RemoveClientSection } from "./RemoveClient";
 import { DevProviderChecks } from "./DevProviderChecks";
-import { clientCardModel } from "../../domain/workspace/clientCard";
 import { onboardingStatusLabel, sendOnboardingHeading } from "../../domain/workspace/onboardingAccess";
 import { ClientOnboardingSection } from "./OnboardingAccess";
 import { discoveryContext } from "../../domain/market/context";
@@ -93,6 +95,8 @@ export function ProjectWorkspace() {
   const [researching, setResearching] = useState(false);
   const [strategyArea, setStrategyArea] = useState<(typeof STRATEGY_AREAS)[number][0]>("matters");
   const [notice, setNotice] = useState("");
+  const [briefOpen, setBriefOpen] = useState(false);
+  const [briefSeed, setBriefSeed] = useState("");
   const [researchRun, setResearchRun] = useState<ResearchRun | null>(null);
   const intelligence = useMemo(
     () => (project ? buildProjectIntelligence(project, project.updatedAt) : null),
@@ -122,10 +126,14 @@ export function ProjectWorkspace() {
   }
 
   const link = `${window.location.origin}${sharePath(project.shareToken)}`;
-  const card = clientCardModel(project);
   const competitors = competitorViews(project, intelligence);
   const opportunities = opportunityViews(project, intelligence);
   const facts = marketFacts(project);
+  const positioning = positioningRead(project);
+  function openBrief(seed = "") {
+    setBriefSeed(seed);
+    setBriefOpen(true);
+  }
 
   function choose(next: Panel) {
     setPanel(next);
@@ -185,18 +193,16 @@ export function ProjectWorkspace() {
   return (
     <div className="studio">
       <header className="studio-top">
-        <div>
-          <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
-          <p className="studio-kicker"><Link to="/studio">Clients</Link></p>
-          <h1>{project.businessName || "Untitled project"}</h1>
-          <p className="studio-lead">{project.category || project.clientName}</p>
-          {card.updated ? <p className="studio-meta">{card.updated}</p> : null}
+        <div className="workspace-identity">
+          <WorkspaceMark project={project} />
+          <div>
+            <p className="studio-kicker"><Link to="/studio">Clients</Link></p>
+            <h1>{project.businessName || "Untitled project"}</h1>
+            <p className="studio-lead">{project.category || "Client"}</p>
+          </div>
         </div>
         <div className="studio-links">
-          <ActionGroup>
-            <Link to="/studio?new=1">Onboard new client</Link>
-            <Link to="/studio/look">Make Brief your own</Link>
-          </ActionGroup>
+          <button type="button" className="studio-button ask-brief" onClick={() => openBrief()}>Ask Brief</button>
         </div>
       </header>
       <nav className="studio-nav" aria-label="Project">
@@ -243,11 +249,12 @@ export function ProjectWorkspace() {
           onRetryTikTok={() => void findCompetitors("tiktok")}
           onRetryAnalysis={() => void findCompetitors("classification")}
           onAdd={(name) => api.setCompetitor(project.id, { id: crypto.randomUUID(), name, website: "", notes: "" })}
+          onAsk={(name) => openBrief(`Let's talk about ${name}.`)}
         />
       ) : null}
-      {panel === "market" ? <MarketBoard facts={facts} /> : null}
+      {panel === "market" ? <MarketBoard facts={facts} positioning={positioning} onAsk={() => openBrief("Let's talk about the market.")} /> : null}
       {panel === "opportunities" ? (
-        <OpportunityBoard items={opportunities} onSave={(id) => reactTo(id, "save")} onDismiss={(id) => reactTo(id, "dismiss")} />
+        <OpportunityBoard items={opportunities} onSave={(id) => reactTo(id, "save")} onDismiss={(id) => reactTo(id, "dismiss")} onAsk={(title) => openBrief(`Let's talk about "${title}".`)} />
       ) : null}
       {panel === "files" ? (
         <FilesPanel
@@ -473,8 +480,36 @@ export function ProjectWorkspace() {
           onCopy={(text, label) => void copy(text, label)}
         />
       ) : null}
+      <AskBrief
+        project={project}
+        open={briefOpen}
+        seed={briefSeed}
+        onClose={() => setBriefOpen(false)}
+        onMessages={(messages: BriefMessage[]) => api.setBriefing(project.id, messages)}
+        onSaveIdea={(idea) => {
+          const ideas = project.contentIdeas ?? [];
+          api.setContentIdeas(project.id, [{ id: crypto.randomUUID(), title: idea.title, body: idea.body, status: "idea", at: new Date().toISOString() }, ...ideas]);
+        }}
+        onNote={(text) => {
+          const notes = project.workNotes ?? [];
+          api.setWorkNotes(project.id, [{ id: crypto.randomUUID(), text, at: new Date().toISOString() }, ...notes]);
+        }}
+      />
     </div>
   );
+}
+
+function WorkspaceMark({ project }: { project: BriefProject }) {
+  const logo = clientLogo(project, "light");
+  const [failed, setFailed] = useState(false);
+  if (!logo || failed) {
+    return (
+      <span className="workspace-mark" data-logo="fallback" aria-hidden="true">
+        <span>{clientInitials(project.businessName || project.clientName)}</span>
+      </span>
+    );
+  }
+  return <img className="workspace-mark" src={logo.src} alt="" data-logo="image" onError={() => setFailed(true)} />;
 }
 
 function Market({

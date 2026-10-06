@@ -33,8 +33,8 @@ export function InspirationScreen() {
       <TransitionWrapper transitionKey={`inspiration-${step}`}>
         {positive ? (
           <ReferenceStep
-            title="Who gets it right?"
-            supporting="Who do you pay attention to? They don't have to be competitors."
+            title="Who do you pay attention to?"
+            supporting="They don't have to be competitors."
             noteLabel="What do you like about them?"
             references={session.inspiration.positiveReferences}
             limit={LIMITS.inspirationPositive}

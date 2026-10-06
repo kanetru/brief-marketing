@@ -393,6 +393,14 @@ export interface WorkNote {
 
 export type ContentIdeaStatus = "idea" | "in_progress" | "done";
 
+export interface BriefMessage {
+  id: string;
+  role: "manager" | "brief";
+  text: string;
+  at: string;
+  basis?: string;
+}
+
 export interface ContentIdea {
   id: string;
   title: string;
@@ -477,6 +485,10 @@ export interface BriefProject {
   profile?: ClientProfile;
   workNotes?: WorkNote[];
   contentIdeas?: ContentIdea[];
+  /** Optional contact captured when the client was created. */
+  contactEmail?: string;
+  /** Ask Brief thread for this client. Absent on older projects. */
+  briefing?: BriefMessage[];
   competitors: CompetitorInput[];
   followUps: FollowUp[];
   followUpRequest: FollowUpRequest | null;

@@ -50,6 +50,7 @@ export type Action =
   | { type: "strategy-set"; field: "awareness" | "capacity" | "time"; value: string | null }
   | { type: "strategy-offer"; offer: OfferInput }
   | { type: "strategy-offer-remove"; id: string }
+  | { type: "strategy-presence"; field: "instagram" | "tiktok" | "website" | "note"; value: string }
   | { type: "toggle-trait"; pole: PersonalityPoleId; trait: PersonalityTrait }
   | { type: "add-custom-trait"; pole: PersonalityPoleId; value: string }
   | { type: "remove-custom-trait"; pole: PersonalityPoleId; value: string }
@@ -320,6 +321,15 @@ export function sessionReducer(state: DiscoverySession, action: Action): Discove
       const timestamp = new Date().toISOString();
       const offers = [...state.strategyInputs.offers.filter((offer) => offer.id !== action.offer.id), action.offer];
       return { ...state, updatedAt: timestamp, strategyInputs: { ...state.strategyInputs, offers } };
+    }
+    case "strategy-presence": {
+      const timestamp = new Date().toISOString();
+      const current = state.strategyInputs.presence ?? { instagram: "", tiktok: "", website: "", note: "" };
+      return {
+        ...state,
+        updatedAt: timestamp,
+        strategyInputs: { ...state.strategyInputs, presence: { ...current, [action.field]: action.value } },
+      };
     }
     case "strategy-offer-remove": {
       const timestamp = new Date().toISOString();

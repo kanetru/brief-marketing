@@ -1,5 +1,5 @@
 import { LoverLoverLogo } from "./LoverLoverLogo";
-import { SECTIONS, sectionIndex, sectionReached, stepCount } from "../domain/sections";
+import { PARKED_SECTIONS, SECTIONS, isParked, sectionIndex, sectionReached, stepCount } from "../domain/sections";
 import type { SectionId } from "../types/discovery";
 
 interface ProgressIndicatorProps {
@@ -22,7 +22,8 @@ function fillFor(index: number, currentIndex: number, step: number, steps: numbe
 export function ProgressIndicator({ current, furthest, step, totalSteps, hideSections = [], onSelect }: ProgressIndicatorProps) {
   const currentIndex = sectionIndex(current);
   const currentLabel = SECTIONS[currentIndex]?.label ?? "";
-  const visible = SECTIONS.filter((section) => !hideSections.includes(section.id));
+  const hidden = new Set<string>([...PARKED_SECTIONS, ...hideSections]);
+  const visible = SECTIONS.filter((section) => !hidden.has(section.id) && !isParked(section.id));
 
   return (
     <nav className="progress" aria-label="Session progress">

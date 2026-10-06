@@ -3,6 +3,7 @@ import { emptyMarketDiscovery, prominentAssessments } from "../market/review";
 import { clientFacingCopy } from "../languageGuard";
 import { formatFollowers } from "./marketCards";
 import { mergeStats, statsForCandidate, statsForWatch, type CompetitorStats } from "./plainAnalytics";
+import { groundedOpportunityViews } from "./groundedOpportunities";
 import { textValue } from "../../state/textEvidence";
 import type { BriefProject, CompetitorInput, CompetitorProfile, Opportunity, ProjectIntelligence } from "../../types/project";
 import type { MarketAccountType, SocialAccountCandidate } from "../../types/marketDiscovery";
@@ -273,10 +274,38 @@ export function competitorViews(project: BriefProject, intelligence: ProjectInte
     place(fromListed(input, profile));
   }
   const named = splitNames(project.discovery?.strategyInputs?.neighbours?.state === "evidence" ? project.discovery.strategyInputs.neighbours.evidence.raw : "");
+  const claimed = new Set<string>();
   for (const name of named) {
-    place(fromCandidate(undefined, "named", `named-${name}`, name, "Named during discovery. Not checked.", "Named during discovery."));
+    const candidate = candidateFor(record, name);
+    if (candidate) claimed.add(candidate.id);
+    place(fromCandidate(
+      candidate,
+      "named",
+      candidate?.id ?? `named-${name}`,
+      name,
+      candidate ? (candidate.bio || "Found in market research.") : "Named during discovery. Not checked.",
+      candidate?.bio || "Named during discovery.",
+    ));
+  }
+  for (const candidate of record.candidates) {
+    if (claimed.has(candidate.id)) continue;
+    const researched = (candidate.recentPosts?.length ?? 0) > 0 || (typeof candidate.followers === "number" && candidate.followers > 0);
+    if (!researched) continue;
+    const name = candidate.displayName || candidate.handle;
+    if (!name || index.has(name.trim().toLowerCase())) continue;
+    place(fromCandidate(candidate, "named", candidate.id, name, candidate.bio || "Found in market research.", candidate.bio || "Found in market research."));
   }
   return views;
+}
+
+function candidateFor(record: ReturnType<typeof emptyMarketDiscovery>, name: string): SocialAccountCandidate | undefined {
+  const key = name.trim().toLowerCase().replace(/^@/, "");
+  if (!key) return undefined;
+  return record.candidates.find((candidate) => {
+    const display = candidate.displayName.trim().toLowerCase();
+    const handle = candidate.handle.trim().toLowerCase().replace(/^@/, "");
+    return display === key || handle === key;
+  });
 }
 
 function marketTitle(title: string, statement: string): string {
@@ -302,6 +331,14 @@ export function marketCards(intelligence: ProjectIntelligence): MarketCardView[]
 export function opportunityViews(project: BriefProject, intelligence: ProjectIntelligence): OpportunityView[] {
   const hidden = hiddenIds(project);
   const saved = savedIds(project);
+  const grounded = groundedOpportunityViews(project).filter((item) => !hidden.has(item.id));
+  if (grounded.length > 0) {
+    return grounded.map((item, index) => ({
+      ...item,
+      index: String(index + 1).padStart(2, "0"),
+      saved: saved.has(item.id),
+    }));
+  }
   return intelligence.opportunities.filter((item) => !hidden.has(item.id)).slice(0, 8).map((item, index) => toOpportunity(item, index, saved.has(item.id)));
 }
 

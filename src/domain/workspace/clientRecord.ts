@@ -70,6 +70,16 @@ export function socialLink(social: ClientSocial): RecordLink | null {
   return { label: PLATFORM[social.platform], value: `@${handle}`, href };
 }
 
+function recordedSocials(project: BriefProject): ClientSocial[] {
+  const saved = (project.socials ?? []).filter((item) => item.handle.trim());
+  if (saved.length > 0) return saved;
+  const presence = project.discovery?.strategyInputs?.presence;
+  const found: ClientSocial[] = [];
+  if (presence?.instagram?.trim()) found.push({ platform: "instagram", handle: presence.instagram });
+  if (presence?.tiktok?.trim()) found.push({ platform: "tiktok", handle: presence.tiktok });
+  return found;
+}
+
 function discoveryOffers(project: BriefProject): ClientOfferRecord[] {
   return (project.discovery?.strategyInputs?.offers ?? [])
     .filter((offer) => offer.name?.trim())
@@ -100,8 +110,8 @@ export function clientRecord(project: BriefProject): ClientRecord {
     name: project.businessName.trim() || project.clientName.trim() || "Untitled",
     category: project.category.trim(),
     description,
-    website: websiteLink(project.website),
-    socials: (project.socials ?? []).map(socialLink).filter((item): item is RecordLink => item !== null),
+    website: websiteLink(project.website || project.discovery?.strategyInputs?.presence?.website || ""),
+    socials: recordedSocials(project).map(socialLink).filter((item): item is RecordLink => item !== null),
     offers: storedOffers.length > 0 ? storedOffers : discoveryOffers(project),
     audience,
     goal,

@@ -5,6 +5,7 @@ import { projectStatus } from "../domain/project/assemble";
 import { emptyWatch, normaliseWatch, withStoredReaction } from "../domain/intelligence/watch";
 import type { MarketDiscoveryRecord } from "../types/marketDiscovery";
 import { emptyMarketDiscovery } from "../domain/market/review";
+import { normaliseHandle } from "../domain/socialHandle";
 import type { StoredClientReading } from "../types/clientRead";
 import type { ManagerReaction } from "../types/intelligence";
 import type {
@@ -56,6 +57,7 @@ export function createProject(input: {
   businessName?: string;
   website?: string;
   category?: string;
+  contactEmail?: string;
   discovery?: DiscoverySession;
   discoveryStatus?: DiscoveryStatus;
   now?: string;
@@ -70,6 +72,7 @@ export function createProject(input: {
     businessName: input.businessName?.trim() || businessNameFrom(discovery),
     website: input.website?.trim() ?? "",
     category: input.category?.trim() ?? "",
+    contactEmail: input.contactEmail?.trim() ?? "",
     status: "draft",
     discoveryStatus: input.discoveryStatus ?? "draft",
     createdAt: now,
@@ -131,7 +134,16 @@ export function markDiscoveryOpened(project: BriefProject, now = new Date().toIS
 
 export function submitDiscovery(project: BriefProject, now = new Date().toISOString()): BriefProject {
   if (project.discoveryStatus === "submitted" || project.discoveryStatus === "follow_up_complete" || project.discoveryStatus === "closed") return project;
-  return bump(project, now, "Discovery submitted", { discoveryStatus: "submitted" }, "discovery_submitted");
+  const presence = project.discovery?.strategyInputs?.presence;
+  const socials = [...(project.socials ?? [])];
+  for (const platform of ["instagram", "tiktok"] as const) {
+    const handle = normaliseHandle(presence?.[platform] ?? "").handle;
+    if (handle && !socials.some((item) => item.platform === platform && item.handle.replace(/^@/, "").toLowerCase() === handle.toLowerCase())) {
+      socials.push({ platform, handle });
+    }
+  }
+  const website = project.website.trim() || presence?.website?.trim() || "";
+  return bump(project, now, "Discovery submitted", { discoveryStatus: "submitted", socials, website }, "discovery_submitted");
 }
 
 export function requestFollowUp(
@@ -227,6 +239,10 @@ export function withProfile(project: BriefProject, profile: ClientProfile, now =
 
 export function withWorkNotes(project: BriefProject, workNotes: WorkNote[], now = new Date().toISOString()): BriefProject {
   return bump(project, now, "Note updated", { workNotes }, "note");
+}
+
+export function withBriefing(project: BriefProject, briefing: BriefProject["briefing"], now = new Date().toISOString()): BriefProject {
+  return bump(project, now, "", { briefing: briefing ?? [] }, null);
 }
 
 export function withContentIdeas(project: BriefProject, contentIdeas: ContentIdea[], now = new Date().toISOString()): BriefProject {
@@ -329,6 +345,8 @@ function normaliseProject(project: BriefProject): BriefProject {
     profile: project.profile ?? emptyProfile(),
     workNotes: project.workNotes ?? [],
     contentIdeas: project.contentIdeas ?? [],
+    briefing: project.briefing ?? [],
+    contactEmail: project.contactEmail ?? "",
     competitors: project.competitors ?? [],
     followUps: project.followUps ?? [],
     followUpRequest: project.followUpRequest ?? null,

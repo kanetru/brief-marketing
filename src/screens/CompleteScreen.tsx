@@ -42,7 +42,7 @@ export function CompleteScreen() {
             </aside>
           ) : null}
           <p className="meta">
-            {given.answered} questions answered · {given.visuals} visual directions explored · {given.references} references supplied
+            {given.answered} answers · {given.references} references
           </p>
         </QuestionScreen>
       </DiscoveryLayout>

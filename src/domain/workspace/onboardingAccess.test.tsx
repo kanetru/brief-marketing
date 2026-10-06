@@ -52,7 +52,7 @@ describe("client onboarding access", () => {
     expect(onboardingIncomplete("follow_up_requested")).toBe(true);
     expect(onboardingIncomplete("submitted")).toBe(false);
     expect(onboardingIncomplete("closed")).toBe(false);
-    expect(sendOnboardingHeading(true)).toBe("Client onboarding is ready.");
+    expect(sendOnboardingHeading(true)).toBe("Your client onboarding is ready.");
     expect(sendOnboardingHeading(false)).toBe("Client onboarding");
   });
 

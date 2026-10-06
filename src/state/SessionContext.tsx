@@ -49,6 +49,7 @@ interface SessionApi {
   setStrategyValue: (field: "awareness" | "capacity" | "time", value: string | null) => void;
   saveOffer: (offer: OfferInput) => void;
   removeOffer: (id: string) => void;
+  setPresence: (field: "instagram" | "tiktok" | "website" | "note", value: string) => void;
   setWhyUncertain: () => void;
   toggleTrait: (pole: PersonalityPoleId, trait: PersonalityTrait) => void;
   addCustomTrait: (pole: PersonalityPoleId, value: string) => void;
@@ -157,6 +158,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
   const saveOffer = useCallback((offer: OfferInput) => send({ type: "strategy-offer", offer }), [send]);
   const removeOffer = useCallback((id: string) => send({ type: "strategy-offer-remove", id }), [send]);
+  const setPresence = useCallback(
+    (field: "instagram" | "tiktok" | "website" | "note", value: string) => send({ type: "strategy-presence", field, value }),
+    [send],
+  );
   const setWhyUncertain = useCallback(() => send({ type: "strategy-uncertain" }), [send]);
   const toggleTrait = useCallback(
     (pole: PersonalityPoleId, trait: PersonalityTrait) => send({ type: "toggle-trait", pole, trait }),
@@ -339,6 +344,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setStrategyValue,
       saveOffer,
       removeOffer,
+      setPresence,
       setWhyUncertain,
       toggleTrait,
       addCustomTrait,
@@ -404,6 +410,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setStrategyValue,
       saveOffer,
       removeOffer,
+      setPresence,
       setWhyUncertain,
       toggleTrait,
       addCustomTrait,
