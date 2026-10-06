@@ -52,7 +52,7 @@ describe("client onboarding access", () => {
     expect(onboardingIncomplete("follow_up_requested")).toBe(true);
     expect(onboardingIncomplete("submitted")).toBe(false);
     expect(onboardingIncomplete("closed")).toBe(false);
-    expect(sendOnboardingHeading(true)).toBe("Send client onboarding");
+    expect(sendOnboardingHeading(true)).toBe("Client onboarding is ready.");
     expect(sendOnboardingHeading(false)).toBe("Client onboarding");
   });
 
@@ -67,11 +67,11 @@ describe("client onboarding access", () => {
     expect(link).toContain(`href="/studio/${item.id}"`);
     expect(link).toContain('data-logo="fallback"');
     expect(link).not.toContain("Open onboarding");
-    expect(html).toContain("Ready to send");
-    expect(html).toContain("Open onboarding");
-    expect(html).toContain(`href="${previewPath(item.id)}"`);
-    expect(html).toContain(`data-client-link="${sharePath(item.shareToken)}"`);
-    expect(html).toContain("Copy client link");
+    expect(html).toContain("DIRT");
+    expect(html).toContain("Land Intelligence");
+    expect(html).not.toContain("Ready to send");
+    expect(html).not.toContain("Open onboarding");
+    expect(html).not.toContain("Copy link");
     expect(html).not.toContain("View responses");
   });
 
@@ -82,11 +82,10 @@ describe("client onboarding access", () => {
         <ClientCard project={item} />
       </MemoryRouter>,
     );
-    expect(html).toContain("Submitted");
-    expect(html).toContain("View responses");
-    expect(html).toContain(`href="/studio/${item.id}?panel=responses"`);
+    expect(html).not.toContain("Submitted");
+    expect(html).not.toContain("View responses");
     expect(html).not.toContain("Open onboarding");
-    expect(html).not.toContain("Copy client link");
+    expect(html).not.toContain("Copy link");
     expect(html).toContain('data-logo="fallback"');
   });
 
@@ -97,7 +96,6 @@ describe("client onboarding access", () => {
       <MemoryRouter>
         <ClientOnboardingSection
           project={item}
-          link={`https://brief.test${live}`}
           heading="Client onboarding"
           onCopy={() => undefined}
           onSend={() => undefined}
@@ -105,16 +103,20 @@ describe("client onboarding access", () => {
         />
       </MemoryRouter>,
     );
+    expect(html).toContain("DIRT");
     expect(html).toContain("Client onboarding");
     expect(html).toContain("Ready to send");
+    expect(html).not.toContain(`https://brief.test${live}`);
+    expect(html).not.toContain(`>${live}<`);
     expect(html).toContain(`data-client-link="${live}"`);
-    expect(html).toContain("Copy client link");
+    expect(html).toContain("Copy link");
     expect(html).toContain(`href="${previewPath(item.id)}"`);
-    expect(html).toContain("Preview onboarding");
+    expect(html).toContain("Preview");
     expect(html).toContain(`href="${live}"`);
     expect(html).toContain("Open as client");
     expect(html).toContain('target="_blank"');
-    expect(html).toContain("Send discovery");
+    expect(html).toContain("Mark as sent");
+    expect(html).toContain("View responses");
     expect(previewPath(item.id)).not.toBe(live);
   });
 

@@ -31,7 +31,7 @@ export function onboardingIncomplete(status: DiscoveryStatus): boolean {
 
 /** Where a newly created client should point the manager. */
 export function sendOnboardingHeading(created: boolean): string {
-  return created ? "Send client onboarding" : "Client onboarding";
+  return created ? "Client onboarding is ready." : "Client onboarding";
 }
 
 /** Manager preview. Stays on a studio path so it is not the client's live link. */

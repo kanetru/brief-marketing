@@ -50,13 +50,13 @@ describe("manager workspace", () => {
     expect(DEFAULT_PANEL).toBe("overview");
     expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Overview", "Competitors", "Market", "Opportunities"]);
     expect(MORE_NAV.map((item) => item.label)).toEqual([
-      "Brand details",
-      "Strategy detail",
-      "Content",
-      "Original responses",
-      "Site research",
-      "Assets",
-      "History",
+      "Files",
+      "Content ideas",
+      "Brand",
+      "Contracts",
+      "Notes",
+      "Onboarding",
+      "Responses",
       "Use in AI",
       "Client settings",
     ]);

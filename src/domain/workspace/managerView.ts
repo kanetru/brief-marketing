@@ -2,6 +2,7 @@ import { splitNames } from "../market/context";
 import { emptyMarketDiscovery, prominentAssessments } from "../market/review";
 import { clientFacingCopy } from "../languageGuard";
 import { formatFollowers } from "./marketCards";
+import { mergeStats, statsForCandidate, statsForWatch, type CompetitorStats } from "./plainAnalytics";
 import { textValue } from "../../state/textEvidence";
 import type { BriefProject, CompetitorInput, CompetitorProfile, Opportunity, ProjectIntelligence } from "../../types/project";
 import type { MarketAccountType, SocialAccountCandidate } from "../../types/marketDiscovery";
@@ -25,6 +26,7 @@ export interface CompetitorView {
   language: string;
   social: string;
   evidence: string;
+  stats?: CompetitorStats;
 }
 
 export interface MarketCardView {
@@ -49,6 +51,7 @@ export interface OpportunityView {
   move: string;
   could: string;
   saved: boolean;
+  basis?: string[];
 }
 
 export interface OriginalResponse {
@@ -73,6 +76,19 @@ function clip(text: string, max = 180): string {
   const cut = clean.slice(0, max - 1);
   const space = cut.lastIndexOf(" ");
   return `${(space > 40 ? cut.slice(0, space) : cut).trim()}…`;
+}
+
+const BADGE_LABEL: Record<CompetitorBadge, string> = {
+  DIRECT: "Direct competitor",
+  INDIRECT: "Indirect",
+  REFERENCE: "Reference",
+  WATCH: "Watch",
+  EMERGING: "Emerging",
+  NAMED: "Named",
+};
+
+export function badgeLabel(badge: CompetitorBadge): string {
+  return BADGE_LABEL[badge];
 }
 
 function badgeFor(value: string): CompetitorBadge {
@@ -156,6 +172,7 @@ function fromCandidate(candidate: SocialAccountCandidate | undefined, classifica
     language: clip(candidate?.bio ?? "", 220),
     social: [platform, candidate?.handle ? `@${candidate.handle}` : ""].filter(Boolean).join(" "),
     evidence: clip(why, 320),
+    stats: candidate ? statsForCandidate(candidate, candidate.retrievedAt) : undefined,
   };
 }
 
@@ -194,6 +211,9 @@ function fromWatched(competitor: MonitoredCompetitor, profiles: ProjectIntellige
   const followers = formatFollowers(rawFollowers);
   const newest = ordered[0];
   const metric = followers ? `${followers}${/demo/i.test(rawFollowers) ? " · demo" : ""}` : "";
+  const stats = statsForWatch(researched, researched.lastCheckedAt || project.updatedAt);
+  stats.themes = themes.map((theme) => theme.charAt(0).toUpperCase() + theme.slice(1)).join(" · ");
+  if (newest?.title) stats.changes = [...stats.changes, clip(newest.title, 80)];
   return {
     id: researched.id,
     name: researched.name,
@@ -210,38 +230,50 @@ function fromWatched(competitor: MonitoredCompetitor, profiles: ProjectIntellige
     language: clip(profile?.language || "", 220),
     social: platforms.join(" · "),
     evidence: clip(newest?.evidence?.join(" ") || profile?.proof || "", 320),
+    stats,
+  };
+}
+
+function mergeCompetitor(current: CompetitorView, next: CompetitorView): CompetitorView {
+  return {
+    ...current,
+    platforms: [...new Set(`${current.platforms} · ${next.platforms}`.split(" · ").map((item) => item.trim()).filter(Boolean))].join(" · "),
+    themes: current.themes || next.themes,
+    stats: mergeStats(current.stats, next.stats),
+    posts: [...current.posts, ...next.posts].slice(0, 3),
   };
 }
 
 export function competitorViews(project: BriefProject, intelligence: ProjectIntelligence): CompetitorView[] {
   const record = project.marketDiscovery ?? emptyMarketDiscovery(project.updatedAt);
   const views: CompetitorView[] = [];
-  const seen = new Set<string>();
-  const remember = (name: string) => {
-    const key = name.trim().toLowerCase();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
+  const index = new Map<string, number>();
+  const place = (view: CompetitorView) => {
+    const key = view.name.trim().toLowerCase();
+    if (!key) return;
+    const existing = index.get(key);
+    if (existing === undefined) {
+      index.set(key, views.length);
+      views.push(view);
+      return;
+    }
+    views[existing] = mergeCompetitor(views[existing]!, view);
   };
   for (const assessment of prominentAssessments(record)) {
     const candidate = record.candidates.find((item) => item.id === assessment.candidateId);
     const name = candidate?.displayName || candidate?.handle || "Account";
-    if (!remember(name)) continue;
-    views.push(fromCandidate(candidate, assessment.classification, assessment.candidateId, name, assessment.whyItMatters, assessment.summary));
+    place(fromCandidate(candidate, assessment.classification, assessment.candidateId, name, assessment.whyItMatters, assessment.summary));
   }
   for (const competitor of project.watch?.competitors ?? []) {
-    if (!remember(competitor.name)) continue;
-    views.push(fromWatched(competitor, intelligence.competitors, project));
+    place(fromWatched(competitor, intelligence.competitors, project));
   }
   for (const input of project.competitors ?? []) {
-    if (!remember(input.name)) continue;
     const profile = intelligence.competitors.find((item) => item.name.toLowerCase() === input.name.toLowerCase());
-    views.push(fromListed(input, profile));
+    place(fromListed(input, profile));
   }
   const named = splitNames(project.discovery?.strategyInputs?.neighbours?.state === "evidence" ? project.discovery.strategyInputs.neighbours.evidence.raw : "");
   for (const name of named) {
-    if (!remember(name)) continue;
-    views.push(fromCandidate(undefined, "named", `named-${name}`, name, "Named during discovery. Not checked.", "Named during discovery."));
+    place(fromCandidate(undefined, "named", `named-${name}`, name, "Named during discovery. Not checked.", "Named during discovery."));
   }
   return views;
 }
@@ -281,6 +313,7 @@ function toOpportunity(item: Opportunity, index: number, saved: boolean): Opport
     move: clip(item.action, 220),
     could: COULD[item.type] ?? "A next piece of work",
     saved,
+    basis: [...(item.clientEvidence ?? []), ...(item.marketEvidence ?? [])].map((line) => clip(line, 280)).filter(Boolean),
   };
 }
 

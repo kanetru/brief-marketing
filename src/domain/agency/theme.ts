@@ -70,17 +70,27 @@ export function correctTheme(theme: AgencyTheme): AgencyTheme {
       ...theme.optionalThemeMetadata,
       requestedHeadingFont: theme.headingFont,
       onPrimary: inkFor(primary),
+      onAccent: inkFor(accent),
     },
   };
 }
 
 export function themeVars(theme: AgencyTheme): CSSProperties {
   const safe = correctTheme(theme);
-  const onPrimary = safe.optionalThemeMetadata.onPrimary || "#F7F4EF";
+  const onPrimary = safe.optionalThemeMetadata.onPrimary || inkFor(safe.colourPrimary);
+  const onAccent = safe.optionalThemeMetadata.onAccent || inkFor(safe.colourAccent);
+  const border = `color-mix(in srgb, ${safe.colourText} 22%, transparent)`;
   return {
     "--paper": safe.colourBackground,
     "--pearl": safe.colourBackground,
+    "--paper-deep": safe.colourSurface,
+    "--color-bg": safe.colourBackground,
     "--color-surface": safe.colourSurface,
+    "--color-text": safe.colourText,
+    "--color-muted": safe.colourMuted,
+    "--color-accent": safe.colourAccent,
+    "--color-border": border,
+    "--color-focus": safe.colourAccent,
     "--ink": safe.colourText,
     "--choc": safe.colourText,
     "--ink-soft": safe.colourMuted,
@@ -90,7 +100,18 @@ export function themeVars(theme: AgencyTheme): CSSProperties {
     "--chocolate": safe.colourPrimary,
     "--cream": onPrimary,
     "--cream-ink": onPrimary,
-    "--line": `color-mix(in srgb, ${safe.colourText} 22%, transparent)`,
+    "--on-accent": onAccent,
+    "--line": border,
+    "--client-bg": safe.colourBackground,
+    "--client-surface": safe.colourSurface,
+    "--client-text": safe.colourText,
+    "--client-muted": safe.colourMuted,
+    "--client-primary": safe.colourPrimary,
+    "--client-secondary": safe.colourAccent,
+    "--client-accent": safe.colourAccent,
+    "--client-border": border,
+    "--client-selection": safe.colourPrimary,
+    "--client-focus": safe.colourAccent,
     "--font-display": safe.headingFont,
     "--font-body": safe.bodyFont,
     "--sans": safe.bodyFont,

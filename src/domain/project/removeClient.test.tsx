@@ -94,7 +94,7 @@ describe("client removal", () => {
       </MemoryRouter>,
     );
     expect(list).toContain("DIRT removed.");
-    expect(list).toContain("Clients");
+    expect(list).toContain("Your clients");
     const missing = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/studio/deleted-id"]}>
         <ProjectProvider>

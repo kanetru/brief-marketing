@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { SEED_KEY, seedDemoWorkspace } from "../domain/project/demoWorkspace";
 import type { StoredClientReading } from "../types/clientRead";
 import type { MarketDiscoveryRecord } from "../types/marketDiscovery";
-import type { AssetStatus, BriefProject, CompetitorInput, FollowUp, LearningResponse, LibraryAsset, StatementOverride, StoredResearch } from "../types/project";
+import type { AssetStatus, BriefProject, ClientProfile, ClientSocial, CompetitorInput, ContentIdea, FollowUp, LearningResponse, LibraryAsset, StatementOverride, StoredResearch, WorkNote } from "../types/project";
 import type { DiscoverySession } from "../types/discovery";
 import {
   completeFollowUp,
@@ -22,6 +22,11 @@ import {
   withFollowUp,
   withLearning,
   withLibraryAsset,
+  withoutLibraryAsset,
+  withSocials,
+  withProfile,
+  withWorkNotes,
+  withContentIdeas,
   withClientReading,
   withReaction,
   withManagerNotes,
@@ -55,6 +60,11 @@ interface ProjectApi {
   setWebsiteResearch: (projectId: string, research: StoredResearch) => void;
   setCompetitorResearch: (projectId: string, competitorId: string, research: StoredResearch) => void;
   addLibraryAsset: (projectId: string, asset: LibraryAsset) => void;
+  removeLibraryAsset: (projectId: string, assetId: string) => void;
+  setSocials: (projectId: string, socials: ClientSocial[]) => void;
+  setProfile: (projectId: string, profile: ClientProfile) => void;
+  setWorkNotes: (projectId: string, notes: WorkNote[]) => void;
+  setContentIdeas: (projectId: string, ideas: ContentIdea[]) => void;
   setLearning: (projectId: string, response: LearningResponse) => void;
   setClientReading: (projectId: string, reading: StoredClientReading) => void;
   setReaction: (projectId: string, reaction: ManagerReaction) => void;
@@ -113,6 +123,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setWebsiteResearch: (projectId, research) => mutate(projectId, (project) => withWebsiteResearch(project, research)),
     setCompetitorResearch: (projectId, competitorId, research) => mutate(projectId, (project) => withCompetitorResearch(project, competitorId, research)),
     addLibraryAsset: (projectId, asset) => mutate(projectId, (project) => withLibraryAsset(project, asset)),
+    removeLibraryAsset: (projectId, assetId) => mutate(projectId, (project) => withoutLibraryAsset(project, assetId)),
+    setSocials: (projectId, socials) => mutate(projectId, (project) => withSocials(project, socials)),
+    setProfile: (projectId, profile) => mutate(projectId, (project) => withProfile(project, profile)),
+    setWorkNotes: (projectId, notes) => mutate(projectId, (project) => withWorkNotes(project, notes)),
+    setContentIdeas: (projectId, ideas) => mutate(projectId, (project) => withContentIdeas(project, ideas)),
     setLearning: (projectId, response) => mutate(projectId, (project) => withLearning(project, response)),
     setClientReading: (projectId, reading) => mutate(projectId, (project) => withClientReading(project, reading)),
     setReaction: (projectId, reaction) => mutate(projectId, (project) => withReaction(project, reaction)),

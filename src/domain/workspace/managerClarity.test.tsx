@@ -7,9 +7,11 @@ import { createSession } from "../../state/createSession";
 import { seedDemoWorkspace } from "../project/demoWorkspace";
 import { buildProjectIntelligence } from "../project/assemble";
 import { DEFAULT_PANEL, MORE_NAV, PRIMARY_NAV } from "./managerNav";
-import { competitorViews, marketCards, opportunityViews, overviewNeedsResearch } from "./managerView";
+import { competitorViews, opportunityViews, overviewNeedsResearch } from "./managerView";
 import { ClientCard } from "../../screens/studio/ProjectList";
-import { CompetitorBoard, CompetitorDetail, MarketBoard, OpportunityBoard, OverviewBoard } from "../../screens/studio/ManagerBoards";
+import { CompetitorBoard, CompetitorDetail, MarketBoard, OpportunityBoard } from "../../screens/studio/ManagerBoards";
+import { ClientOverview } from "../../screens/studio/ClientOverview";
+import { marketFacts } from "./plainAnalytics";
 
 const AT = "2026-10-05T12:00:00.000Z";
 
@@ -37,8 +39,7 @@ describe("manager clarity", () => {
   it("opens on four sections and keeps the rest behind More", () => {
     expect(DEFAULT_PANEL).toBe("overview");
     expect(PRIMARY_NAV.map((item) => item.id)).toEqual(["overview", "competitors", "market", "opportunities"]);
-    expect(MORE_NAV.map((item) => item.label)).toContain("Brand details");
-    expect(MORE_NAV.map((item) => item.label)).toContain("History");
+    expect(MORE_NAV.map((item) => item.label)).toEqual(["Files", "Content ideas", "Brand", "Contracts", "Notes", "Onboarding", "Responses", "Use in AI", "Client settings"]);
     expect(MORE_NAV.map((item) => item.label)).toContain("Use in AI");
     expect(PRIMARY_NAV.map((item) => item.label).join(" ")).not.toMatch(/Intelligence|Brand|Assets|History/);
   });
@@ -60,10 +61,15 @@ describe("manager clarity", () => {
     const intelligence = buildProjectIntelligence(project, AT);
     const competitors = competitorViews(project, intelligence);
     const overview = renderToStaticMarkup(
-      <OverviewBoard read="North makes furniture that is specified, not styled." matters={[{ id: "p", kicker: "Positioning", text: "The joint is the point." }]} needsResearch={false} onFindCompetitors={() => undefined} />,
+      <ClientOverview project={project} onDetails={() => undefined} onSocials={() => undefined} onProfile={() => undefined} />,
     );
-    expect(overview).toContain("The read");
-    expect(overview).toContain("What matters now");
+    expect(overview).toContain("North Workshop");
+    expect(overview).toContain("northworkshop.example");
+    expect(overview).toContain("A small workshop making furniture for homes.");
+    expect(overview).toContain("Who they sell to");
+    expect(overview).toContain("What they want");
+    expect(overview).not.toContain("The read");
+    expect(overview).not.toContain("What matters now");
     expect(overview).toContain("surface-card");
     const watched = competitors[0];
     const board = renderToStaticMarkup(
@@ -97,8 +103,9 @@ describe("manager clarity", () => {
     const drawer = renderToStaticMarkup(<CompetitorDetail view={detail!} onClose={() => undefined} />);
     expect(drawer).toContain("competitor-detail");
     expect(drawer).toContain('role="dialog"');
-    expect(drawer).toContain("Why they matter");
-    const market = renderToStaticMarkup(<MarketBoard cards={marketCards(intelligence)} />);
+    expect(drawer).toContain("Social performance");
+    expect(drawer).not.toContain("Why they matter");
+    const market = renderToStaticMarkup(<MarketBoard facts={marketFacts(project)} />);
     expect(market).toMatch(/market|Market analysis/);
     const opportunities = renderToStaticMarkup(
       <OpportunityBoard items={opportunityViews(project, intelligence)} onSave={() => undefined} onDismiss={() => undefined} />,
@@ -116,11 +123,11 @@ describe("manager clarity", () => {
     expect(views.map((item) => item.badge)).toContain("NAMED");
     expect(views.map((item) => item.name)).toEqual(expect.arrayContaining(["FarmLab", "AgriWebb"]));
     const overview = renderToStaticMarkup(
-      <OverviewBoard read="" matters={[]} needsResearch onFindCompetitors={() => undefined} />,
+      <ClientOverview project={project} onDetails={() => undefined} onSocials={() => undefined} onProfile={() => undefined} />,
     );
-    expect(overview).toContain("Find competitors");
-    expect(overview).toContain("Brief is building the first read.");
-    const emptyMarket = renderToStaticMarkup(<MarketBoard cards={marketCards(intelligence)} />);
+    expect(overview).toContain("Soil history for farms.");
+    expect(overview).not.toContain("The read");
+    const emptyMarket = renderToStaticMarkup(<MarketBoard facts={marketFacts(project)} />);
     expect(emptyMarket).toContain("Market analysis will appear after competitor research.");
     const named = renderToStaticMarkup(
       <CompetitorBoard views={views} busy={false} failed={false} onFind={() => undefined} onAdd={() => undefined} />,

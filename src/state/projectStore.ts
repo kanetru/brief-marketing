@@ -10,7 +10,10 @@ import type { ManagerReaction } from "../types/intelligence";
 import type {
   AssetStatus,
   BriefProject,
+  ClientProfile,
+  ClientSocial,
   CompetitorInput,
+  ContentIdea,
   DiscoveryStatus,
   FollowUp,
   HistoryKind,
@@ -18,6 +21,7 @@ import type {
   LibraryAsset,
   StatementOverride,
   StoredResearch,
+  WorkNote,
 } from "../types/project";
 import type { DiscoverySession } from "../types/discovery";
 
@@ -75,6 +79,10 @@ export function createProject(input: {
     shareToken: crypto.randomUUID().replace(/-/g, ""),
     discovery,
     managerNotes: "",
+    socials: [],
+    profile: emptyProfile(),
+    workNotes: [],
+    contentIdeas: [],
     competitors: [],
     followUps: [],
     followUpRequest: null,
@@ -205,6 +213,26 @@ export function withLibraryAsset(project: BriefProject, asset: LibraryAsset, now
   return bump(project, now, "Asset added", { library }, "asset_added");
 }
 
+export function withoutLibraryAsset(project: BriefProject, assetId: string, now = new Date().toISOString()): BriefProject {
+  return bump(project, now, "File removed", { library: project.library.filter((item) => item.id !== assetId) }, null);
+}
+
+export function withSocials(project: BriefProject, socials: ClientSocial[], now = new Date().toISOString()): BriefProject {
+  return bump(project, now, "", { socials: socials.filter((item) => item.handle.trim()) }, null);
+}
+
+export function withProfile(project: BriefProject, profile: ClientProfile, now = new Date().toISOString()): BriefProject {
+  return bump(project, now, "", { profile }, null);
+}
+
+export function withWorkNotes(project: BriefProject, workNotes: WorkNote[], now = new Date().toISOString()): BriefProject {
+  return bump(project, now, "Note updated", { workNotes }, "note");
+}
+
+export function withContentIdeas(project: BriefProject, contentIdeas: ContentIdea[], now = new Date().toISOString()): BriefProject {
+  return bump(project, now, "", { contentIdeas }, null);
+}
+
 export function withLearning(project: BriefProject, response: LearningResponse, now = new Date().toISOString()): BriefProject {
   const learning = [...project.learning.filter((item) => item.id !== response.id), response];
   return bump(project, now, "", { learning }, null);
@@ -297,6 +325,10 @@ function normaliseProject(project: BriefProject): BriefProject {
       note: event.note ?? "",
     })),
     managerNotes: project.managerNotes ?? "",
+    socials: project.socials ?? [],
+    profile: project.profile ?? emptyProfile(),
+    workNotes: project.workNotes ?? [],
+    contentIdeas: project.contentIdeas ?? [],
     competitors: project.competitors ?? [],
     followUps: project.followUps ?? [],
     followUpRequest: project.followUpRequest ?? null,
@@ -310,6 +342,10 @@ function normaliseProject(project: BriefProject): BriefProject {
     watch: normaliseWatch(project.watch, project.updatedAt),
     marketDiscovery: project.marketDiscovery ?? emptyMarketDiscovery(project.updatedAt),
   };
+}
+
+function emptyProfile(): ClientProfile {
+  return { description: "", audience: "", goal: "", offers: [] };
 }
 
 function businessNameFrom(session: DiscoverySession): string {

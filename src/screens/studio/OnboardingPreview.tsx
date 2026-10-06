@@ -44,7 +44,7 @@ export function OnboardingPreview() {
         <RoutePrefix prefix={previewPath(project.id)}>
           <div className="onboarding-preview" data-screen="onboarding-preview">
             <p className="preview-banner" role="status">
-              Preview onboarding. Answers here are not saved, and this does not change the client's status.
+              Preview. Nothing here is saved.
             </p>
             <p className="studio-links">
               <Link to={`/studio/${project.id}`}>Back to client</Link>

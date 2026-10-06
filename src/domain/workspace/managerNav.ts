@@ -6,13 +6,13 @@ export const PRIMARY_NAV = [
 ] as const;
 
 export const MORE_NAV = [
-  { id: "brand", label: "Brand details" },
-  { id: "strategy", label: "Strategy detail" },
-  { id: "content", label: "Content" },
-  { id: "responses", label: "Original responses" },
-  { id: "websites", label: "Site research" },
-  { id: "needs", label: "Assets" },
-  { id: "history", label: "History" },
+  { id: "files", label: "Files" },
+  { id: "ideas", label: "Content ideas" },
+  { id: "brand", label: "Brand" },
+  { id: "contracts", label: "Contracts" },
+  { id: "notes", label: "Notes" },
+  { id: "onboarding", label: "Onboarding" },
+  { id: "responses", label: "Responses" },
   { id: "pack", label: "Use in AI" },
   { id: "settings", label: "Client settings" },
 ] as const;

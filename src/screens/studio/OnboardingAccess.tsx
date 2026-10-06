@@ -6,30 +6,24 @@ import type { BriefProject } from "../../types/project";
 
 export function ClientOnboardingSection({
   project,
-  link,
   heading = "Client onboarding",
   onCopy,
   onSend,
   onViewResponses,
 }: {
   project: BriefProject;
-  link: string;
   heading?: string;
   onCopy: () => void;
   onSend: () => void;
   onViewResponses: () => void;
 }) {
-  const done = !onboardingIncomplete(project.discoveryStatus);
   return (
     <section className="studio-panel look-section onboarding-panel" data-screen="client-onboarding">
-      <h2>{heading}</h2>
+      <h2>{project.businessName || heading}</h2>
+      <p>{heading}</p>
       <p className="studio-meta" data-screen="onboarding-status">{onboardingStatusLabel(project.discoveryStatus)}</p>
-      <p className="studio-link">{link}</p>
-      <p className="studio-meta">Preview onboarding stays in the workspace and does not save answers. Open as client uses the live link.</p>
       <OnboardingActions project={project} onCopy={onCopy} onSend={onSend} />
-      {done ? (
-        <button type="button" className="studio-text-button" onClick={onViewResponses}>View responses</button>
-      ) : null}
+      <button type="button" className="studio-text-button" onClick={onViewResponses}>View responses</button>
     </section>
   );
 }
@@ -63,11 +57,11 @@ export function OnboardingActions({
   const live = sharePath(project.shareToken);
   return (
     <ActionGroup>
-      <button type="button" className="studio-button" data-client-link={live} onClick={onCopy}>Copy client link</button>
-      <Link className="studio-button" to={previewPath(project.id)}>Preview onboarding</Link>
+      <button type="button" className="studio-button" data-client-link={live} onClick={onCopy}>Copy link</button>
+      <Link className="studio-button" to={previewPath(project.id)}>Preview</Link>
       <a className="studio-button" href={live} target="_blank" rel="noopener noreferrer">Open as client</a>
       {project.discoveryStatus === "draft" ? (
-        <button type="button" className="studio-button" onClick={onSend}>Send discovery</button>
+        <button type="button" className="studio-text-button" onClick={onSend}>Mark as sent</button>
       ) : null}
     </ActionGroup>
   );

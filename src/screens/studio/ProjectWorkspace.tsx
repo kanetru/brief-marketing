@@ -4,21 +4,21 @@ import { DEFAULT_PANEL, LAST_CLIENT_KEY, MANAGER_NAV, PRIMARY_NAV, type ManagerP
 import { ActionGroup } from "../../components/ActionGroup";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { buildBrandIntelligence } from "../../domain/brandIntelligence";
-import { clientFacingCopy } from "../../domain/languageGuard";
-import { STARTER_WORKFLOWS, starterPrompt } from "../../domain/project/agentPack";
-import { adaptiveFollowUps } from "../../domain/project/adaptiveQuestions";
 import { buildProjectIntelligence } from "../../domain/project/assemble";
 import { nextAssetStatus } from "../../domain/project/assetRegister";
 import { sharePath } from "../../domain/project/access";
 import { describeClientSite } from "../../domain/project/research/compare";
 import { requestSiteResearch } from "../../services/researchClient";
 import { useProjects } from "../../state/ProjectContext";
-import type { AgentFile, AssetCategory, AssetItem, BriefProject, CategoryPattern, ProjectIntelligence, ResearchTension, SourceQuote, UnderstandingField } from "../../types/project";
+import type { AgentFile, AssetCategory, AssetItem, BriefProject, CategoryPattern, ProjectIntelligence, ResearchTension, SourceQuote } from "../../types/project";
 import { StrategyView } from "./StrategyView";
 import { ContentDesk, StrategySummary, savedIdeas } from "./WorkSurfaces";
-import { BrandBrainPanel, HistoryPanel, MarketWatch } from "./IntelligenceDesk";
-import { CompetitorBoard, MarketBoard, OpportunityBoard, OverviewBoard, ResponseBoard } from "./ManagerBoards";
-import { competitorViews, marketCards, matterCards, opportunityViews, originalResponses, overviewNeedsResearch, researchFailed, researchPartial, theRead } from "../../domain/workspace/managerView";
+import { HistoryPanel, MarketWatch } from "./IntelligenceDesk";
+import { CompetitorBoard, MarketBoard, OpportunityBoard, ResponseBoard } from "./ManagerBoards";
+import { ClientOverview } from "./ClientOverview";
+import { BrandReference, FilesPanel, IdeasPanel, NotesPanel } from "./WorkPlaces";
+import { competitorViews, opportunityViews, originalResponses, researchFailed, researchPartial } from "../../domain/workspace/managerView";
+import { marketFacts } from "../../domain/workspace/plainAnalytics";
 import { researchRetry } from "../../domain/market/stages";
 import { clientRemovalName } from "../../domain/project/removeClient";
 import type { MarketRetry } from "../../types/marketDiscovery";
@@ -26,8 +26,8 @@ import { MoreNav } from "./MoreNav";
 import { RemoveClientSection } from "./RemoveClient";
 import { DevProviderChecks } from "./DevProviderChecks";
 import { clientCardModel } from "../../domain/workspace/clientCard";
-import { onboardingIncomplete, sendOnboardingHeading } from "../../domain/workspace/onboardingAccess";
-import { ClientOnboardingSection, OnboardingStatusLine } from "./OnboardingAccess";
+import { onboardingStatusLabel, sendOnboardingHeading } from "../../domain/workspace/onboardingAccess";
+import { ClientOnboardingSection } from "./OnboardingAccess";
 import { discoveryContext } from "../../domain/market/context";
 import { emptyMarketDiscovery, storeRun } from "../../domain/market/review";
 import { requestMarketDiscovery } from "../../services/marketClient";
@@ -43,9 +43,9 @@ const STRATEGY_AREAS = [
   ["unknown", "Open questions"],
 ] as const;
 
-type Panel = ManagerPanel;
+type Panel = ManagerPanel | "strategy" | "content" | "websites" | "needs" | "history";
 
-function isPanel(value: string | null): value is Panel {
+function isPanel(value: string | null): value is ManagerPanel {
   return MANAGER_NAV.some((item) => item.id === value);
 }
 
@@ -59,14 +59,6 @@ interface ResearchRun {
   pages: string[];
   competitorsResearched: number;
 }
-
-const KIND_LABEL: Record<UnderstandingField["kind"], string> = {
-  fact: "Fact",
-  preference: "Preference",
-  inference: "Inference",
-  hypothesis: "Hypothesis",
-  recommendation: "Recommendation",
-};
 
 function StrategyRelation({ project }: { project: BriefProject }) {
   const reading = project.watch.readings[0];
@@ -86,11 +78,6 @@ function StrategyRelation({ project }: { project: BriefProject }) {
       <p className="studio-meta">These stay hypotheses. You decide.</p>
     </section>
   );
-}
-
-function fieldMark(field: UnderstandingField): string {
-  if (field.decisionStatus === "approved" && field.epistemicStatus !== "fact") return "Approved direction";
-  return KIND_LABEL[field.epistemicStatus];
 }
 
 export function ProjectWorkspace() {
@@ -137,9 +124,8 @@ export function ProjectWorkspace() {
   const link = `${window.location.origin}${sharePath(project.shareToken)}`;
   const card = clientCardModel(project);
   const competitors = competitorViews(project, intelligence);
-  const matters = matterCards(project, intelligence);
-  const themes = marketCards(intelligence);
   const opportunities = opportunityViews(project, intelligence);
+  const facts = marketFacts(project);
 
   function choose(next: Panel) {
     setPanel(next);
@@ -177,6 +163,13 @@ export function ProjectWorkspace() {
       note: "",
       at: new Date().toISOString(),
     });
+    if (action === "save") {
+      const item = opportunities.find((entry) => entry.id === id);
+      const ideas = project.contentIdeas ?? [];
+      if (item && !ideas.some((idea) => idea.id === id)) {
+        api.setContentIdeas(project.id, [{ id, title: item.title, body: item.move, status: "idea", at: new Date().toISOString() }, ...ideas]);
+      }
+    }
     setNotice(action === "save" ? "Saved." : "Dismissed.");
   }
 
@@ -199,6 +192,12 @@ export function ProjectWorkspace() {
           <p className="studio-lead">{project.category || project.clientName}</p>
           {card.updated ? <p className="studio-meta">{card.updated}</p> : null}
         </div>
+        <div className="studio-links">
+          <ActionGroup>
+            <Link to="/studio?new=1">Onboard new client</Link>
+            <Link to="/studio/look">Make Brief your own</Link>
+          </ActionGroup>
+        </div>
       </header>
       <nav className="studio-nav" aria-label="Project">
         {PRIMARY_NAV.map(({ id, label }) => (
@@ -206,16 +205,15 @@ export function ProjectWorkspace() {
             {label}
           </button>
         ))}
-        <MoreNav panel={panel} open={moreOpen} onToggle={setMoreOpen} onChoose={choose} />
+        <MoreNav panel={isPanel(panel) ? panel : DEFAULT_PANEL} open={moreOpen} onToggle={setMoreOpen} onChoose={choose} />
       </nav>
       {notice ? <p className="studio-notice">{notice}</p> : null}
       {panel === "overview" ? (
         <>
-          {onboardingIncomplete(project.discoveryStatus) ? (
+          {justCreated(location.state) ? (
             <ClientOnboardingSection
               project={project}
-              link={link}
-              heading={sendOnboardingHeading(justCreated(location.state))}
+              heading={sendOnboardingHeading(true)}
               onCopy={() => void copy(link, "Client link copied.")}
               onSend={() => {
                 api.sendDiscovery(project.id);
@@ -223,14 +221,12 @@ export function ProjectWorkspace() {
               }}
               onViewResponses={() => choose("responses")}
             />
-          ) : (
-            <OnboardingStatusLine project={project} onViewResponses={() => choose("responses")} />
-          )}
-          <OverviewBoard
-            read={theRead(intelligence)}
-            matters={matters}
-            needsResearch={overviewNeedsResearch(project)}
-            onFindCompetitors={() => void findCompetitors()}
+          ) : null}
+          <ClientOverview
+            project={project}
+            onDetails={(details) => api.setDetails(project.id, details)}
+            onSocials={(socials) => api.setSocials(project.id, socials)}
+            onProfile={(profile) => api.setProfile(project.id, profile)}
           />
         </>
       ) : null}
@@ -249,9 +245,47 @@ export function ProjectWorkspace() {
           onAdd={(name) => api.setCompetitor(project.id, { id: crypto.randomUUID(), name, website: "", notes: "" })}
         />
       ) : null}
-      {panel === "market" ? <MarketBoard cards={themes} /> : null}
+      {panel === "market" ? <MarketBoard facts={facts} /> : null}
       {panel === "opportunities" ? (
         <OpportunityBoard items={opportunities} onSave={(id) => reactTo(id, "save")} onDismiss={(id) => reactTo(id, "dismiss")} />
+      ) : null}
+      {panel === "files" ? (
+        <FilesPanel
+          assets={project.library}
+          onAdd={(asset) => api.addLibraryAsset(project.id, asset)}
+          onRemove={(id) => api.removeLibraryAsset(project.id, id)}
+        />
+      ) : null}
+      {panel === "ideas" ? (
+        <IdeasPanel ideas={project.contentIdeas ?? []} onChange={(ideas) => api.setContentIdeas(project.id, ideas)} />
+      ) : null}
+      {panel === "contracts" ? (
+        <FilesPanel
+          category="contracts"
+          assets={project.library}
+          onAdd={(asset) => api.addLibraryAsset(project.id, asset)}
+          onRemove={(id) => api.removeLibraryAsset(project.id, id)}
+        />
+      ) : null}
+      {panel === "notes" ? (
+        <NotesPanel
+          notes={project.workNotes ?? []}
+          legacy={project.managerNotes}
+          onChange={(notes) => api.setWorkNotes(project.id, notes)}
+          onLegacy={(text) => api.setNotes(project.id, text)}
+        />
+      ) : null}
+      {panel === "onboarding" ? (
+        <ClientOnboardingSection
+          project={project}
+          heading="Client onboarding"
+          onCopy={() => void copy(link, "Client link copied.")}
+          onSend={() => {
+            api.sendDiscovery(project.id);
+            setNotice("Link ready.");
+          }}
+          onViewResponses={() => choose("responses")}
+        />
       ) : null}
       {panel === "responses" ? <ResponseBoard lines={originalResponses(project)} /> : null}
       {panel === "strategy" ? (
@@ -402,23 +436,7 @@ export function ProjectWorkspace() {
         />
         </>
       ) : null}
-      {panel === "brand" ? (
-        <>
-          <BrandBrainPanel project={project} intelligence={intelligence} />
-          <details>
-            <summary>Look and voice</summary>
-            <Creative reading={reading} reactions={project.discovery.territoryFeedback} />
-          </details>
-          <details>
-            <summary>Source notes</summary>
-            <Understanding
-              fields={intelligence.understanding.fields}
-              evidence={intelligence.evidence}
-              onSave={(fieldId, text, status) => api.setOverride(project.id, { fieldId, text, status, updatedAt: new Date().toISOString() })}
-            />
-          </details>
-        </>
-      ) : null}
+      {panel === "brand" ? <BrandReference project={project} /> : null}
       {panel === "needs" ? (
         <Assets
           items={intelligence.assets}
@@ -429,21 +447,11 @@ export function ProjectWorkspace() {
       ) : null}
       {panel === "settings" ? (
         <>
-          <DiscoveryPanel
+          <ClientSettings
             project={project}
-            link={link}
-            onCopy={() => void copy(link, "Client link copied.")}
-            onSend={() => {
-              api.sendDiscovery(project.id);
-              setNotice("Link ready.");
-            }}
-            onViewResponses={() => choose("responses")}
-            onFollowUp={(prompts) => {
-              api.requestFollowUp(project.id, prompts);
-              setNotice("Follow-up sent.");
-            }}
+            onOpenOnboarding={() => choose("onboarding")}
             onDetails={(details) => api.setDetails(project.id, details)}
-            onNotes={(notes) => api.setNotes(project.id, notes)}
+            onSocials={(socials) => api.setSocials(project.id, socials)}
           />
           {import.meta.env.DEV ? <DevProviderChecks /> : null}
           <RemoveClientSection
@@ -462,96 +470,10 @@ export function ProjectWorkspace() {
         <AgentPackPanel
           files={intelligence.agentPack.files}
           master={intelligence.agentPack.master}
-          generatedAt={intelligence.generatedAt}
-          version={intelligence.agentPack.projectVersion}
           onCopy={(text, label) => void copy(text, label)}
-          onRegenerate={() => {
-            api.regenerate(project.id);
-            setNotice("Context rebuilt from the current project.");
-          }}
         />
       ) : null}
     </div>
-  );
-}
-
-const SECTION_TITLE: Record<string, string> = {
-  business: "What the business is",
-  audience: "Who they serve",
-  market: "How they say they differ",
-  brand: "How it should feel",
-  marketing: "What the work is for",
-  creative: "A direction worth trying",
-  company: "What the business is",
-};
-
-function Understanding({
-  fields,
-  evidence,
-  onSave,
-}: {
-  fields: UnderstandingField[];
-  evidence: Array<{ id: string; text: string; kind: string; sourceType: string }>;
-  onSave: (fieldId: string, text: string, status: "approved" | "edited" | "rejected") => void;
-}) {
-  const sections = ["business", "audience", "market", "brand", "marketing", "creative"] as const;
-  return (
-    <section className="studio-panel">
-      {sections.map((section) => {
-        const group = fields.filter((field) => field.section === section);
-        if (group.length === 0) return null;
-        return (
-          <div key={section} className="studio-group">
-            <h2>{SECTION_TITLE[section] ?? section}</h2>
-            {group.map((field) => (
-              <FieldCard key={`${field.id}:${field.kind}`} field={field} evidence={evidence.filter((item) => field.evidenceIds.includes(item.id))} onSave={onSave} />
-            ))}
-          </div>
-        );
-      })}
-    </section>
-  );
-}
-
-function FieldCard({
-  field,
-  evidence,
-  onSave,
-}: {
-  field: UnderstandingField;
-  evidence: Array<{ id: string; text: string; kind: string; sourceType: string }>;
-  onSave: (fieldId: string, text: string, status: "approved" | "edited" | "rejected") => void;
-}) {
-  const [text, setText] = useState(field.text);
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    setText(field.text);
-  }, [field.text]);
-  return (
-    <article className="studio-card">
-      <p className="studio-kicker">{field.label} · {fieldMark(field)} · {field.confidence}</p>
-      <textarea value={text} onChange={(event) => setText(event.target.value)} rows={3} />
-      {field.epistemicStatus !== "fact" ? <p className="studio-meta">Approving keeps this as a {field.epistemicStatus}. It does not become a fact.</p> : null}
-      <ActionGroup className="card-actions">
-        <button type="button" className="studio-button" onClick={() => onSave(field.id, text, text.trim() === field.text.trim() ? "approved" : "edited")}>
-          {text.trim() === field.text.trim() ? "Approve direction" : "Save edit"}
-        </button>
-        <button type="button" className="studio-text-button" onClick={() => onSave(field.id, field.text, "rejected")}>
-          Use Brief's version
-        </button>
-        <button type="button" className="studio-text-button" onClick={() => setOpen((value) => !value)}>
-          {open ? "Hide evidence" : "Evidence"}
-        </button>
-      </ActionGroup>
-      {open ? (
-        <ul className="studio-evidence">
-          {evidence.length === 0 ? <li>No source is attached yet.</li> : null}
-          {evidence.map((item) => (
-            <li key={item.id}><span>{item.kind} · {item.sourceType}</span>{item.text}</li>
-          ))}
-        </ul>
-      ) : null}
-    </article>
   );
 }
 
@@ -793,35 +715,6 @@ function EvidenceToggle({
   );
 }
 
-function Creative({
-  reading,
-  reactions,
-}: {
-  reading: NonNullable<ReturnType<typeof buildBrandIntelligence>["reading"]>;
-  reactions: { reactions: Array<{ territoryId: string; response: string; note: string }>; preference: string | null };
-}) {
-  return (
-    <section className="studio-panel">
-      <h2>{reading.hypothesis.centralIdea}</h2>
-      <div className="studio-cards">
-        {reading.territories.map((territory) => {
-          const reaction = reactions.reactions.find((item) => item.territoryId === territory.archetypeId);
-          return (
-            <article key={territory.archetypeId} className="studio-card">
-              <h3>{territory.name}</h3>
-              <p>{clientFacingCopy(territory.idea)}</p>
-              <p className="studio-meta">Risk · {territory.risk}</p>
-              <p className="studio-meta">Voice · {territory.voice.idea}</p>
-              {reaction ? <p className="studio-meta">Client · {reaction.response}{reaction.note ? ` — ${reaction.note}` : ""}</p> : null}
-            </article>
-          );
-        })}
-      </div>
-      {reactions.preference ? <p className="studio-meta">Preference · {reactions.preference}</p> : null}
-    </section>
-  );
-}
-
 function Assets({
   items,
   library,
@@ -905,81 +798,49 @@ function Assets({
   );
 }
 
-function DiscoveryPanel({
+function ClientSettings({
   project,
-  link,
-  onCopy,
-  onSend,
-  onViewResponses,
-  onFollowUp,
+  onOpenOnboarding,
   onDetails,
-  onNotes,
+  onSocials,
 }: {
   project: BriefProject;
-  link: string;
-  onCopy: () => void;
-  onSend: () => void;
-  onViewResponses: () => void;
-  onFollowUp: (prompts: Array<{ id: string; prompt: string }>) => void;
+  onOpenOnboarding: () => void;
   onDetails: (details: { clientName: string; businessName: string; website: string; category: string }) => void;
-  onNotes: (notes: string) => void;
+  onSocials: (socials: import("../../types/project").ClientSocial[]) => void;
 }) {
-  const [draft, setDraft] = useState({ clientName: project.clientName, businessName: project.businessName, website: project.website, category: project.category });
-  const [note, setNote] = useState(project.managerNotes);
-  const [custom, setCustom] = useState("");
-  const suggested = adaptiveFollowUps(project.discovery, project.followUps).filter((item) => !item.answer.trim()).slice(0, 5);
+  const [draft, setDraft] = useState({
+    clientName: project.clientName,
+    businessName: project.businessName,
+    website: project.website,
+    category: project.category,
+    instagram: project.socials?.find((item) => item.platform === "instagram")?.handle ?? "",
+    tiktok: project.socials?.find((item) => item.platform === "tiktok")?.handle ?? "",
+  });
   return (
-    <section className="studio-panel">
-      <ClientOnboardingSection
-        project={project}
-        link={link}
-        onCopy={onCopy}
-        onSend={onSend}
-        onViewResponses={onViewResponses}
-      />
+    <section className="studio-panel" data-screen="client-settings">
+      <h2>Client settings</h2>
+      <p className="studio-meta">{onboardingStatusLabel(project.discoveryStatus)}</p>
+      <button type="button" className="studio-text-button" onClick={onOpenOnboarding}>Onboarding</button>
       <form
         className="studio-form"
         onSubmit={(event) => {
           event.preventDefault();
-          const prompts = suggested.map((item) => ({ id: item.id, prompt: item.prompt }));
-          if (custom.trim()) prompts.push({ id: crypto.randomUUID(), prompt: custom.trim() });
-          onFollowUp(prompts.slice(0, 5));
-          setCustom("");
+          onDetails({ clientName: draft.clientName, businessName: draft.businessName, website: draft.website, category: draft.category });
+          onSocials([
+            ...(project.socials ?? []).filter((item) => item.platform !== "instagram" && item.platform !== "tiktok"),
+            { platform: "instagram", handle: draft.instagram },
+            { platform: "tiktok", handle: draft.tiktok },
+          ]);
         }}
       >
-        <p className="studio-kicker">Follow-up</p>
-        {suggested.map((item) => <p key={item.id}>{item.prompt}</p>)}
-        <label>
-          Or one question of your own
-          <textarea value={custom} onChange={(event) => setCustom(event.target.value)} rows={3} />
-        </label>
-        <button type="submit" className="studio-button" disabled={suggested.length === 0 && !custom.trim()}>Request follow-up</button>
-      </form>
-      <form
-        className="studio-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onDetails(draft);
-        }}
-      >
-        <label>Client<input value={draft.clientName} onChange={(event) => setDraft({ ...draft, clientName: event.target.value })} /></label>
+        <label>Client name<input value={draft.clientName} onChange={(event) => setDraft({ ...draft, clientName: event.target.value })} /></label>
         <label>Business<input value={draft.businessName} onChange={(event) => setDraft({ ...draft, businessName: event.target.value })} /></label>
         <label>Website<input value={draft.website} onChange={(event) => setDraft({ ...draft, website: event.target.value })} /></label>
+        <label>Instagram<input value={draft.instagram} onChange={(event) => setDraft({ ...draft, instagram: event.target.value })} /></label>
+        <label>TikTok<input value={draft.tiktok} onChange={(event) => setDraft({ ...draft, tiktok: event.target.value })} /></label>
         <label>Category<input value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value })} /></label>
-        <button type="submit" className="studio-button">Save details</button>
-      </form>
-      <form
-        className="studio-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onNotes(note);
-        }}
-      >
-        <label>
-          What you already know
-          <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} placeholder="Kept separate from what the client said." />
-        </label>
-        <button type="submit" className="studio-button">Save note</button>
+        <button type="submit" className="studio-button">Save</button>
       </form>
     </section>
   );
@@ -988,48 +849,22 @@ function DiscoveryPanel({
 function AgentPackPanel({
   files,
   master,
-  generatedAt,
-  version,
   onCopy,
-  onRegenerate,
 }: {
   files: AgentFile[];
   master: AgentFile;
-  generatedAt: string;
-  version: number;
   onCopy: (text: string, label: string) => void;
-  onRegenerate: () => void;
 }) {
   const named = (name: string) => files.find((file) => file.name === name);
   return (
     <section className="studio-panel" data-screen="agent-pack">
       <h2>Use this client in AI</h2>
-      <p className="studio-meta">Version {version}</p>
       <ActionGroup>
-        <button type="button" className="studio-button" onClick={() => onCopy(master.markdown, "Full context copied.")}>Copy full context</button>
+        <button type="button" className="studio-button" onClick={() => onCopy(master.markdown, "Client context copied.")}>Copy client context</button>
         <CopyChip label="Copy brand voice" file={named("04_voice.md")} onCopy={onCopy} />
         <CopyChip label="Copy audience" file={named("02_audience.md")} onCopy={onCopy} />
-        <CopyChip label="Copy content strategy" file={named("07_content_strategy.md")} onCopy={onCopy} />
-        <CopyChip label="Copy market context" file={named("06_competitors.md")} onCopy={onCopy} />
         <button type="button" className="studio-button" onClick={() => downloadFile("agent-pack.md", [master, ...files].map((file) => `# ${file.name}\n\n${file.markdown}`).join("\n\n---\n\n"))}>Download agent pack</button>
-        <button type="button" className="studio-text-button" onClick={onRegenerate}>Rebuild</button>
       </ActionGroup>
-      <h3>Start a task</h3>
-      <ActionGroup>
-        {STARTER_WORKFLOWS.map((workflow) => (
-          <button key={workflow.id} type="button" className="studio-text-button" onClick={() => onCopy(starterPrompt(workflow.id, { generatedAt, projectVersion: version, files, master }), `${workflow.label} prompt copied.`)}>
-            {workflow.label}
-          </button>
-        ))}
-      </ActionGroup>
-      <ul className="studio-files">
-        {[master, ...files].map((file) => (
-          <li key={file.name}>
-            <span>{file.title}</span>
-            <button type="button" onClick={() => downloadFile(file.name, file.markdown)}>Download</button>
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }

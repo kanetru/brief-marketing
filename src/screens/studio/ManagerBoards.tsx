@@ -1,50 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ActionGroup, BadgeRow } from "../../components/ActionGroup";
-import type { CompetitorView, MarketCardView, MatterCard, OpportunityView, OriginalResponse, ResearchPartial } from "../../domain/workspace/managerView";
+import { badgeLabel, type CompetitorView, type OpportunityView, type OriginalResponse, type ResearchPartial } from "../../domain/workspace/managerView";
+import type { MarketFacts } from "../../domain/workspace/plainAnalytics";
 import type { TechnicalDetail } from "../../types/marketDiscovery";
-
-export function OverviewBoard({
-  read,
-  matters,
-  needsResearch,
-  onFindCompetitors,
-}: {
-  read: string;
-  matters: MatterCard[];
-  needsResearch: boolean;
-  onFindCompetitors: () => void;
-}) {
-  return (
-    <div className="manager-stack" data-screen="overview">
-      <section className="surface-card">
-        <p className="card-kicker">The read</p>
-        {read ? read.split(/\n\s*\n/).map((paragraph) => <p key={paragraph.slice(0, 24)}>{paragraph}</p>) : <p>Brief is building the first read.</p>}
-      </section>
-      {matters.length > 0 ? (
-        <section>
-          <h2>What matters now</h2>
-          <div className="card-grid">
-            {matters.map((item) => (
-              <article key={item.id} className="surface-card">
-                <p className="card-kicker">{item.kicker}</p>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-      {needsResearch ? (
-        <section className="surface-card" data-screen="find-competitors">
-          <h2>Market research hasn't run yet.</h2>
-          <p>Brief can find competitors and accounts worth watching.</p>
-          <ActionGroup>
-            <button type="button" className="studio-button" onClick={onFindCompetitors}>Find competitors</button>
-          </ActionGroup>
-        </section>
-      ) : null}
-    </div>
-  );
-}
 
 export function CompetitorBoard({
   views,
@@ -80,7 +38,7 @@ export function CompetitorBoard({
       <header className="board-head">
         <div>
           <h2>Competitors</h2>
-          <p className="studio-meta">{views.length === 0 ? "No accounts yet" : `${views.length} ${views.length === 1 ? "account" : "accounts"} worth watching`}</p>
+          <p className="studio-meta">{views.length === 0 ? "No competitors yet" : `${views.length} ${views.length === 1 ? "competitor" : "competitors"}`}</p>
         </div>
         <ActionGroup>
           <button type="button" className="studio-button" disabled={busy} onClick={onFind}>{busy ? "Researching…" : "Find more"}</button>
@@ -161,16 +119,25 @@ export function CompetitorBoard({
               <div className="card-identity">
                 <h3>{item.name}</h3>
                 <BadgeRow>
-                  <p className="card-badge">{item.badge}</p>
+                  <p className="card-badge">{badgeLabel(item.badge)}</p>
                 </BadgeRow>
               </div>
-              {item.platforms ? <p>{item.platforms}</p> : null}
-              {item.owns ? <p><span className="card-kicker">What they appear to own</span>{item.owns}</p> : null}
-              {item.themes ? <p><span className="card-kicker">Current themes</span>{item.themes}</p> : null}
-              {item.change ? <p><span className="card-kicker">Recent change</span>{item.change}</p> : null}
-              {item.metrics.map((metric) => <p key={metric} className="studio-meta">{metric}</p>)}
+              {item.stats?.accounts.map((account) => (
+                <p key={`${account.platform}-${account.handle}`} className="metric-row">
+                  <span>{account.handle ? `${account.platform} @${account.handle}` : account.platform}</span>
+                  {account.followers ? <span>{account.followers}</span> : null}
+                </p>
+              ))}
+              {item.stats?.metrics.map((metric) => (
+                <p key={metric.label} className="metric-row">
+                  <span>{metric.label}</span>
+                  <span>{metric.value}</span>
+                </p>
+              ))}
+              {item.stats?.changes.map((change) => <p key={change}>{change}</p>)}
+              {(item.stats?.themes || item.themes) ? <p><span className="card-kicker">Top themes</span>{item.stats?.themes || item.themes}</p> : null}
               <div className="action-group card-actions">
-                <span className="studio-text-button">View</span>
+                <span className="studio-text-button">View analytics</span>
               </div>
             </article>
           ))}
@@ -225,24 +192,55 @@ export function CompetitorDetail({ view, onClose }: { view: CompetitorView; onCl
         </header>
         <div className="layer-body">
           <BadgeRow>
-            <p className="card-badge">{view.badge}</p>
+            <p className="card-badge">{badgeLabel(view.badge)}</p>
           </BadgeRow>
-          {view.summary ? <section><h3>Summary</h3><p>{view.summary}</p></section> : null}
-          {view.why ? <section><h3>Why they matter</h3><p>{view.why}</p></section> : null}
-          {view.positioning ? <section><h3>Positioning</h3><p>{view.positioning}</p></section> : null}
-          {view.themes ? <section><h3>Current themes</h3><p>{view.themes}</p></section> : null}
-          {view.posts.length > 0 ? <section><h3>Recent posts</h3>{view.posts.map((post) => <p key={post}>{post}</p>)}</section> : null}
-          {view.language ? <section><h3>Language</h3><p>{view.language}</p></section> : null}
-          {view.social ? <section><h3>Social activity</h3><p>{view.social}</p></section> : null}
-          {view.evidence ? <section className="surface-inset"><h3>Evidence</h3><p>{view.evidence}</p></section> : null}
+          <section>
+            <h3>Overview</h3>
+            {view.stats?.website ? <p className="metric-row"><span>Website</span><a href={view.stats.websiteUrl}>{view.stats.website}</a></p> : null}
+            {view.summary ? <p>{view.summary}</p> : null}
+            {view.stats?.monitoredSince ? <p className="studio-meta">Monitored since {view.stats.monitoredSince}</p> : null}
+            {view.stats?.updated ? <p className="studio-meta">Last updated {view.stats.updated}</p> : null}
+          </section>
+          <section>
+            <h3>Social performance</h3>
+            {(view.stats?.accounts ?? []).map((account) => (
+              <p key={`${account.platform}-${account.handle}`} className="metric-row">
+                <span>{account.handle ? `${account.platform} @${account.handle}` : account.platform}</span>
+                {account.followers ? <span>{account.followers}</span> : null}
+                {account.url ? <a href={account.url}>Open</a> : null}
+              </p>
+            ))}
+            {(view.stats?.metrics ?? []).map((metric) => (
+              <p key={metric.label} className="metric-row"><span>{metric.label}</span><span>{metric.value}</span></p>
+            ))}
+            {view.stats && view.stats.followersSeries.length >= 2 ? <FollowerChart points={view.stats.followersSeries} /> : null}
+            {view.stats?.historyNote ? <p>{view.stats.historyNote}</p> : null}
+            {!view.stats ? <p>No social metrics yet.</p> : null}
+          </section>
+          {(view.stats?.themes || view.themes) ? <section><h3>Content</h3><p>{view.stats?.themes || view.themes}</p></section> : null}
+          {((view.stats?.topPosts.length ?? 0) > 0 || view.posts.length > 0) ? (
+            <section>
+              <h3>Recent posts</h3>
+              {(view.stats?.topPosts ?? []).map((post) => (
+                <p key={post.text}>{post.text}{post.detail ? <span className="studio-meta"> {post.detail}</span> : null}</p>
+              ))}
+              {(view.stats?.topPosts.length ?? 0) > 0 ? null : view.posts.map((post) => <p key={post}>{post}</p>)}
+            </section>
+          ) : null}
+          {(view.stats?.changes.length ?? 0) > 0 ? (
+            <section>
+              <h3>Changes</h3>
+              {view.stats?.changes.map((change) => <p key={change}>{change}</p>)}
+            </section>
+          ) : null}
         </div>
       </aside>
     </div>
   );
 }
 
-export function MarketBoard({ cards }: { cards: MarketCardView[] }) {
-  if (cards.length === 0) {
+export function MarketBoard({ facts }: { facts: MarketFacts }) {
+  if (facts.competitors === 0 && facts.posts === 0) {
     return (
       <section className="surface-card" data-screen="market-empty">
         <h2>Market</h2>
@@ -251,23 +249,40 @@ export function MarketBoard({ cards }: { cards: MarketCardView[] }) {
     );
   }
   return (
-    <section data-screen="market">
+    <section data-screen="market" className="manager-stack">
       <h2>Market</h2>
-      <div className="card-grid">
-        {cards.map((card) => (
-          <article key={card.id} className="surface-card">
-            <h3>{card.title}</h3>
-            <p>{card.text}</p>
-            {card.share ? <p className="studio-meta">{card.share}</p> : null}
-            {card.ratio !== null ? (
-              <div className="share-bar" aria-hidden="true">
-                <span style={{ width: `${Math.round(card.ratio * 100)}%` }} />
-              </div>
-            ) : null}
-          </article>
-        ))}
-      </div>
+      <section className="surface-card">
+        <h3>Market summary</h3>
+        {facts.facts.map((fact) => <p key={fact}>{fact}</p>)}
+      </section>
+      {facts.growing.length > 0 ? <section className="surface-card"><h3>What&apos;s growing</h3>{facts.growing.map((line) => <p key={line}>{line}</p>)}</section> : null}
+      {facts.declining.length > 0 ? <section className="surface-card"><h3>What&apos;s declining</h3>{facts.declining.map((line) => <p key={line}>{line}</p>)}</section> : null}
+      {facts.topics.length > 0 ? (
+        <section className="surface-card">
+          <h3>What competitors are talking about</h3>
+          <p>{facts.topics.join(" · ")}</p>
+        </section>
+      ) : null}
+      {facts.interpretation.length > 0 ? (
+        <section className="surface-card">
+          <h3>What&apos;s changing</h3>
+          {facts.interpretation.map((line) => <p key={line}>{line}</p>)}
+        </section>
+      ) : null}
     </section>
+  );
+}
+
+function FollowerChart({ points }: { points: number[] }) {
+  const max = Math.max(...points);
+  const min = Math.min(...points);
+  const span = max - min || 1;
+  return (
+    <div className="spark" role="img" aria-label={`Followers over time, from ${points[0]} to ${points[points.length - 1]}`}>
+      {points.map((point, index) => (
+        <span key={`${point}-${index}`} style={{ height: `${16 + ((point - min) / span) * 48}px` }} />
+      ))}
+    </div>
   );
 }
 
@@ -284,7 +299,7 @@ export function OpportunityBoard({
     return (
       <section className="surface-card" data-screen="opportunities-empty">
         <h2>Opportunities</h2>
-        <p>Brief needs enough brand and market evidence before suggesting opportunities.</p>
+        <p>Brief needs to know the client and the market before suggesting opportunities.</p>
       </section>
     );
   }
@@ -296,9 +311,15 @@ export function OpportunityBoard({
           <article key={item.id} className="surface-card" data-saved={item.saved ? "true" : "false"}>
             <p className="card-kicker">{item.index}</p>
             <h3>{item.title}</h3>
-            <p><span className="card-kicker">Why</span>{item.why}</p>
-            <p><span className="card-kicker">Opportunity</span>{item.move}</p>
+            <p><span className="card-kicker">Why this looks promising</span>{item.why}</p>
+            <p><span className="card-kicker">What to make</span>{item.move}</p>
             <p><span className="card-kicker">Could become</span>{item.could}</p>
+            {(item.basis ?? []).length > 0 ? (
+              <details>
+                <summary>Why Brief thinks this</summary>
+                {(item.basis ?? []).map((line) => <p key={line}>{line}</p>)}
+              </details>
+            ) : null}
             <ActionGroup className="card-actions">
               <button type="button" className="studio-button" data-testid="save-opportunity" onClick={() => onSave(item.id)}>{item.saved ? "Saved" : "Save"}</button>
               <button type="button" className="studio-text-button" onClick={() => onDismiss(item.id)}>Dismiss</button>

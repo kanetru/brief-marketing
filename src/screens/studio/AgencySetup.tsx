@@ -1,7 +1,7 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ActionGroup } from "../../components/ActionGroup";
-import { ExperiencePreview } from "../../components/ExperiencePreview";
+import { ExperiencePreview, type PreviewStage } from "../../components/ExperiencePreview";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { DEMO_ACCOUNT } from "../../domain/project/account";
 import { CHAPTER_IDS, resolveExperience, type ChapterId } from "../../domain/agency/experience";
@@ -23,7 +23,7 @@ export function AgencySetup() {
   const agency = useAgency();
   const existing = agency.brandFor(DEMO_ACCOUNT.workspaceId);
   const [brand, setBrand] = useState<WorkspaceBrand>(() => existing ?? blankBrand());
-  const [preview, setPreview] = useState<"opening" | "completion">("opening");
+  const [preview, setPreview] = useState<PreviewStage>("opening");
   const experience = brand.experience ?? {};
   const resolved = useMemo(() => resolveExperience(brand), [brand]);
   const safe = useMemo(() => correctTheme(brand.theme), [brand.theme]);
@@ -78,10 +78,10 @@ export function AgencySetup() {
       <header className="studio-top">
         <div>
           <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
-          <p className="studio-kicker">{DEMO_ACCOUNT.workspaceName}</p>
-          <h1>Client experience</h1>
+          <p className="studio-kicker"><Link to="/studio">Clients</Link></p>
+          <h1>Make Brief your own</h1>
+          <p className="studio-lead">Make the onboarding experience look and sound like your agency.</p>
         </div>
-        <Link to="/studio">Clients</Link>
       </header>
       <form className="studio-split agency-layout" onSubmit={onSubmit}>
         <div className="look-editor">
@@ -213,8 +213,18 @@ export function AgencySetup() {
         <section className="preview-column look-section" data-screen="agency-preview">
           <h2>Preview</h2>
           <ActionGroup>
-            <button type="button" className="studio-button" aria-current={preview === "opening" ? "page" : undefined} onClick={() => setPreview("opening")}>Opening</button>
-            <button type="button" className="studio-button" aria-current={preview === "completion" ? "page" : undefined} onClick={() => setPreview("completion")}>Completion</button>
+            {([
+              ["opening", "Opening"],
+              ["question", "Question"],
+              ["entries", "Entries"],
+              ["choices", "Choices"],
+              ["colour", "Colour"],
+              ["type", "Type"],
+              ["final", "Final"],
+              ["completion", "Completion"],
+            ] as const).map(([id, label]) => (
+              <button key={id} type="button" className="studio-button" aria-current={preview === id ? "page" : undefined} onClick={() => setPreview(id)}>{label}</button>
+            ))}
           </ActionGroup>
           <div className="preview-row">
             <ExperiencePreview brand={{ ...brand, theme: { ...brand.theme, logo } }} frame="desktop" view={preview} />

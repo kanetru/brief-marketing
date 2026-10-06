@@ -2561,3 +2561,125 @@ button {
     transition: none;
   }
 }
+
+/* Agency onboarding uses the manager's colours on every screen, including questions. */
+body:has(.shell[data-agency]) {
+  background: transparent;
+}
+
+.shell[data-agency] {
+  background: var(--client-bg);
+  color: var(--client-text);
+  font-family: var(--sans);
+}
+
+.shell[data-agency].is-dark {
+  background: var(--client-bg);
+  color: var(--client-text);
+}
+
+.shell[data-agency] h1,
+.shell[data-agency] h2,
+.shell[data-agency] .opening-title,
+.shell[data-agency] .question-title,
+.shell[data-agency] .statement,
+.shell[data-agency] .acknowledgement {
+  font-family: var(--display);
+  color: var(--client-text);
+}
+
+.shell[data-agency].is-dark .progress-current,
+.shell[data-agency].is-dark .mark-kicker,
+.shell[data-agency].is-dark .session-link,
+.shell[data-agency].is-dark .kicker,
+.shell[data-agency].is-dark .meta,
+.shell[data-agency].is-dark .opening-note,
+.shell[data-agency].is-dark .supporting,
+.shell[data-agency].is-dark .text-button,
+.shell[data-agency].is-dark .statement,
+.shell[data-agency].is-dark .statement-lead,
+.shell[data-agency].is-dark .statement p:last-child {
+  color: var(--client-text);
+}
+
+.shell[data-agency] .kicker,
+.shell[data-agency] .meta,
+.shell[data-agency] .supporting,
+.shell[data-agency] .gentle,
+.shell[data-agency] .powered-by {
+  color: var(--client-muted);
+}
+
+.shell[data-agency].is-dark .dock,
+.shell[data-agency] .dock {
+  background: var(--client-bg);
+}
+
+.shell[data-agency].is-dark .dock::before {
+  background: linear-gradient(to top, var(--client-bg), transparent);
+}
+
+.shell[data-agency] .progress .track,
+.shell[data-agency].is-dark .progress .track {
+  background: color-mix(in srgb, var(--client-text) 22%, transparent);
+}
+
+.shell[data-agency] .progress .fill,
+.shell[data-agency].is-dark .progress .fill {
+  background: var(--client-accent);
+}
+
+.shell[data-agency] .primary-button {
+  background: var(--client-accent);
+  color: var(--on-accent);
+}
+
+.shell[data-agency] .primary-button:focus-visible,
+.shell[data-agency] :focus-visible {
+  outline: 2px solid var(--client-focus);
+  outline-offset: 3px;
+}
+
+.shell[data-agency] .primary-button:disabled {
+  background: transparent;
+  color: var(--client-muted);
+  box-shadow: inset 0 0 0 1px var(--client-border);
+}
+
+.shell[data-agency][data-button="outline"] .primary-button,
+.shell[data-agency].is-dark[data-button="outline"] .primary-button {
+  background: transparent;
+  color: var(--client-text);
+  border: 1px solid var(--client-text);
+}
+
+.shell[data-agency] .choice-card,
+.shell[data-agency] .push-card,
+.shell[data-agency] .type-world {
+  border-color: var(--client-border);
+  color: var(--client-text);
+}
+
+.shell[data-agency] .choice-card[aria-pressed="true"],
+.shell[data-agency] .push-card[aria-pressed="true"],
+.shell[data-agency] .type-world[aria-pressed="true"] {
+  background: var(--client-selection);
+  color: var(--cream);
+  border-color: var(--client-selection);
+}
+
+.shell[data-agency] .choice-card[aria-pressed="true"] small {
+  color: color-mix(in srgb, var(--cream) 78%, transparent);
+}
+
+.shell[data-agency] .text-button,
+.shell[data-agency] .quiet {
+  color: var(--client-muted);
+}
+
+.shell.is-dark[data-agency] .opening-mark,
+.shell.is-dark[data-agency] .mark-logo,
+.shell.is-dark[data-agency]:not([data-logo-dark="true"]) .opening-mark,
+.shell.is-dark[data-agency]:not([data-logo-dark="true"]) .mark-logo {
+  filter: none;
+}

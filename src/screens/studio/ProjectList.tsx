@@ -1,13 +1,11 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ActionGroup } from "../../components/ActionGroup";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { DEMO_ACCOUNT } from "../../domain/project/account";
 import { workspaceAttention } from "../../domain/intelligence/attention";
-import { sharePath } from "../../domain/project/access";
 import { clientCardModel } from "../../domain/workspace/clientCard";
 import { clientInitials, clientLogo } from "../../domain/workspace/clientLogo";
-import { onboardingIncomplete, onboardingStatusLabel, previewPath } from "../../domain/workspace/onboardingAccess";
 import { LAST_CLIENT_KEY } from "../../domain/workspace/managerNav";
 import { organicFixture } from "../../fixtures/brandFixtures";
 import { useProjects } from "../../state/ProjectContext";
@@ -17,7 +15,8 @@ export function ProjectList() {
   const { projects, create } = useProjects();
   const navigate = useNavigate();
   const removed = removedNotice(useLocation().state);
-  const [creating, setCreating] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [creating, setCreating] = useState(() => searchParams.get("new") === "1");
   const [clientName, setClientName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [website, setWebsite] = useState("");
@@ -53,19 +52,13 @@ export function ProjectList() {
         <div>
           <LoverLoverLogo kind="secondary" color="choc" className="studio-logo" alt="Lover Lover" />
           <p className="studio-kicker">{DEMO_ACCOUNT.workspaceName}</p>
-          <h1>Clients</h1>
-        </div>
-        <div className="studio-links">
-          <ActionGroup>
-            <button type="button" className="studio-button" onClick={() => setCreating((open) => !open)}>+ New client</button>
-            <Link to="/studio/look">Client experience</Link>
-          </ActionGroup>
+          <h1>Welcome, {firstName(DEMO_ACCOUNT.name)}</h1>
         </div>
       </header>
       {removed ? <p className="studio-notice" role="status">{removed} removed.</p> : null}
       {creating ? (
         <form className="studio-create surface-card" onSubmit={openNew}>
-          <h2>New client</h2>
+          <h2>Onboard new client</h2>
           <label>
             Client
             <input value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Who you're working with" />
@@ -83,21 +76,30 @@ export function ProjectList() {
             <input value={category} onChange={(event) => setCategory(event.target.value)} placeholder="What kind of business" />
           </label>
           <ActionGroup>
-            <button type="submit" className="studio-button">Create project</button>
+            <button type="submit" className="studio-button">Create client</button>
             <button type="button" className="studio-text-button" onClick={openExample}>
               Worked example
             </button>
           </ActionGroup>
         </form>
       ) : null}
+      <h2>Your clients</h2>
       <ul className="client-grid" data-screen="client-cards">
           {ranked.length === 0 ? <li className="studio-empty">No clients yet.</li> : null}
           {ranked.map((project) => (
             <ClientCard key={project.id} project={project} />
           ))}
         </ul>
+      <ActionGroup className="home-actions">
+        <button type="button" className="studio-button" onClick={() => setCreating((open) => !open)}>Onboard new client</button>
+        <Link className="studio-button" to="/studio/look">Make Brief your own</Link>
+      </ActionGroup>
     </div>
   );
+}
+
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] || "there";
 }
 
 function removedNotice(state: unknown): string {
@@ -117,48 +119,12 @@ export function ClientCard({ project }: { project: BriefProject }) {
           <span className="client-name">
             <strong>{card.name}</strong>
             <span>{card.subtitle}</span>
-            <span className="studio-meta">{onboardingStatusLabel(project.discoveryStatus)}</span>
           </span>
         </span>
         <span>{card.competitors}</span>
         <span>{card.opportunities}</span>
-        <em>{card.updated}</em>
       </Link>
-      <ClientOnboardingActions project={project} />
     </li>
-  );
-}
-
-function ClientOnboardingActions({ project }: { project: BriefProject }) {
-  const [note, setNote] = useState("");
-  const live = sharePath(project.shareToken);
-
-  async function copy() {
-    const url = typeof window === "undefined" ? live : `${window.location.origin}${live}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setNote("Client link copied.");
-    } catch {
-      setNote(url);
-    }
-  }
-
-  if (!onboardingIncomplete(project.discoveryStatus)) {
-    return (
-      <ActionGroup className="card-actions">
-        <Link className="studio-button" to={`/studio/${project.id}?panel=responses`}>View responses</Link>
-      </ActionGroup>
-    );
-  }
-
-  return (
-    <div data-screen="onboarding-actions">
-      <ActionGroup className="card-actions">
-        <Link className="studio-button" to={previewPath(project.id)}>Open onboarding</Link>
-        <button type="button" className="studio-button" data-client-link={live} onClick={() => void copy()}>Copy client link</button>
-      </ActionGroup>
-      {note ? <p className="studio-meta" role="status">{note}</p> : null}
-    </div>
   );
 }
 

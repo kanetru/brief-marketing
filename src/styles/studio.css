@@ -101,6 +101,72 @@ body:has(.studio) {
   background: var(--paper);
 }
 
+a.studio-button {
+  text-decoration: none;
+}
+
+.home-actions {
+  margin-top: 1.4rem;
+}
+
+.metric-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  align-items: baseline;
+}
+
+.spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  min-height: 4rem;
+  margin: 0.6rem 0;
+}
+
+.spark span {
+  display: block;
+  width: 0.7rem;
+  background: currentColor;
+}
+
+.preview-field {
+  margin: 0.35rem 0;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.preview-swatches {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.preview-swatches span {
+  display: block;
+  width: 3.2rem;
+  height: 3.2rem;
+}
+
+.agency-frame.shell {
+  min-height: 0;
+}
+
+.agency-preview[data-preview="question"],
+.agency-preview[data-preview="entries"],
+.agency-preview[data-preview="choices"],
+.agency-preview[data-preview="colour"],
+.agency-preview[data-preview="type"],
+.agency-preview[data-preview="final"] {
+  align-content: start;
+}
+
+.client-logo {
+  display: block;
+  max-width: 8rem;
+  height: auto;
+}
+
 .studio-button {
   border: 1px solid var(--ink);
   background: var(--ink);

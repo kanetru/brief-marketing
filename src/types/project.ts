@@ -364,6 +364,43 @@ export interface ResearchTension {
   quotes: SourceQuote[];
 }
 
+export type ClientSocialPlatform = "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook";
+
+export interface ClientSocial {
+  platform: ClientSocialPlatform;
+  handle: string;
+}
+
+export interface ClientOfferRecord {
+  name: string;
+  description: string;
+  priceLabel: string;
+}
+
+/** Manager edits. Empty strings fall back to what the client said. */
+export interface ClientProfile {
+  description: string;
+  audience: string;
+  goal: string;
+  offers: ClientOfferRecord[];
+}
+
+export interface WorkNote {
+  id: string;
+  text: string;
+  at: string;
+}
+
+export type ContentIdeaStatus = "idea" | "in_progress" | "done";
+
+export interface ContentIdea {
+  id: string;
+  title: string;
+  body: string;
+  status: ContentIdeaStatus;
+  at: string;
+}
+
 export interface LibraryAsset {
   id: string;
   name: string;
@@ -434,6 +471,12 @@ export interface BriefProject {
   shareToken: string;
   discovery: DiscoverySession;
   managerNotes: string;
+  /** Handles the manager has recorded. Absent on older projects. */
+  socials?: ClientSocial[];
+  /** Practical record edits. Absent on older projects. */
+  profile?: ClientProfile;
+  workNotes?: WorkNote[];
+  contentIdeas?: ContentIdea[];
   competitors: CompetitorInput[];
   followUps: FollowUp[];
   followUpRequest: FollowUpRequest | null;
