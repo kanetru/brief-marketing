@@ -2582,10 +2582,21 @@ body:has(.shell[data-agency]) {
 .shell[data-agency] h2,
 .shell[data-agency] .opening-title,
 .shell[data-agency] .question-title,
-.shell[data-agency] .statement,
 .shell[data-agency] .acknowledgement {
   font-family: var(--display);
   color: var(--client-text);
+}
+
+.shell[data-agency] .statement {
+  background: var(--client-primary);
+  color: var(--cream);
+  font-family: var(--display);
+}
+
+.shell[data-agency] .statement-lead,
+.shell[data-agency] .statement p,
+.shell[data-agency] .statement p:last-child {
+  color: var(--cream);
 }
 
 .shell[data-agency].is-dark .progress-current,
@@ -2595,10 +2606,7 @@ body:has(.shell[data-agency]) {
 .shell[data-agency].is-dark .meta,
 .shell[data-agency].is-dark .opening-note,
 .shell[data-agency].is-dark .supporting,
-.shell[data-agency].is-dark .text-button,
-.shell[data-agency].is-dark .statement,
-.shell[data-agency].is-dark .statement-lead,
-.shell[data-agency].is-dark .statement p:last-child {
+.shell[data-agency].is-dark .text-button {
   color: var(--client-text);
 }
 
@@ -2672,9 +2680,44 @@ body:has(.shell[data-agency]) {
   color: color-mix(in srgb, var(--cream) 78%, transparent);
 }
 
+.shell[data-agency] .compare-panel,
+.shell[data-agency] .type-card,
+.shell[data-agency] .voice-option {
+  background: var(--client-surface);
+  border-color: var(--client-border);
+  color: var(--client-text);
+}
+
+.shell[data-agency] .compare-panel:hover,
+.shell[data-agency] .compare-panel.is-chosen,
+.shell[data-agency] .voice-option:hover {
+  border-color: var(--client-text);
+}
+
+.shell[data-agency] .compare-panel.is-chosen .compare-caption::after {
+  background: var(--client-accent);
+}
+
+.shell[data-agency] .type-card.is-pressed,
+.shell[data-agency] .voice-option.is-pressed {
+  background: var(--client-selection);
+  color: var(--cream);
+  border-color: var(--client-selection);
+}
+
+.shell[data-agency] .dock::before {
+  background: linear-gradient(to top, var(--client-bg), transparent);
+}
+
 .shell[data-agency] .text-button,
 .shell[data-agency] .quiet {
   color: var(--client-muted);
+}
+
+.shell[data-agency] .preview-button.is-solid {
+  background: var(--client-accent);
+  color: var(--on-accent);
+  border-color: var(--client-accent);
 }
 
 .shell.is-dark[data-agency] .opening-mark,

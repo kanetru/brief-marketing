@@ -213,7 +213,8 @@ function fromWatched(competitor: MonitoredCompetitor, profiles: ProjectIntellige
   const metric = followers ? `${followers}${/demo/i.test(rawFollowers) ? " · demo" : ""}` : "";
   const stats = statsForWatch(researched, researched.lastCheckedAt || project.updatedAt);
   stats.themes = themes.map((theme) => theme.charAt(0).toUpperCase() + theme.slice(1)).join(" · ");
-  if (newest?.title) stats.changes = [...stats.changes, clip(newest.title, 80)];
+  const change = newest?.title ? clip(newest.title, 80) : "";
+  if (change && !/demo/i.test(change)) stats.changes = [...stats.changes, change];
   return {
     id: researched.id,
     name: researched.name,

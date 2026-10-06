@@ -4,6 +4,14 @@ import { clientLogo } from "../../domain/workspace/clientLogo";
 import { textValue } from "../../state/textEvidence";
 import type { AssetCategory, BriefProject, ContentIdea, ContentIdeaStatus, LibraryAsset, WorkNote } from "../../types/project";
 
+const FILE_KIND: Record<string, string> = {
+  brand: "Brand",
+  web: "Web",
+  content: "Content",
+  photo_video: "Photography",
+  proof: "Contract",
+};
+
 const IDEA_STATUS: Record<ContentIdeaStatus, string> = {
   idea: "Idea",
   in_progress: "In progress",
@@ -35,7 +43,7 @@ export function FilesPanel({
         {shown.map((asset) => (
           <li key={asset.id}>
             <span>{asset.name}</span>
-            <span className="studio-meta">{asset.category} · {asset.createdAt.slice(0, 10)}</span>
+            <span className="studio-meta">{FILE_KIND[asset.category] ?? "File"} · {asset.createdAt.slice(0, 10)}</span>
             {asset.fileRef ? <a href={asset.fileRef} download={asset.name}>Open</a> : null}
             <button type="button" onClick={() => onRemove(asset.id)}>Remove</button>
           </li>

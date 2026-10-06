@@ -97,6 +97,9 @@ describe("manager clarity", () => {
     expect(competitors.map((item) => item.name)).toEqual(expect.arrayContaining(["Kiln & Co", "North & Sons", "Late Timber"]));
     const late = competitors.find((item) => item.name === "Late Timber");
     expect(late?.metrics.join(" ")).toMatch(/demo/i);
+    expect(late?.stats?.changes.join(" ") ?? "").not.toMatch(/demo sample/i);
+    expect(late?.stats?.accounts.every((account) => account.followers === "")).toBe(true);
+    expect(late?.stats?.metrics.some((metric) => metric.label === "Followers")).toBe(true);
     expect(late?.themes).not.toMatch(/followers|headline/i);
     const detail = competitors[0];
     expect(detail).toBeTruthy();

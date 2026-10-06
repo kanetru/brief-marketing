@@ -209,17 +209,19 @@ export function statsForWatch(competitor: MonitoredCompetitor, since: string): C
   const changes: string[] = [];
   if (previous !== null && latest !== null && latest > previous) changes.push("Followers up");
   if (previous !== null && latest !== null && latest < previous) changes.push("Followers down");
-  const accounts = [...new Set(competitor.socialHandles.map(platformName).filter(Boolean))].map((platform) => ({
+  const platforms = [...new Set(competitor.socialHandles.map(platformName).filter(Boolean))];
+  const followers = latest ? compactCount(latest) : "";
+  const accounts = platforms.map((platform) => ({
     platform,
     handle: "",
-    followers: latest ? compactCount(latest) : "",
+    followers: platforms.length === 1 ? followers : "",
     url: "",
   }));
   const site = websiteParts(competitor.website);
   return {
     ...site,
     accounts,
-    metrics: [],
+    metrics: platforms.length > 1 && followers ? [{ label: "Followers", value: followers }] : [],
     changes,
     themes: "",
     topPosts: [],

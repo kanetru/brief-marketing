@@ -9,12 +9,13 @@ import { createSession } from "../../state/createSession";
 import { DEMO_ACCOUNT } from "../project/account";
 import { contrastRatio, correctTheme, themeVars } from "../agency/theme";
 import { clientRecord } from "./clientRecord";
-import { compactCount, marketFacts, statsForCandidate, trackingNote } from "./plainAnalytics";
+import { compactCount, marketFacts, statsForCandidate, statsForWatch, trackingNote } from "./plainAnalytics";
 import { ProjectList } from "../../screens/studio/ProjectList";
 import { FilesPanel, IdeasPanel, NotesPanel } from "../../screens/studio/WorkPlaces";
 import type { AgencyTheme } from "../../types/agency";
 import type { SocialAccountCandidate } from "../../types/marketDiscovery";
 import type { ContentIdea, LibraryAsset, WorkNote } from "../../types/project";
+import type { MonitoredCompetitor } from "../../types/intelligence";
 
 const AT = "2026-10-06T00:00:00.000Z";
 const globalCss = readFileSync(new URL("../../styles/global.css", import.meta.url), "utf8");
@@ -152,6 +153,23 @@ describe("competitor and market data", () => {
     expect(empty.accounts[0]?.followers).toBe("");
     expect(empty.metrics).toEqual([]);
     expect(compactCount(0)).toBe("");
+    const shared: MonitoredCompetitor = {
+      id: "late",
+      name: "Late Timber",
+      website: "https://late.example",
+      socialHandles: ["Instagram", "TikTok"],
+      relationship: "direct",
+      monitoredSources: [],
+      lastCheckedAt: AT,
+      origin: "demo",
+      snapshots: [{ at: AT, origin: "demo", note: "", metrics: { followers: "18400 demo" } }],
+    };
+    const watched = statsForWatch(shared, AT);
+    expect(watched.accounts.map((account) => account.followers)).toEqual(["", ""]);
+    expect(watched.metrics).toEqual([{ label: "Followers", value: "18.4k" }]);
+    const single = statsForWatch({ ...shared, socialHandles: ["Instagram"] }, AT);
+    expect(single.accounts[0]?.followers).toBe("18.4k");
+    expect(single.metrics).toEqual([]);
   });
 
   it("grounds the market summary in collected posts", () => {
@@ -197,6 +215,8 @@ describe("working places", () => {
     expect(html).toContain("Add file");
     expect(html).toContain("Remove");
     expect(html).toContain("Open");
+    expect(html).toContain("Contract");
+    expect(html).not.toContain("PROOF");
     const contracts = renderToStaticMarkup(<FilesPanel assets={[asset]} category="contracts" onAdd={() => undefined} onRemove={() => undefined} />);
     expect(contracts).toContain("Contracts");
     expect(contracts).toContain("2026 Social Media Agreement.pdf");
@@ -240,6 +260,9 @@ describe("agency theme", () => {
     expect(agency).toContain("var(--client-accent)");
     expect(agency).toContain("var(--client-selection)");
     expect(agency).toContain("filter: none");
+    expect(agency).toContain(".preview-button.is-solid");
+    expect(agency).toContain(".compare-panel");
+    expect(agency).toContain(".statement");
     expect(agency).not.toContain("#422424");
     expect(agency).not.toContain("#74040f");
     const preview = renderToStaticMarkup(
