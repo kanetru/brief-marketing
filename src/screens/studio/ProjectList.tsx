@@ -4,8 +4,10 @@ import { ActionGroup } from "../../components/ActionGroup";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { DEMO_ACCOUNT } from "../../domain/project/account";
 import { workspaceAttention } from "../../domain/intelligence/attention";
+import { sharePath } from "../../domain/project/access";
 import { clientCardModel } from "../../domain/workspace/clientCard";
 import { clientInitials, clientLogo } from "../../domain/workspace/clientLogo";
+import { onboardingIncomplete, onboardingStatusLabel, previewPath } from "../../domain/workspace/onboardingAccess";
 import { LAST_CLIENT_KEY } from "../../domain/workspace/managerNav";
 import { organicFixture } from "../../fixtures/brandFixtures";
 import { useProjects } from "../../state/ProjectContext";
@@ -28,7 +30,7 @@ export function ProjectList() {
   function openNew(event: FormEvent) {
     event.preventDefault();
     const project = create({ clientName, businessName, website, category });
-    navigate(`/studio/${project.id}`);
+    navigate(`/studio/${project.id}`, { state: { created: true } });
   }
 
   function openExample() {
@@ -108,20 +110,55 @@ export function ClientCard({ project }: { project: BriefProject }) {
   const card = clientCardModel(project);
   const selected = typeof sessionStorage !== "undefined" && sessionStorage.getItem(LAST_CLIENT_KEY) === project.id;
   return (
-    <li data-screen="attention-row">
+    <li className="client-tile" data-screen="attention-row">
       <Link to={`/studio/${project.id}`} className="surface-card client-card" data-selected={selected ? "true" : "false"} data-tone={card.tone}>
         <span className="client-identity">
           <ClientMark name={card.name} project={project} />
           <span className="client-name">
             <strong>{card.name}</strong>
             <span>{card.subtitle}</span>
+            <span className="studio-meta">{onboardingStatusLabel(project.discoveryStatus)}</span>
           </span>
         </span>
         <span>{card.competitors}</span>
         <span>{card.opportunities}</span>
         <em>{card.updated}</em>
       </Link>
+      <ClientOnboardingActions project={project} />
     </li>
+  );
+}
+
+function ClientOnboardingActions({ project }: { project: BriefProject }) {
+  const [note, setNote] = useState("");
+  const live = sharePath(project.shareToken);
+
+  async function copy() {
+    const url = typeof window === "undefined" ? live : `${window.location.origin}${live}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setNote("Client link copied.");
+    } catch {
+      setNote(url);
+    }
+  }
+
+  if (!onboardingIncomplete(project.discoveryStatus)) {
+    return (
+      <ActionGroup className="card-actions">
+        <Link className="studio-button" to={`/studio/${project.id}?panel=responses`}>View responses</Link>
+      </ActionGroup>
+    );
+  }
+
+  return (
+    <div data-screen="onboarding-actions">
+      <ActionGroup className="card-actions">
+        <Link className="studio-button" to={previewPath(project.id)}>Open onboarding</Link>
+        <button type="button" className="studio-button" data-client-link={live} onClick={() => void copy()}>Copy client link</button>
+      </ActionGroup>
+      {note ? <p className="studio-meta" role="status">{note}</p> : null}
+    </div>
   );
 }
 

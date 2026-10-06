@@ -20,6 +20,7 @@ import { VoiceScreen } from "./screens/VoiceScreen";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
 import { ClientIndex, ClientProjectGate, ManagerGate } from "./screens/studio/gates";
 import { AgencySetup } from "./screens/studio/AgencySetup";
+import { OnboardingPreview } from "./screens/studio/OnboardingPreview";
 import { ProjectList } from "./screens/studio/ProjectList";
 import { ProjectWorkspace } from "./screens/studio/ProjectWorkspace";
 import { FollowUpScreen } from "./screens/FollowUpScreen";
@@ -51,6 +52,26 @@ export function App() {
         <Route path="/demo/complete" element={<CompleteScreen />} />
         <Route path="/studio" element={<ManagerGate><ProjectList /></ManagerGate>} />
         <Route path="/studio/look" element={<ManagerGate><AgencySetup /></ManagerGate>} />
+        <Route path="/studio/:projectId/preview" element={<ManagerGate><OnboardingPreview /></ManagerGate>}>
+          <Route index element={<Navigate to="start" replace />} />
+          <Route path="start" element={<WelcomeScreen />} />
+          <Route path="business" element={<BusinessScreen />} />
+          <Route path="audience" element={<AudienceScreen />} />
+          <Route path="goals" element={<GoalsScreen />} />
+          <Route path="reality" element={<RealityScreen />} />
+          <Route path="personality" element={<PersonalityScreen />} />
+          <Route path="spectrum" element={<SpectrumScreen />} />
+          <Route path="visual" element={<VisualScreen />} />
+          <Route path="colour" element={<ColourScreen />} />
+          <Route path="type" element={<TypeScreen />} />
+          <Route path="imagery" element={<ImageryScreen />} />
+          <Route path="voice" element={<VoiceScreen />} />
+          <Route path="inspiration" element={<InspirationScreen />} />
+          <Route path="clarify" element={<ClarifyScreen />} />
+          <Route path="profile" element={<ProfileScreen />} />
+          <Route path="follow-up" element={<FollowUpScreen />} />
+          <Route path="complete" element={<CompleteScreen />} />
+        </Route>
         <Route path="/studio/:projectId" element={<ManagerGate><ProjectWorkspace /></ManagerGate>} />
         <Route path="/c/:token" element={<ClientProjectGate />}>
           <Route index element={<ClientIndex />} />

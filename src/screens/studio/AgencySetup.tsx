@@ -1,5 +1,6 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { ActionGroup } from "../../components/ActionGroup";
 import { ExperiencePreview } from "../../components/ExperiencePreview";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { DEMO_ACCOUNT } from "../../domain/project/account";
@@ -83,56 +84,62 @@ export function AgencySetup() {
         <Link to="/studio">Clients</Link>
       </header>
       <form className="studio-split agency-layout" onSubmit={onSubmit}>
-        <div className="studio-create">
-          <h2>Practice</h2>
-          <label>Name<input value={brand.name} onChange={(event) => setBrand({ ...brand, name: event.target.value })} /></label>
-          <label>Website<input value={brand.website} onChange={(event) => setBrand({ ...brand, website: event.target.value })} /></label>
-          <label>Your name<input value={brand.contactName} onChange={(event) => setBrand({ ...brand, contactName: event.target.value })} /></label>
+        <div className="look-editor">
+          <section className="look-section">
+            <h2>Practice</h2>
+            <label>Name<input value={brand.name} onChange={(event) => setBrand({ ...brand, name: event.target.value })} /></label>
+            <label>Website<input value={brand.website} onChange={(event) => setBrand({ ...brand, website: event.target.value })} /></label>
+            <label>Your name<input value={brand.contactName} onChange={(event) => setBrand({ ...brand, contactName: event.target.value })} /></label>
+          </section>
 
-          <div data-screen="logo-upload">
+          <section className="look-section" data-screen="logo-upload">
             <h2>Logo</h2>
-            <FileField label="Primary logo" onChange={onFile("logo")} />
-            <FileField label="Dark logo" onChange={onFile("logoDark")} />
-            <FileField label="Mark" onChange={onFile("mark")} />
-          </div>
+            <ActionGroup>
+              <FileField label="Primary logo" onChange={onFile("logo")} />
+              <FileField label="Dark logo" onChange={onFile("logoDark")} />
+              <FileField label="Mark" onChange={onFile("mark")} />
+            </ActionGroup>
+          </section>
 
-          <div data-screen="colour-setup">
+          <section className="look-section" data-screen="colour-setup">
             <h2>Colour and type</h2>
-            <ColourField label="Primary" value={brand.theme.colourPrimary} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourPrimary: value } })} />
-            <ColourField label="Accent" value={brand.theme.colourAccent} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourAccent: value } })} />
-            <ColourField label="Extra accent" value={brand.theme.colourExtra || brand.theme.colourAccent} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourExtra: value } })} />
-            <ColourField label="Background" value={brand.theme.colourBackground} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourBackground: value } })} />
-            <ColourField label="Text" value={brand.theme.colourText} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourText: value } })} />
-            <FontField label="Heading" value={brand.theme.headingFont} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, headingFont: value } })} />
-            <FontField label="Body" value={brand.theme.bodyFont} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, bodyFont: value } })} />
-            <label>
-              Buttons
-              <select value={brand.theme.buttonStyle || "solid"} onChange={(event) => setBrand({ ...brand, theme: { ...brand.theme, buttonStyle: event.target.value as ButtonTreatment } })}>
-                <option value="solid">Solid</option>
-                <option value="outline">Outline</option>
-              </select>
-            </label>
-          </div>
+            <div className="look-colours">
+              <ColourField label="Primary" value={brand.theme.colourPrimary} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourPrimary: value } })} />
+              <ColourField label="Accent" value={brand.theme.colourAccent} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourAccent: value } })} />
+              <ColourField label="Extra accent" value={brand.theme.colourExtra || brand.theme.colourAccent} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourExtra: value } })} />
+              <ColourField label="Background" value={brand.theme.colourBackground} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourBackground: value } })} />
+              <ColourField label="Text" value={brand.theme.colourText} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, colourText: value } })} />
+              <FontField label="Heading" value={brand.theme.headingFont} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, headingFont: value } })} />
+              <FontField label="Body" value={brand.theme.bodyFont} onChange={(value) => setBrand({ ...brand, theme: { ...brand.theme, bodyFont: value } })} />
+              <label>
+                Buttons
+                <select value={brand.theme.buttonStyle || "solid"} onChange={(event) => setBrand({ ...brand, theme: { ...brand.theme, buttonStyle: event.target.value as ButtonTreatment } })}>
+                  <option value="solid">Solid</option>
+                  <option value="outline">Outline</option>
+                </select>
+              </label>
+            </div>
+          </section>
 
-          <div data-screen="opening-copy">
+          <section className="look-section" data-screen="opening-copy">
             <h2>Opening</h2>
             <label>Eyebrow<input value={experience.openingEyebrow ?? resolved.openingEyebrow} onChange={(event) => patchExperience({ openingEyebrow: event.target.value })} /></label>
             <label>Heading<input value={experience.openingHeading ?? resolved.openingHeading} onChange={(event) => patchExperience({ openingHeading: event.target.value })} /></label>
             <label>Supporting text<textarea rows={3} value={experience.openingSupport ?? resolved.openingSupport} onChange={(event) => patchExperience({ openingSupport: event.target.value })} /></label>
             <label>Button<input value={experience.openingButton ?? resolved.openingButton} onChange={(event) => patchExperience({ openingButton: event.target.value })} /></label>
-          </div>
+          </section>
 
-          <fieldset>
-            <legend>What happens next</legend>
+          <section className="look-section">
+            <h2>What happens next</h2>
             <label className="check-row">
               <input type="checkbox" checked={experience.expectationEnabled ?? false} onChange={(event) => patchExperience({ expectationEnabled: event.target.checked })} />
-              Show
+              <span>Show</span>
             </label>
             <label>Heading<input value={experience.expectationHeading ?? "What happens next"} onChange={(event) => patchExperience({ expectationHeading: event.target.value })} /></label>
             <label>Text<textarea rows={3} value={experience.expectationBody ?? resolved.expectationBody} onChange={(event) => patchExperience({ expectationBody: event.target.value })} /></label>
-          </fieldset>
+          </section>
 
-          <div>
+          <section className="look-section">
             <h2>Chapters</h2>
             {CHAPTER_IDS.map((id) => {
               const fallback = resolved.chapters[id];
@@ -145,49 +152,51 @@ export function AgencySetup() {
                 </details>
               );
             })}
-          </div>
+          </section>
 
-          <fieldset data-screen="manager-intro-editor">
-            <legend>Your introduction</legend>
+          <section className="look-section" data-screen="manager-intro-editor">
+            <h2>Your introduction</h2>
             <label className="check-row">
               <input type="checkbox" checked={experience.introEnabled ?? false} onChange={(event) => patchExperience({ introEnabled: event.target.checked })} />
-              Show
+              <span>Show</span>
             </label>
             <label>Name<input value={experience.managerName ?? brand.contactName} onChange={(event) => patchExperience({ managerName: event.target.value })} /></label>
-            <FileField label="Photo" onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = () => {
-                const url = typeof reader.result === "string" ? reader.result : "";
-                if (url) patchExperience({ managerPhoto: url });
-              };
-              reader.readAsDataURL(file);
-            }} />
+            <ActionGroup>
+              <FileField label="Photo" onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const url = typeof reader.result === "string" ? reader.result : "";
+                  if (url) patchExperience({ managerPhoto: url });
+                };
+                reader.readAsDataURL(file);
+              }} />
+            </ActionGroup>
             <label>Message<textarea rows={4} value={experience.introMessage ?? ""} onChange={(event) => patchExperience({ introMessage: event.target.value })} /></label>
-          </fieldset>
+          </section>
 
-          <div>
+          <section className="look-section">
             <h2>Completion</h2>
             <label>Heading<input value={experience.completionHeading ?? "Thanks — you're done."} onChange={(event) => patchExperience({ completionHeading: event.target.value })} /></label>
             <label>Message<textarea rows={3} value={experience.completionBody ?? resolved.completionBody} onChange={(event) => patchExperience({ completionBody: event.target.value })} /></label>
             <label>Next step<textarea rows={2} value={experience.completionNext ?? ""} onChange={(event) => patchExperience({ completionNext: event.target.value })} /></label>
             <label>Signature<input value={experience.signature ?? ""} onChange={(event) => patchExperience({ signature: event.target.value })} /></label>
-          </div>
+          </section>
 
-          <fieldset>
-            <legend>Questions?</legend>
+          <section className="look-section">
+            <h2>Questions?</h2>
             <label className="check-row">
               <input type="checkbox" checked={experience.helpEnabled ?? false} onChange={(event) => patchExperience({ helpEnabled: event.target.checked })} />
-              Show
+              <span>Show</span>
             </label>
             <label>Name<input value={experience.helpName ?? ""} onChange={(event) => patchExperience({ helpName: event.target.value })} /></label>
             <label>Email<input value={experience.helpEmail ?? ""} onChange={(event) => patchExperience({ helpEmail: event.target.value })} /></label>
             <label>Phone<input value={experience.helpPhone ?? ""} onChange={(event) => patchExperience({ helpPhone: event.target.value })} /></label>
             <label>Help text<textarea rows={2} value={experience.helpText ?? ""} onChange={(event) => patchExperience({ helpText: event.target.value })} /></label>
-          </fieldset>
+          </section>
 
-          <div>
+          <section className="look-section">
             <h2>Words</h2>
             {(["client", "brand", "business", "project"] as const).map((term) => (
               <label key={term}>
@@ -195,20 +204,23 @@ export function AgencySetup() {
                 <input value={experience.terms?.[term] ?? term} onChange={(event) => patchExperience({ terms: { ...experience.terms, [term]: event.target.value } })} />
               </label>
             ))}
-          </div>
+          </section>
 
-          <button type="submit" className="studio-button">Save</button>
+          <ActionGroup footer>
+            <button type="submit" className="studio-button">Save</button>
+          </ActionGroup>
         </div>
-        <div className="preview-column" data-screen="agency-preview">
-          <div className="intel-switch">
-            <button type="button" aria-current={preview === "opening" ? "page" : undefined} onClick={() => setPreview("opening")}>Opening</button>
-            <button type="button" aria-current={preview === "completion" ? "page" : undefined} onClick={() => setPreview("completion")}>Completion</button>
-          </div>
+        <section className="preview-column look-section" data-screen="agency-preview">
+          <h2>Preview</h2>
+          <ActionGroup>
+            <button type="button" className="studio-button" aria-current={preview === "opening" ? "page" : undefined} onClick={() => setPreview("opening")}>Opening</button>
+            <button type="button" className="studio-button" aria-current={preview === "completion" ? "page" : undefined} onClick={() => setPreview("completion")}>Completion</button>
+          </ActionGroup>
           <div className="preview-row">
             <ExperiencePreview brand={{ ...brand, theme: { ...brand.theme, logo } }} frame="desktop" view={preview} />
             <ExperiencePreview brand={{ ...brand, theme: { ...brand.theme, logo } }} frame="mobile" view={preview} />
           </div>
-        </div>
+        </section>
       </form>
     </div>
   );

@@ -32,6 +32,7 @@ import {
   withMarketDiscovery,
 } from "./projectStore";
 import { withoutProject } from "../domain/project/removeClient";
+import { muteProjectWrites } from "../domain/workspace/onboardingAccess";
 import type { ManagerReaction } from "../types/intelligence";
 
 interface ProjectApi {
@@ -126,6 +127,13 @@ export function useProjects(): ProjectApi {
   const api = useContext(ProjectContext);
   if (!api) throw new Error("Project provider missing");
   return api;
+}
+
+/** Child screens keep reading projects, but Finish, learning, and follow-up cannot write them. */
+export function MutedProjectScope({ children }: { children: ReactNode }) {
+  const live = useProjects();
+  const muted = useMemo(() => muteProjectWrites(live), [live]);
+  return <ProjectContext.Provider value={muted}>{children}</ProjectContext.Provider>;
 }
 
 export function ClientProjectScope({ project, children }: { project: BriefProject; children: ReactNode }) {

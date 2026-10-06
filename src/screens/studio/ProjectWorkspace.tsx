@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { DEFAULT_PANEL, LAST_CLIENT_KEY, PRIMARY_NAV, type ManagerPanel } from "../../domain/workspace/managerNav";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { DEFAULT_PANEL, LAST_CLIENT_KEY, MANAGER_NAV, PRIMARY_NAV, type ManagerPanel } from "../../domain/workspace/managerNav";
 import { ActionGroup } from "../../components/ActionGroup";
 import { LoverLoverLogo } from "../../components/LoverLoverLogo";
 import { buildBrandIntelligence } from "../../domain/brandIntelligence";
@@ -13,7 +13,7 @@ import { sharePath } from "../../domain/project/access";
 import { describeClientSite } from "../../domain/project/research/compare";
 import { requestSiteResearch } from "../../services/researchClient";
 import { useProjects } from "../../state/ProjectContext";
-import type { AgentFile, AssetCategory, AssetItem, BriefProject, CategoryPattern, DiscoveryStatus, ProjectIntelligence, ResearchTension, SourceQuote, UnderstandingField } from "../../types/project";
+import type { AgentFile, AssetCategory, AssetItem, BriefProject, CategoryPattern, ProjectIntelligence, ResearchTension, SourceQuote, UnderstandingField } from "../../types/project";
 import { StrategyView } from "./StrategyView";
 import { ContentDesk, StrategySummary, savedIdeas } from "./WorkSurfaces";
 import { BrandBrainPanel, HistoryPanel, MarketWatch } from "./IntelligenceDesk";
@@ -26,6 +26,8 @@ import { MoreNav } from "./MoreNav";
 import { RemoveClientSection } from "./RemoveClient";
 import { DevProviderChecks } from "./DevProviderChecks";
 import { clientCardModel } from "../../domain/workspace/clientCard";
+import { onboardingIncomplete, sendOnboardingHeading } from "../../domain/workspace/onboardingAccess";
+import { ClientOnboardingSection, OnboardingStatusLine } from "./OnboardingAccess";
 import { discoveryContext } from "../../domain/market/context";
 import { emptyMarketDiscovery, storeRun } from "../../domain/market/review";
 import { requestMarketDiscovery } from "../../services/marketClient";
@@ -41,18 +43,15 @@ const STRATEGY_AREAS = [
   ["unknown", "Open questions"],
 ] as const;
 
-const DISCOVERY_LABEL: Record<DiscoveryStatus, string> = {
-  draft: "Not sent",
-  invited: "Waiting for the client",
-  opened: "Client opened it",
-  in_progress: "Discovery in progress",
-  submitted: "Discovery complete",
-  follow_up_requested: "Follow-up with the client",
-  follow_up_complete: "Follow-up complete",
-  closed: "Closed",
-};
-
 type Panel = ManagerPanel;
+
+function isPanel(value: string | null): value is Panel {
+  return MANAGER_NAV.some((item) => item.id === value);
+}
+
+function justCreated(state: unknown): boolean {
+  return Boolean(state && typeof state === "object" && "created" in state && (state as { created?: unknown }).created === true);
+}
 
 interface ResearchRun {
   status: "reading" | "complete";
@@ -97,9 +96,12 @@ function fieldMark(field: UnderstandingField): string {
 export function ProjectWorkspace() {
   const { projectId = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const requestedPanel = searchParams.get("panel");
   const api = useProjects();
   const project = api.projects.find((item) => item.id === projectId) ?? null;
-  const [panel, setPanel] = useState<Panel>(DEFAULT_PANEL);
+  const [panel, setPanel] = useState<Panel>(() => (isPanel(requestedPanel) ? requestedPanel : DEFAULT_PANEL));
   const [moreOpen, setMoreOpen] = useState(false);
   const [researching, setResearching] = useState(false);
   const [strategyArea, setStrategyArea] = useState<(typeof STRATEGY_AREAS)[number][0]>("matters");
@@ -118,6 +120,10 @@ export function ProjectWorkspace() {
     if (!project) return;
     sessionStorage.setItem(LAST_CLIENT_KEY, project.id);
   }, [project]);
+
+  useEffect(() => {
+    if (isPanel(requestedPanel)) setPanel(requestedPanel);
+  }, [requestedPanel]);
 
   if (!project || !intelligence || !reading) {
     return (
@@ -204,12 +210,29 @@ export function ProjectWorkspace() {
       </nav>
       {notice ? <p className="studio-notice">{notice}</p> : null}
       {panel === "overview" ? (
-        <OverviewBoard
-          read={theRead(intelligence)}
-          matters={matters}
-          needsResearch={overviewNeedsResearch(project)}
-          onFindCompetitors={() => void findCompetitors()}
-        />
+        <>
+          {onboardingIncomplete(project.discoveryStatus) ? (
+            <ClientOnboardingSection
+              project={project}
+              link={link}
+              heading={sendOnboardingHeading(justCreated(location.state))}
+              onCopy={() => void copy(link, "Client link copied.")}
+              onSend={() => {
+                api.sendDiscovery(project.id);
+                setNotice("Link ready.");
+              }}
+              onViewResponses={() => choose("responses")}
+            />
+          ) : (
+            <OnboardingStatusLine project={project} onViewResponses={() => choose("responses")} />
+          )}
+          <OverviewBoard
+            read={theRead(intelligence)}
+            matters={matters}
+            needsResearch={overviewNeedsResearch(project)}
+            onFindCompetitors={() => void findCompetitors()}
+          />
+        </>
       ) : null}
       {panel === "competitors" ? (
         <CompetitorBoard
@@ -409,11 +432,12 @@ export function ProjectWorkspace() {
           <DiscoveryPanel
             project={project}
             link={link}
-            onCopy={() => void copy(link, "Discovery link copied.")}
+            onCopy={() => void copy(link, "Client link copied.")}
             onSend={() => {
               api.sendDiscovery(project.id);
               setNotice("Link ready.");
             }}
+            onViewResponses={() => choose("responses")}
             onFollowUp={(prompts) => {
               api.requestFollowUp(project.id, prompts);
               setNotice("Follow-up sent.");
@@ -886,6 +910,7 @@ function DiscoveryPanel({
   link,
   onCopy,
   onSend,
+  onViewResponses,
   onFollowUp,
   onDetails,
   onNotes,
@@ -894,6 +919,7 @@ function DiscoveryPanel({
   link: string;
   onCopy: () => void;
   onSend: () => void;
+  onViewResponses: () => void;
   onFollowUp: (prompts: Array<{ id: string; prompt: string }>) => void;
   onDetails: (details: { clientName: string; businessName: string; website: string; category: string }) => void;
   onNotes: (notes: string) => void;
@@ -904,15 +930,13 @@ function DiscoveryPanel({
   const suggested = adaptiveFollowUps(project.discovery, project.followUps).filter((item) => !item.answer.trim()).slice(0, 5);
   return (
     <section className="studio-panel">
-      <h2>Discovery</h2>
-      <p className="studio-meta">{DISCOVERY_LABEL[project.discoveryStatus]}</p>
-      <div className="studio-share">
-        <p className="studio-link">{link}</p>
-        <ActionGroup>
-          <button type="button" className="studio-button" onClick={onCopy}>Copy link</button>
-          {project.discoveryStatus === "draft" ? <button type="button" className="studio-button" onClick={onSend}>Send discovery</button> : null}
-        </ActionGroup>
-      </div>
+      <ClientOnboardingSection
+        project={project}
+        link={link}
+        onCopy={onCopy}
+        onSend={onSend}
+        onViewResponses={onViewResponses}
+      />
       <form
         className="studio-form"
         onSubmit={(event) => {
